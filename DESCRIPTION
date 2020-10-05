@@ -1,0 +1,24 @@
+Package: dwp
+Type: Package
+Title: What the package does (short line)
+Version: 0.0.1.0
+Date: 2020-10-02
+Author: Who wrote it
+Maintainer: Who to complain to <ddalthorp@usgs.gov>
+Description: More about what it does (maybe more than one line)
+License: CC0
+LazyData: true
+Encoding: UTF-8
+Imports:
+    expint,
+    GenEst,
+    gtools,
+    invgamma,
+    matrixStats,
+    mvtnorm,
+    numDeriv,
+    sf,
+    statmod
+RoxygenNote: 6.1.1
+Suggests: 
+    testthat (>= 2.1.0)
