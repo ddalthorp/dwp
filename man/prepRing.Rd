@@ -4,10 +4,10 @@
 \alias{prepRing}
 \title{Create ringData structure for fitting distance models}
 \usage{
-prepRing(siteLayout, scCol = NULL, notSearched = NULL)
+prepRing(siteLayout, scVar = NULL, notSearched = NULL)
 }
 \arguments{
-\item{scCol}{(optional) name of a column with search class delineator in
+\item{scVar}{(optional) name of a column with search class delineator in
 \code{site_layout$layout}.}
 
 \item{notSearched}{name(s) of the search classes that are not searched
@@ -27,7 +27,7 @@ List containing:
      distance from 1 to maximim distance searched at any turbine;}
    \item{\code{$searchMax}}{maximum distance searched at any turbine (numeric
      scalar);}
-   \item{\code{$scCol}}{name of the search class column (if any);}
+   \item{\code{$scVar}}{name of the search class column (if any);}
    \item{\code{$X}}{number of carcasses found at each turbine (vector}
  }
 }

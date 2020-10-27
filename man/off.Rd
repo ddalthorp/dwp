@@ -2,7 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{off}
 \alias{off}
-\title{utility function for calculating offset for integral optim for tfit.dmod}
+\title{utility function for calculating offset for integrals for glm to dd}
 \usage{
 off(r, distr)
 }

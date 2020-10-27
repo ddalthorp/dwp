@@ -10,7 +10,7 @@ readLayout(file_layout, file_CO, file_turbine = NULL, unitCol = NULL)
 \item{file_layout}{name of a shape file (polygons or multipolygons) that
 delineates areas searched at each turbine. Search areas may be defined for
 any number of search classes (associated with different detection
-probabilities) and turbines. Search classes are listed the \code{scCol}
+probabilities) and turbines. Search classes are listed the \code{scVar}
 column and turbine IDs are specified in the (\code{unitCol}) column. If a
 \code{unitCol} is provided (required if the site consists of more than one
 turbine), each turbine should have a syntactically valid name. Search class
@@ -32,7 +32,8 @@ provided and the \code{unitCol} must be present in \code{file_turbine},
 must be syntactically valid R names (see Description above).}
 }
 \value{
-\code{siteLayout} object = list with spatial characteristics of the site
+A \code{siteLayout} object, which is a list with spatial
+ characteristics of the site, including
  \describe{
    \item{\code{$layout}}{turbine search area configurations (polygons and multipolygons)
      from \code{file_layout} shape file as an \code{sf} object.}

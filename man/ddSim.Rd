@@ -3,14 +3,11 @@
 \name{ddSim}
 \alias{ddSim}
 \alias{ddSim.dd}
-\alias{ddSim.dmod}
 \title{Simulation of dispersion parameters}
 \usage{
 ddSim(x, ...)
 
 \method{ddSim}{dd}(x, nsim = 1000, extent = "full", ...)
-
-\method{ddSim}{dmod}(x, nsim = 1000, extent = "full", ...)
 }
 \arguments{
 \item{x}{object to simulate from}

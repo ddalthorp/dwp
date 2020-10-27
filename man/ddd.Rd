@@ -7,13 +7,13 @@
 \alias{qdd}
 \title{Function to mimic dnorm, dexp, etc. for \code{dd} models}
 \usage{
-ddd(x, model, extent = "full")
+ddd(x, model, extent = "full", zrad = 150)
 
-pdd(x, model, extent = "full")
+pdd(x, model, extent = "full", zrad = 150)
 
-rcd(x, model, extent = "full")
+rcd(x, model, extent = "full", zrad = 150)
 
-qdd(p, model, extent = "full", subdiv = 1000)
+qdd(p, model, extent = "full", zrad = 150, subdiv = 1000)
 }
 \arguments{
 \item{x}{numeric x >= 0}
@@ -28,8 +28,8 @@ within the search radius.}
 \code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}
  uses the MLE parameters found in the \code{dd} object.}
 
-\item{trad}{the radius to use for truncated distributions
-(\code{trad = NULL} to use full, non-truncated distribution)}
+\item{srad}{the radius to use for truncated distributions
+(\code{srad = NULL} to use full, non-truncated distribution)}
 
 \item{x}{numeric x >= 0}
 
@@ -45,11 +45,11 @@ uses the MLE parameters found in the \code{dd} object.}
 \item{model}{either a \code{dd} object or a set of simulated parameters
 (i.e., a \code{ddSim} object)}
 
-\item{trad}{the radius to use for truncated distributions
-(\code{trad = NULL} to use full, non-truncated distribution)}
+\item{srad}{the radius to use for truncated distributions
+(\code{srad = NULL} to use full, non-truncated distribution)}
 }
 \value{
-vector of PDF values. If \code{trad = NULL} and a full distribution
+vector of PDF values. If \code{srad = NULL} and a full distribution
  is used, the length of the output is equal to the maximum of the length of
  \code{x} and the number of parameter sets are included in \code{model} (i.e.
  1 if \code{model} is a \code{dd} object, or \code{nrow(model)} if

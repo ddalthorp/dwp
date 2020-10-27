@@ -2,28 +2,28 @@
 % Please edit documentation in R/fun.R
 \name{ddCI}
 \alias{ddCI}
-\title{Calculate CI for CDF, PDF, or rcd for a \code{dd} model at distance \code{r}}
+\title{Calculate CI for CDF, PDF, or quantile}
 \usage{
-ddCI(mod, r, type = "CDF", CL = 0.9, nsim = 1000, extent = "full",
-  na.tol = 0.1)
+ddCI(mod, x, type = "CDF", CL = 0.9, nsim = 1000, extent = "full",
+  zrad = 150, na.tol = 0.1)
 }
 \arguments{
 \item{mod}{a \code{dd} object}
 
-\item{r}{distance from turbine (scalar or vector)}
+\item{x}{distance from turbine (scalar or vector) or probability (for quantile)}
 
-\item{type}{"CDF", "PDF", or "rcd"}
+\item{type}{"CDF", "PDF", or "quantile"}
 
 \item{CL}{confidence level for the confidence interval(s)}
 
 \item{nsim}{number of simulation draws to base the estimate of CI on}
 
 \item{na.tol}{maximum fraction of invalid parameter sets to discard when
-constructing CIs; abort if \code{mean(mod[, "proper"]) > na.tol}}
+constructing CIs; abort if \code{mean(mod[, "extensible"]) > na.tol}}
 }
 \value{
 array (\code{ddCI} class) with columns for distance and the CI bounds
 }
 \description{
-Calculate CI for CDF, PDF, or rcd for a \code{dd} model at distance \code{r}
+Calculate CI for CDF, PDF, or quantile
 }

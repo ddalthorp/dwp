@@ -7,7 +7,8 @@
 \title{plot dd and ddArray objects}
 \usage{
 \method{plot}{ddArray}(x, type = "CDF", extent = "full", set = "all",
-  xmax = NULL, resolution = 250, mod_highlight = NULL, ...)
+  xmax = NULL, resolution = 250, mod_highlight = NULL,
+  par_reset = TRUE, ...)
 
 \method{plot}{dd}(x, type = "CDF", extent = "full", xmax = NULL,
   resolution = 250, nsim = 1000, CL = 0.9, ...)

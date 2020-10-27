@@ -4,43 +4,28 @@
 \alias{cof2parms}
 \alias{cof2parms.matrix}
 \alias{cof2parms.numeric}
-\alias{cof2parms.dmod}
-\title{convert glm parameters into distr parameters}
+\alias{cof2parms.dd}
+\title{Convert glm distance parameters into named distribution parameters}
 \usage{
-cof2parms(x, ...)
-
 cof2parms(x, ...)
 
 \method{cof2parms}{matrix}(x, distr, ...)
 
 \method{cof2parms}{numeric}(x, distr, ...)
 
-\method{cof2parms}{dmod}(x, ...)
+\method{cof2parms}{dd}(x, ...)
 }
 \arguments{
-\item{x}{structure containing the parameters values to be converted}
+\item{x}{object (vector or matrix of parameters, dmod, or glm)
+with named glm parameters ("r", "I(r^2)", "I(r^3)", "log(r)", or "I(1/r)")}
 
 \item{...}{ignored [but required for CRAN]}
 
 \item{distr}{name of the distribution}
-
-\item{rvar}{name of the distance variable}
-
-\item{x}{object (vector or matrix of parameters, dmod, or glm)
-with named glm parameters ("r", "I(r^2)", "I(r^3)", "log(r)", or "I(1/r)")}
-
-\item{distr}{name of the distribution}
 }
 \value{
-array with columns for the glm parameters, the corresponding
- probability distribution parameters,
-
 matrix of parameters
 }
 \description{
-There is a natural connection between glm and exponential
- families of probability distributions. \code{cof2parms} converts the glm
- parameters into probability distribution parameters in cases where the
- glm converges to 0 as x approaches infininty and converges to x0 < Inf as
- x approaches 0.
+Convert glm distance parameters into named distribution parameters
 }

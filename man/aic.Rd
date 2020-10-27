@@ -4,28 +4,25 @@
 \alias{aic}
 \alias{aic.ddArray}
 \alias{aic.dd}
-\title{Akaike Information Criterion}
+\title{Calculate Akaike Information Criterion (AIC) for Distance Distributions}
 \usage{
 aic(x, ...)
 
-\method{aic}{ddArray}(x, ...)
+\method{aic}{ddArray}(x, extent = "full", ...)
 
 \method{aic}{dd}(x, ...)
 }
 \arguments{
-\item{x}{list of models to calculate AICs for}
+\item{x}{list of models (\code{ddArray}) or single model (\code{dd}) to calculate AICs for}
 
-\item{...}{ignored (but required for S3 functions)}
+\item{...}{ignored}
 
-\item{rCol}{name of the "r" variable in model formulas}
-
-\item{scCol}{name of the search class variable in model formulas}
-
-\item{expoCol}{name of the exposure variable in model formulas}
+\item{extent}{Include only the extensible models (\code{extent = "full"}) or
+all models, regardless of whether they can be extended beyond the search
+radius (\code{extent = "win"}).}
 }
 \value{
-Data frame with AIC, AICc, deltaAICc, and AICw (AIC for the models
- restricted to within the search radius) for all models in \code{x}
+Data frame with AIC, AICc, deltaAICc for all models in \code{x}
 }
 \description{
 functions for calculating AIC and AICc for carcass dispersion

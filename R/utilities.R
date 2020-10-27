@@ -127,12 +127,20 @@ dlogC <- function(x, b1, b2, b3, const = NULL){
 #' @rdname dmb
 #' @export
 plogC <- function(x, b1, b2, b3, const = NULL){
-  if (is.null(const)) const <- 1/integrate(
+  if (is.null(const)) const <- tryCatch(1/integrate(
     f = function(x) x * exp(b1 * x + b2 * x^2 + b3 * x^3),
-    lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
+      lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
+    error = function(e) NA
+  )
+  if (is.na(const)) return(rep(NA, length(x)))
   ans <- numeric(length(x))
-  ans[x > 0] <- const * rmutil::int(f = function(r) # vectorized wrt r but not b1, b2, b3
-    r * exp(b1*r + b2*r^2 + b3*r^3), a = 0, b = x[x > 0])
+  for (xi in which(x > 0)){
+    ans[xi] <- tryCatch(const * integrate(
+      f = function(r) r * exp(b1*r + b2*r^2 + b3*r^3), lower = 0, upper = x[xi]
+      )$val,
+      error = function(e) NA
+    )
+  }
   ans
 }
 
@@ -152,9 +160,12 @@ plogC <- function(x, b1, b2, b3, const = NULL){
 #'
 digam <- function(x, shape, scale){
   ans <- numeric(length(x))
-  ans[x > 0] <- invgamma::dinvgamma(x[x > 0],
+  xx <- x
+  if (any(x <= 0)) xx[x <= 0] <- 1e-4
+  ans <- invgamma::dinvgamma(xx,
     shape = shape,
     scale =  1/scale)
+  ans[x <= 0] <- 0
   ans
 }
 
@@ -162,9 +173,12 @@ digam <- function(x, shape, scale){
 #' @export
 pigam <- function(x, shape, scale){
   ans <- numeric(length(x))
-  ans[x > 0] <- invgamma::pinvgamma(x[x > 0],
+  xx <- x
+  if (any(x <= 0)) xx[x <= 0] <- 1e-4
+  ans <- invgamma::pinvgamma(xx,
     shape = shape,
     scale = 1/scale)
+  ans[x <= 0] <- 0
   ans
 }
 
@@ -185,19 +199,29 @@ dpng <- function(x, b0, b1, b2, b3, const = NULL){
   if (is.null(const)) const <- 1/integrate(
     f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3),
     lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
-  const * x * exp(b0*log(x) + b1*x + b2*x^2 + b3*x^3)
+  ans <- const * x * exp(b0*log(x) + b1*x + b2*x^2 + b3*x^3)
+  ans[x <= 0] <- 0
+  ans
 }
 
 #' @rdname dmb
 #' @export
 ppng <- function(x, b0, b1, b2, b3, const = NULL){
   # works for vector x but not beta parameters
-  if (is.null(const)) const <- 1/integrate(
+  if (is.null(const)) const <- tryCatch(1/integrate(
     f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3),
-    lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
-  x0 <- x[x > 0]
-  c(rep(0, sum(x <= 0)), const * rmutil::int(f = function(x) x * exp(b0*log(x) + b1*x + b2*x^2 + b3*x^3),
-    a = 0, b = x0, eps = .Machine$double.eps^0.5))
+    lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
+    error = function(e) NA)
+  if(is.na(const)) return(rep(NA, length(x)))
+  ans <- numeric(length(x))
+  for (xi in which(x > 0)){
+    ans[xi] <- const * integrate(
+      f = function(r) r * exp(b0*log(r) + b1*r + b2*r^2 + b3*r^3),
+      lower = 0, upper = x[xi]
+    )$val
+  }
+  ans[x <= 0] <- 0
+  ans
 }
 
 #' @param x, q vector of quantiles
@@ -262,7 +286,7 @@ rmat <- function(r, distr){
     paranormal_gamma = cbind(1, log(r), r, r^2, r^3),
     Rayleigh = cbind(1, r^2),
     MaxwellBoltzmann = cbind(1, r^2),
-    constant = NA,
+    constant = matrix(1, nrow = length(r)) ,
     tnormal = cbind(1, r, r^2),
     exponential = cbind(1, r),
     Pareto = cbind(1, log(r)),
@@ -271,7 +295,7 @@ rmat <- function(r, distr){
   )
 }
 
-#' utility function for calculating offset for integral optim for tfit.dmod
+#' utility function for calculating offset for integrals for glm to dd
 #'
 #' This is a simple utility function for calculating offsets when exposure
 #'  is assumed to be 100% at a given distance \code{r}. This is useful for
@@ -306,7 +330,7 @@ cofOK <- function(cof, distr){
   output <- rep(TRUE, nrow(cof))
   lim <- constraints[[distr]]
   for (ci in rownames(lim)){
-    if (ci == "(Intercept)") next
+#    if (distr == "constant") next
     output[cof[, ci] <= lim[ci, "lower"] | cof[, ci] >= lim[ci, "upper"]] <- FALSE
   }
   output
@@ -317,4 +341,3 @@ cofOK <- function(cof, distr){
 #' @param from vector of distribution names to be excluded from
 #' @export
 exclude <- function(what, from = mod_name) setdiff(from, what)
-

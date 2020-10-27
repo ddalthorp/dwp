@@ -1,39 +1,21 @@
 mod_color = c(
   gamma = 2,
-  lognormal = 1,
-  logLinear = colors()[123], #deepskyblue2
+  logLinear = colors()[97], #darkorchid2 #colors()[35], #brown3
   logQuadratic = 4,
-  logCubic = colors()[69], #cyan1
-  inverse_gamma = colors()[97], #darkorchid2
-  paranormal_gamma = colors()[148],  #goldenrod1
-  Rayleigh = 3,
-  MaxwellBoltzmann = 3, #[dashed]
-  constant = 8,
-  tnormal = colors()[123], #deepskyblue2 [dashed]
-  exponential = 4, # [dashed]
-  Pareto = colors()[35], #brown3
-  chisq = colors()[35], #brown3 [dashed]
-  inverse_gaussian = colors()[657] #yellowgreen
+  Rayleigh = colors()[123], #deepskyblue2 [dashed]
+  logCubic = 3,
+  paranormal_gamma = colors()[657], #yellowgreen
+  lognormal = 1,
+  inverse_gamma = colors()[148],  #goldenrod1
+  Pareto = 7,
+  chisq = 1,
+  exponential = colors()[35], #brown3
+  inverse_gaussian = 2,
+  tnormal = 4,
+  MaxwellBoltzmann = colors()[123], #deepskyblue2 [dashed]
+  constant = 8
 )
 mod_name = names(mod_color)
-critical_parameter = c(
-# parameters that must <0 to construct proper CDF or PDF for full distribution
-  gamma = "r",
-  lognormal = "I(log(r)^2)",
-  logLinear = "r",
-  logQuadratic = "I(r^2)",
-  logCubic = "I(r^3)",
-  inverse_gamma = "log(r)",
-  paranormal_gamma = "I(r^3)",
-  Rayleigh = "I(r^2)",
-  MaxwellBoltzmann = "I(r^2)",
-  Pareto = "log(r)",
-  constant = "r",
-  tnormal = "I(r^2)",
-  exponential = "r",
-  chisq = "log(r)",
-  inverse_gaussian = "r"
-)
 parm_name <- list(
   gamma = c("shape", "rate"),
   lognormal = c("meanlog", "sdlog"),
@@ -45,7 +27,7 @@ parm_name <- list(
   Rayleigh = "s2",
   MaxwellBoltzmann = "a",
   Pareto = "a",
-  constant = "r",
+  constant = NULL,
   tnormal = c("mean", "sd"),
   exponential = "rate",
   chisq = "df",
@@ -79,7 +61,7 @@ natural = c( # distributions that require offset other than log(exposure)
   Rayleigh = TRUE,
   Pareto = TRUE,
   MaxwellBoltzmann = FALSE,
-  constant = FALSE,
+  constant = TRUE,
   tnormal = FALSE,
   exponential = FALSE,
   chisq = FALSE,
@@ -129,7 +111,7 @@ constraints <- list(
          "log(r)" = c(lower = -Inf, upper = -2,  parscale = 1)),
   paranormal_gamma = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-         "log(r)" = c(lower = -Inf, upper = Inf, parscale = 1),
+         "log(r)" = c(lower = -2,   upper = Inf, parscale = 1),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.1),
           "I(r^2)"= c(lower = -Inf, upper = Inf, parscale = 0.001),
           "I(r^3)"= c(lower = -Inf, upper = 0,   parscale = 0.00001)),
@@ -142,7 +124,8 @@ constraints <- list(
   Pareto = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
           "log(r)"= c(lower = -Inf, upper = -2,   parscale = 1)),
-  constant = NA,
+  constant = rbind(
+    "(Intercept)" = c(lower =  Inf, upper = -Inf, parscale = 5)),
   tnormal = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.01),
@@ -158,72 +141,6 @@ constraints <- list(
           "I(1/r)"= c(lower = -Inf, upper = 0,   parscale = 10),
               "r" = c(lower = -Inf, upper = 0,   parscale = 0.1))
 )
-icp <- numeric(length(mod_name))
-names(icp) <- mod_name
-# icp = slope is defined as the value (a) for the critical parameter that gives
-#  a mean distance of 40 in the special case where the other parameters of the
-#  distance function are 0. This results in a generic curve with its hump a little
-#  way to the left of 40. The integrals for calculating the mean distance are
-#  sometimes solvable with elementary functions (gamma and logLinear) and sometimes
-#  not. In all cases (except gamma and logLinear), numerical integration is used
-#  in order to simplify the coding. The primary benefits of exact values in R
-#  functions (namely, vectorization, precision, and stability of calculation)
-#  are not relevant here.
-for (distr in mod_name){
-  icp[distr] <- switch(distr,
-    gamma = -0.05,
-    lognormal = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * log(x)^2), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * log(x)^2), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-2, -0.2))$root,
-    logLinear = -0.05,
-    logQuadratic = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^2), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^2), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-4, -0.0001))$root,
-    logCubic = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^3), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^3), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-1, -0.000001))$root,
-    inverse_gamma = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(-10/x + a * log(x)), lower = 1, upper = Inf)$val/
-      integrate(f = function(x) x * exp(-10/x + a * log(x)), lower = 1, upper = Inf)$val - 40
-    }, interval = c(-5, -3.01))$root,
-    paranormal_gamma = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^3), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^3), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-1, -0.000001))$root,
-    Rayleigh = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^2), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^2), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-4, -0.0001))$root,
-    MaxwellBoltzmann = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^2), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^2), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-4, -0.0001))$root,
-    Pareto = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * log(x)), lower = 1, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * log(x)), lower = 1, upper = Inf)$val - 40
-    }, interval = c(-5, -3.01))$root,
-    constant = NA,
-    tnormal = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x^2 - log(x)), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x^2 - log(x)), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-4, -0.0001))$root,
-    exponential = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * x - log(x)), lower = 0, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * x - log(x)), lower = 0, upper = Inf)$val - 40
-    }, interval = c(-4, -0.01))$root,
-    chisq = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(a * log(x) - x/2), lower = 1, upper = Inf)$val/
-      integrate(f = function(x) x * exp(a * log(x) - x/2), lower = 1, upper = Inf)$val - 40
-    }, interval = c(2, 100))$root,
-    inverse_gaussian = uniroot(f = function(a){
-      integrate(f = function(x) x^2 * exp(-10/x + a * x - 5/2*log(x)), lower = 1, upper = Inf)$val/
-      integrate(f = function(x) x * exp(-10/x + a * x - 5/2*log(x)), lower = 1, upper = Inf)$val - 40
-    }, interval = c(-4, -0.0001))$root
-  )
-}
 
 par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FALSE,
   bg = "transparent", bty = "o", cex = 1, cex.axis = 1, cex.lab = 1,
@@ -244,13 +161,11 @@ par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FAL
 usethis::use_data(
   cof_name,
   constraints,
-  critical_parameter,
   mod_color,
   mod_name,
   mod_offset,
   parm_name,
   natural,
   par_default,
-  icp,
   internal = FALSE, overwrite = TRUE
 )
