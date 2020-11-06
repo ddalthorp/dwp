@@ -2,7 +2,7 @@
 % Please edit documentation in R/fun.R
 \name{readLayout}
 \alias{readLayout}
-\title{Create a siteLayout}
+\title{Create a shapeLayout}
 \usage{
 readLayout(file_layout, file_CO, file_turbine = NULL, unitCol = NULL)
 }
@@ -32,7 +32,7 @@ provided and the \code{unitCol} must be present in \code{file_turbine},
 must be syntactically valid R names (see Description above).}
 }
 \value{
-A \code{siteLayout} object, which is a list with spatial
+A \code{shapeLayout} object, which is a list with spatial
  characteristics of the site, including
  \describe{
    \item{\code{$layout}}{turbine search area configurations (polygons and multipolygons)
@@ -41,9 +41,9 @@ A \code{siteLayout} object, which is a list with spatial
    \item{\code{$turbines}}{turbine centers (as \code{sf} object)}
    \item{\code{$carcasses}}{carcass discovery locations along with (optional)
      incidental information (turbine, visibility class, species,)}
-   \item{\code{$unitCol, $X, $tset, $tcenter}}{name of the column with turbine IDs
+   \item{\code{$unitCol, $ncarc, $tset, $tcenter}}{name of the column with turbine IDs
      (\code{$unitCol}, character string), number of carcasses found at each turbine
-     (\code{$X}, vector), turbine names (\code{$tset}, vector of character strings),
+     (\code{$ncarc}, vector), turbine names (\code{$tset}, vector of character strings),
      locations of turbine centers (\code{$tcenter}, nturb by 2 array) UTMs of
      turbine centers, extracted and simplified from \code{$turbines}}
  }

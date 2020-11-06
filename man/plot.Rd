@@ -6,9 +6,9 @@
 \alias{plot.dd}
 \title{plot dd and ddArray objects}
 \usage{
-\method{plot}{ddArray}(x, type = "CDF", extent = "full", set = "all",
-  xmax = NULL, resolution = 250, mod_highlight = NULL,
-  par_reset = TRUE, ...)
+\method{plot}{ddArray}(x, type = "CDF", extent = "full",
+  distr = "all", xmax = NULL, resolution = 250,
+  mod_highlight = NULL, par_reset = TRUE, ...)
 
 \method{plot}{dd}(x, type = "CDF", extent = "full", xmax = NULL,
   resolution = 250, nsim = 1000, CL = 0.9, ...)
@@ -25,9 +25,6 @@ PDF/(2 * \pi * r).}
 
 \item{extent}{Plot dispersions as fraction of total carcasses (\code{"full"})
 or as fraction of carcasses within the searched area (\code{"win"}).}
-
-\item{set}{To show lines for all fitted models, use \code{set = "all"}; or
-\code{set} = vector of model names to show lines for.}
 
 \item{xmax}{maximum distance to show in the graph; if \code{xmax = NULL}, the
 maximum distance is taken as the max distance in the data set to which the
@@ -46,6 +43,9 @@ for \code{dd} plot (ignored for \code{ddArray} objects)}
 
 \item{CL}{confidence level to show in a \code{dd} plot (ignored for
 \code{ddArray} objects)}
+
+\item{set}{To show lines for all fitted models, use \code{set = "all"}; or
+\code{set} = vector of model names to show lines for.}
 }
 \description{
 Plot CDF, PDF, or rcd (relative carcass density) for a single

@@ -3,53 +3,66 @@
 \name{dmb}
 \alias{dmb}
 \alias{pmb}
-\alias{dlogL}
-\alias{plogL}
-\alias{dlogQ}
-\alias{plogQ}
-\alias{dlogC}
-\alias{plogC}
-\alias{digam}
-\alias{pigam}
-\alias{dpng}
-\alias{ppng}
-\alias{dRay}
-\alias{pRay}
-\alias{dPare1}
-\alias{pPare1}
-\title{Probability Distributions for Carcasses vs. Distance}
+\alias{dxep1}
+\alias{pxep1}
+\alias{pxep02}
+\alias{dxep02}
+\alias{dxep12}
+\alias{pxep12}
+\alias{dxep123}
+\alias{pxep123}
+\alias{dxepi0}
+\alias{pxepi0}
+\alias{dxep0123}
+\alias{pxep0123}
+\alias{dxep012}
+\alias{pxep012}
+\alias{dxep2}
+\alias{pxep2}
+\alias{dxep0}
+\alias{pxep0}
+\title{Calculate Exposure for Corners of Square Plots
+Probability Distributions for Carcasses vs. Distance}
 \usage{
 dmb(x, a)
 
 pmb(q, a)
 
-dlogL(x, b1)
+dxep1(x, b1)
 
-plogL(q, b1)
+pxep1(q, b1)
 
-dlogQ(x, b1, b2)
+pxep02(q, b0, b2)
 
-plogQ(x, b1, b2)
+dxep02(x, b0, b2)
 
-dlogC(x, b1, b2, b3, const = NULL)
+dxep12(x, b1, b2)
 
-plogC(x, b1, b2, b3, const = NULL)
+pxep12(x, b1, b2)
 
-digam(x, shape, scale)
+dxep123(x, b1, b2, b3, const = NULL)
 
-pigam(x, shape, scale)
+pxep123(x, b1, b2, b3, const = NULL)
 
-dpng(x, b0, b1, b2, b3, const = NULL)
+dxepi0(x, shape, scale)
 
-ppng(x, b0, b1, b2, b3, const = NULL)
+pxepi0(x, shape, scale)
 
-dRay(x, s2)
+dxep0123(x, b0, b1, b2, b3, const = NULL)
 
-pRay(x, s2)
+pxep0123(x, b0, b1, b2, b3, const = NULL)
 
-dPare1(x, a)
+dxep012(x, b0, b1, b2, const = NULL)
 
-pPare1(x, a)
+pxep012(x, b0, b1, b2, const = NULL)
+
+dxep2(x, s2)
+
+pxep2(x, s2)
+
+dxep0(x, a)
+
+pxep0(x, a)
 }
 \arguments{
 \item{x, }{q vector of quantiles}
@@ -59,12 +72,12 @@ distributions. See Detailin the Maxwell-Boltzmann distribution}
 
 \item{b1}{\code{b1} parameter in the log-linear distribution}
 
+\item{b0, }{b1, b2, b3, const parameters in the paranormal-gamma distribution}
+
 \item{shape, }{scale \code{a > 0 (shape), b > 0 (scale)} parameters in the
 inverse gamma distribution}
 
-\item{b0, }{b1, b2, b3, const parameters in the paranormal-gamma distribution}
-
-\item{s2}{\code{s2} parameter in the Rayleigh distribution}
+\item{s2}{\code{s2} parameter in the xep2 distribution}
 
 \item{x, }{q vector of quantiles}
 
@@ -82,9 +95,13 @@ inverse gamma distribution}
 
 \item{x, }{q vector of quantiles}
 
+\item{b0, }{b1, b2, const parameters in the xep012 distribution}
+
 \item{x, }{q vector of quantiles}
 
-\item{a}{\code{a} parameter in the Pareto distribution with \code{scale = x_m}
+\item{x, }{q vector of quantiles}
+
+\item{a}{\code{a} parameter in the xep0 distribution with \code{scale = x_m}
 fixed at 1.}
 }
 \value{
@@ -113,7 +130,12 @@ fixed at 1.}
  for the otherp functions. The numerical arguments are recycled to the length of
  the result.
 
-\code{dpng} gives the density, \code{ppng} gives the distribution function.
+\code{dxep0123} gives the density, \code{ppng} gives the distribution function.
+ The length of the result is the maximum of the lengths of the numerical arguments
+ for the other functions. The numerical arguments are recycled to the length of
+ the result.
+
+\code{dxep012} gives the density, \code{pxep012} gives the distribution function.
  The length of the result is the maximum of the lengths of the numerical arguments
  for the other functions. The numerical arguments are recycled to the length of
  the result.
@@ -129,6 +151,7 @@ fixed at 1.}
  the result.
 }
 \description{
+Calculate Exposure for Corners of Square Plots
 Probability Distributions for Carcasses vs. Distance
 }
 \details{
@@ -158,7 +181,12 @@ The pdf of the paranormal-gamma distribution is defined as
  Calculation is cumbersome and done via numerical integration and is not
  vectorized yet.
 
-The pdf of the Rayleigh distribution is defined as
+The pdf of the xep012 distribution is defined as
+ f(x; b0, b1, b2) = const * x * exp(b0 * log(x) + b1 * x + b2 * x^2).
+ Calculation is cumbersome and done via numerical integration and is not
+ vectorized (yet).
+
+The pdf of the xep2 distribution is defined as
  f(x; s2) = x/s2 * exp(-x^2/(2 * s2))
 
 The pdf of the Pareto distribution with scale = 1 is defined as

@@ -4,37 +4,40 @@
 \alias{ddFit}
 \title{Fit Distance Distribution Model(s)}
 \usage{
-ddFit(ringData, model = "all", scVar = NULL, rCol = "r",
-  expoCol = "exposure", ncarcCol = "ncarc")
+ddFit(rdat, distr = "standard", scVar = NULL, rCol = "r",
+  expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE)
 }
 \arguments{
-\item{ringData}{Data frame with a tally of carcasses within 1 m rings, along
+\item{rdat}{Data frame with a tally of carcasses within 1 m rings, along
 with outer radii of the rings, (optional) search class column, and the amount
 of area searched in each search class and ring.}
 
-\item{model}{names (vector of character strings) of glm distribution templates
-to fit. Default is \code{"all"}, which fits \code{gamma}, \code{lognormal},
-\code{logLinear}, \code{logQuadratic}, \code{logCubic}, \code{inverse_gamma},
-\code{paranormal_gamma}, \code{Rayleigh}, \code{MaxwellBoltzmann}, \code{constant},
-\code{tnormal}, \code{exponential}, \code{Pareto}, \code{chisq}, and
-\code{inverse_gaussian}. Any subset of these may also be fit with a single
-call to \code{ddFit}.}
-
-\item{scVar}{name of column in \code{ringData} with (optional) subdivisions
+\item{scVar}{name of column in \code{rdat} with (optional) subdivisions
 of rings into search classes (character strings)}
 
-\item{rCol}{name of column in \code{ringData} with outer radius for 1m rings}
+\item{rCol}{name of column in \code{rdat} with outer radius for 1m rings}
 
 \item{expoCol}{name of "exposure" column of total area in each ring belonging
 to each search class.}
+
+\item{model}{names (vector of character strings) of glm distribution templates
+to fit. Default is \code{"all"}, which fits \code{xep01}, \code{lognormal},
+\code{xep1}, \code{xep12}, \code{xep123}, \code{xepi0},
+\code{xep0123}, \code{xep012}, \code{xep2}, \code{MaxwellBoltzmann}, \code{constant},
+\code{tnormal}, \code{exponential}, \code{xep0}, \code{chisq}, and
+\code{inverse_gaussian}. Any subset of these may also be fit with a single
+call to \code{ddFit}.}
 }
 \description{
 Fit glm's for distance distribution models corresponding to
- gamma, lognormal, log-linear, log-quadratic, log-cubic, truncated normal,
- exponential, Rayleigh, Pareto, inverse gamma, paranormal gamma, Maxwell
- Boltzmann, chi-squared, and/or inverse Gaussian distributions. By default,
- \code{ddFit} fits all the aforementioned models, but any subset of the models
- may be fit as well.
+ xep01 (gamma), xep012, lognormal, xep1, xep12, xep123, truncated normal,
+ exponential, xep2 (Rayleigh), xep0 (Pareto), xepi0 (inverse gamma), xep0123
+ (normal gamma with x = tau), Maxwell Boltzmann, chi-squared, and/or inverse
+ Gaussian distributions. By default, \code{ddFit} fits all the aforementioned
+ models, but any subset of the models may be fit as well by using, for example,
+ \code{model = exclude(c("xep123", "constant"))} to fit all except the
+ \code{"xep123"} and \code{"constant"} models or \code{model = c("xep01", "lognormal")}
+ to fit just the \code{"xep01"} and \code{"lognormal"} models.
 
  The glm is converted to a probability distribution by dividing by a
  normalizing constant, namely the integral of the glm evaluated from 0 to

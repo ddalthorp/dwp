@@ -1,135 +1,166 @@
 mod_color = c(
-  gamma = 2,
-  logLinear = colors()[97], #darkorchid2 #colors()[35], #brown3
-  logQuadratic = 4,
-  Rayleigh = colors()[123], #deepskyblue2 [dashed]
-  logCubic = 3,
-  paranormal_gamma = colors()[657], #yellowgreen
+  xep1 = colors()[97], #darkorchid2 #colors()[35], #brown3
+  xep01 = 2,
+  xep2 = colors()[123],
+  xep02 = colors()[6],
+  xep12 = 4,
+  xep012 = 1,
+  xep123 = 3,
+  xep0123 = colors()[657], #yellowgreen
+  tnormal = 4,
+  MaxwellBoltzmann = colors()[123], #deepskyblue2 [dashed]
   lognormal = 1,
-  inverse_gamma = colors()[148],  #goldenrod1
-  Pareto = 7,
+  xepi0 = colors()[148],  #goldenrod1
+  xep0 = 7,
   chisq = 1,
   exponential = colors()[35], #brown3
   inverse_gaussian = 2,
-  tnormal = 4,
-  MaxwellBoltzmann = colors()[123], #deepskyblue2 [dashed]
   constant = 8
 )
-mod_name = names(mod_color)
+mod_all = names(mod_color)
+mod_standard = list(
+  "xep1",
+  "xep01",
+  "xep2",
+  "xep02",
+  "xep12",
+  "xep012",
+  "xep123",
+  "xep0123",
+  "tnormal",
+  "MaxwellBoltzmann",
+  "lognormal",
+  "constant"
+)
 parm_name <- list(
-  gamma = c("shape", "rate"),
-  lognormal = c("meanlog", "sdlog"),
-  logLinear = "b1",
-  logQuadratic = c("b1", "b2"),
-  logCubic = c("b1", "b2", "b3"),
-  inverse_gamma = c("shape", "scale"),
-  paranormal_gamma = c("b0", "b1", "b2", "b3"),
-  Rayleigh = "s2",
-  MaxwellBoltzmann = "a",
-  Pareto = "a",
-  constant = NULL,
+  xep1 = "b1",
+  xep01 = c("shape", "rate"),
+  xep2 = "s2",
+  xep02 = c("b0", "b2"),
+  xep12 = c("b1", "b2"),
+  xep012 = c("b0", "b1", "b2"),
+  xep123 = c("b1", "b2", "b3"),
+  xep0123 = c("b0", "b1", "b2", "b3"),
   tnormal = c("mean", "sd"),
+  MaxwellBoltzmann = "a",
+  lognormal = c("meanlog", "sdlog"),
+  xepi0 = c("shape", "scale"),
+  xep0 = "a",
   exponential = "rate",
   chisq = "df",
-  inverse_gaussian = c("mean", "dispersion")
+  inverse_gaussian = c("mean", "dispersion"),
+  constant = NULL
 )
 cof_name <- list(
-  gamma = c("(Intercept)", "log(r)", "r"),
-  lognormal = c("(Intercept)", "log(r)", "I(log(r)^2)"),
-  logLinear = c("(Intercept)", "r"),
-  logQuadratic = c("(Intercept)", "r", "I(r^2)"),
-  logCubic = c("(Intercept)","r", "I(r^2)", "I(r^3)"),
-  inverse_gamma = c("(Intercept)", "I(1/r)", "log(r)"),
-  paranormal_gamma = c("(Intercept)", "log(r)", "r", "I(r^2)", "I(r^3)"),
-  Rayleigh = c("(Intercept)", "I(r^2)"),
-  MaxwellBoltzmann = c("(Intercept)", "I(r^2)"),
-  Pareto = c("(Intercept)", "log(r)"),
-  constant = c("(Intercept)"),
+  xep1 = c("(Intercept)", "r"),
+  xep01 = c("(Intercept)", "log(r)", "r"),
+  xep2 = c("(Intercept)", "I(r^2)"),
+  xep02 = c("(Intercept)", "log(r)", "I(r^2)"),
+  xep12 = c("(Intercept)", "r", "I(r^2)"),
+  xep012 = c("(Intercept)", "log(r)", "r", "I(r^2)"),
+  xep123 = c("(Intercept)","r", "I(r^2)", "I(r^3)"),
+  xep0123 = c("(Intercept)", "log(r)", "r", "I(r^2)", "I(r^3)"),
   tnormal = c("(Intercept)", "r", "I(r^2)"),
+  MaxwellBoltzmann = c("(Intercept)", "I(r^2)"),
+  lognormal = c("(Intercept)", "log(r)", "I(log(r)^2)"),
+  xep0 = c("(Intercept)", "log(r)"),
+  xepi0 = c("(Intercept)", "I(1/r)", "log(r)"),
   exponential = c("(Intercept)", "r"),
   chisq = c("(Intercept)", "log(r)"),
-  inverse_gaussian = c("(Intercept)", "I(1/r)", "r")
+  inverse_gaussian = c("(Intercept)", "I(1/r)", "r"),
+  constant = c("(Intercept)")
 )
-natural = c( # distributions that require offset other than log(exposure)
-  gamma = TRUE,
-  lognormal = TRUE,
-  logLinear = TRUE,
-  logQuadratic = TRUE,
-  logCubic = TRUE,
-  inverse_gamma = TRUE,
-  paranormal_gamma = TRUE,
-  Rayleigh = TRUE,
-  Pareto = TRUE,
-  MaxwellBoltzmann = FALSE,
-  constant = TRUE,
+natural = c( # distributions require offset log(exposure)
+  xep1 = TRUE,
+  xep01 = TRUE,
+  xep2 = TRUE,
+  xep02 = TRUE,
+  xep12 = TRUE,
+  xep012 = TRUE,
+  xep123 = TRUE,
+  xep0123 = TRUE,
   tnormal = FALSE,
+  MaxwellBoltzmann = FALSE,
+  lognormal = TRUE,
+  xepi0 = TRUE,
+  xep0 = TRUE,
   exponential = FALSE,
   chisq = FALSE,
-  inverse_gaussian = FALSE
+  inverse_gaussian = FALSE,
+  constant = TRUE
 )
 mod_offset <- c(
-  gamma = "log(exposure)",
-  lognormal = "log(exposure)",
-  logLinear = "log(exposure)",
-  logQuadratic = "log(exposure)",
-  logCubic = "log(exposure)",
-  inverse_gamma = "log(exposure)",
-  paranormal_gamma = "log(exposure)",
-  Rayleigh = "log(exposure)",
-  MaxwellBoltzmann = "log(exposure * r)",
-  Pareto = "log(exposure)",
-  constant = "log(exposure)",
+  xep1 = "log(exposure)",
+  xep01 = "log(exposure)",
+  xep2 = "log(exposure)",
+  xep02 = "log(exposure)",
+  xep12 = "log(exposure)",
+  xep012 = "log(exposure)",
+  xep123 = "log(exposure)",
+  xep0123 = "log(exposure)",
   tnormal = "log(exposure) - log(r)",
+  MaxwellBoltzmann = "log(exposure * r)",
+  lognormal = "log(exposure)",
+  xepi0 = "log(exposure)",
+  xep0 = "log(exposure)",
   exponential = "log(exposure) - log(r)",
   chisq = "log(exposure) - r/2",
-  inverse_gaussian = "log(exposure) - 2.5 * log(r)"
+  inverse_gaussian = "log(exposure) - 2.5 * log(r)",
+  constant = "log(exposure)"
 )
 constraints <- list(
-  gamma = rbind(
+  xep1 =  rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+              "r" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
+  xep01 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
          "log(r)" = c(lower = -2,   upper = Inf, parscale = 1),
               "r" = c(lower = -Inf, upper = 0,   parscale = 0.01)),
-  lognormal = rbind(
+  xep2 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-         "log(r)" = c(lower = -Inf, upper = Inf, parscale = 1),
-    "I(log(r)^2)" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
-  logLinear =  rbind(
+          "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.001)),
+  xep02 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-              "r" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
-  logQuadratic = rbind(
+         "log(r)" = c(lower = -2,   upper = Inf, parscale = 1),
+         "I(r^2)" = c(lower = -Inf, upper = 0,   parscale = 0.0001)),
+  xep12 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.1),
           "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.001)),
-  logCubic = rbind(
+  xep012 = rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+         "log(r)" = c(lower = -2,   upper = Inf, parscale = 1),
+              "r" = c(lower = -Inf, upper = Inf, parscale = 0.01),
+         "I(r^2)" = c(lower = -Inf, upper = 0,   parscale = 0.0001)),
+  xep123 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.01),
           "I(r^2)"= c(lower = -Inf, upper = Inf, parscale = 0.001),
           "I(r^3)"= c(lower = -Inf, upper = 0,   parscale = 0.00001)),
-  inverse_gamma = rbind(
-    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-         "I(1/r)" = c(lower = -Inf, upper = 0,   parscale = 100),
-         "log(r)" = c(lower = -Inf, upper = -2,  parscale = 1)),
-  paranormal_gamma = rbind(
+  xep0123 = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
          "log(r)" = c(lower = -2,   upper = Inf, parscale = 1),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.1),
           "I(r^2)"= c(lower = -Inf, upper = Inf, parscale = 0.001),
           "I(r^3)"= c(lower = -Inf, upper = 0,   parscale = 0.00001)),
-  Rayleigh = rbind(
-    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-          "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.001)),
-  MaxwellBoltzmann = rbind(
-    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-          "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.001)),
-  Pareto = rbind(
-    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
-          "log(r)"= c(lower = -Inf, upper = -2,   parscale = 1)),
-  constant = rbind(
-    "(Intercept)" = c(lower =  Inf, upper = -Inf, parscale = 5)),
   tnormal = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
               "r" = c(lower = -Inf, upper = Inf, parscale = 0.01),
           "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.0001)),
+  MaxwellBoltzmann = rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+          "I(r^2)"= c(lower = -Inf, upper = 0,   parscale = 0.001)),
+  lognormal = rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+         "log(r)" = c(lower = -Inf, upper = Inf, parscale = 1),
+    "I(log(r)^2)" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
+  xepi0 = rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+         "I(1/r)" = c(lower = -Inf, upper = 0,   parscale = 100),
+         "log(r)" = c(lower = -Inf, upper = -2,  parscale = 1)),
+  xep0 = rbind(
+    "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
+          "log(r)"= c(lower = -Inf, upper = -2,   parscale = 1)),
   exponential = rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
               "r" = c(lower = -Inf, upper = 0, parscale = 0.1)),
@@ -139,7 +170,9 @@ constraints <- list(
   inverse_gaussian =rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
           "I(1/r)"= c(lower = -Inf, upper = 0,   parscale = 10),
-              "r" = c(lower = -Inf, upper = 0,   parscale = 0.1))
+              "r" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
+  constant = rbind(
+    "(Intercept)" = c(lower =  Inf, upper = -Inf, parscale = 5))
 )
 
 par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FALSE,
@@ -162,10 +195,11 @@ usethis::use_data(
   cof_name,
   constraints,
   mod_color,
-  mod_name,
+  mod_all,
   mod_offset,
   parm_name,
   natural,
   par_default,
+  mod_standard,
   internal = FALSE, overwrite = TRUE
 )

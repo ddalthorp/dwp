@@ -19,7 +19,7 @@ qdd(p, model, extent = "full", zrad = 150, subdiv = 1000)
 \item{x}{numeric x >= 0}
 
 \item{model}{either a \code{dd} object or the name of a distance model
-(e.g., "gamma").}
+(e.g., "xep01").}
 
 \item{extent}{"full" or "win" to account for all carcasses or only those
 within the search radius.}
@@ -34,7 +34,7 @@ within the search radius.}
 \item{x}{numeric x >= 0}
 
 \item{model}{either a \code{dd} object or the name of a distance model
-(e.g., "gamma").}
+(e.g., "xep01").}
 
 \item{parms}{scalar, vector, or array of parameters. Or if \code{x} is a
 \code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}

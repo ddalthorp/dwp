@@ -1,3 +1,15 @@
+#' Incomplete Gamma Function
+#' @param x non-negative numeric vector
+#' @param a positive numeric vector
+#' @param lower boolean for calculating lower or upper incomplete gamma function
+#' @details The upper incomplete gamma function, following Wolfram Alpha, namely,
+#'  incGam(x, a) = Gamma = integral(exp(-t) * t^(a - 1) dt from x to Inf),
+#'  calculated using pgamma.
+#' @return scalar or vector of length = max(length(x), length(a)), with values
+#'  of the shorter recycled to match the length of the longer a la pnorm etc.
+#' @export
+incGamma <- function(a, x, lower = FALSE) pgamma(x, a, lower = lower) * gamma(a)
+
 #' Error function
 #' @description The error function is closely related to the standard normal CDF and arises frequently in probability calculations
 #' @param x numeric scalar or array
@@ -5,6 +17,8 @@
 #' @return erf(x) with same dimensions as x
 #' @export
 erf <- function(x) 2 * pnorm(x * sqrt(2)) - 1
+
+#' Calculate Exposure for Corners of Square Plots
 
 #' Probability Distributions for Carcasses vs. Distance
 #' @param x, q vector of quantiles
@@ -33,7 +47,7 @@ dmb <- function(x, a) sqrt(2/pi) * x^2/as.vector(a)^3 * exp(-x^2/(2 * as.vector(
 pmb <- function(q, a)
   erf(q/(sqrt(2) * as.vector(a))) - sqrt(2/pi) * (q * exp(-q^2/(2 * as.vector(a)^2)))/as.vector(a)
 
-#' Integral in logQuadratic distribution
+#' Integral in xep12 distribution
 #' @param x non-negative numeric vector
 #' @param a positive numeric vector
 #' @details The upper incomplete gamma function, following Wolfram Alpha, namely,
@@ -59,16 +73,40 @@ lQint <- function(x, b1, b2){
 #' @rdname dmb
 #' @export
 #'
-dlogL <- function(x, b1) as.vector(b1)^2 * x * exp(as.vector(b1) * x)
+dxep1 <- function(x, b1){
+  ans <- as.vector(b1)^2 * x * exp(as.vector(b1) * x)
+  ans[x <= 0]  <- 0
+  ans
+}
 
 #' @rdname dmb
 #' @export
-plogL <- function(q, b1){
+pxep1 <- function(q, b1){
   totl <- max(length(q), length(b1))
   b1 <- rep(b1, length.out = totl)
   q <- rep(q, length.out = totl)
   exp(b1 * q) * (b1 * q - 1) + 1
 }
+
+#' @rdname dmb
+#' @export
+pxep02 <- function(q, b0, b2){
+  const <- 1/((-b2)^(-b0/2) * (-gamma(b0/2 + 1))/(2 * b2))
+  ans <- const * q^b0 * (-b2 * q^2)^(-b0/2) *
+    (incGamma(1/2*(b0 + 2), -b2 * q^2) - gamma(b0/2 + 1))/(2*b2)
+  ans[q <= 0] <- 0
+  ans
+}
+
+#' @rdname dmb
+#' @export
+dxep02 <- function(x, b0, b2){
+  const <- 1/((-b2)^(-b0/2) * (-gamma(b0/2 + 1))/(2 * b2))
+  ans <- const * x * exp(b0 * log(x) + b2 * x^2)
+  ans[x <= 0] <- 0
+  ans
+}
+
 
 #' @param x, q vector of quantiles
 #' @param b1, b2 \code{b1, b2} parameters in the log-quadratic distribution
@@ -83,20 +121,25 @@ plogL <- function(q, b1){
 #' @rdname dmb
 #' @export
 #'
-dlogQ <- function(x, b1, b2){
+dxep12 <- function(x, b1, b2){
   const <- 4 * b2^2/(sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
     (erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
-  const * x * exp(b1*x + b2*x^2)
+  ans <- numeric(length(x))
+  ans <- const * x * exp(b1*x + b2*x^2)
+  ans[x <= 0] <- 0
+  ans
 }
 
 #' @rdname dmb
 #' @export
-plogQ <- function(x, b1, b2){
+pxep12 <- function(x, b1, b2){
   const <- 1/(sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
     (erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
-  const * (sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
+  ans <- const * (sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
     (erf((-b2 * x - 0.5*b1)/sqrt(-b2)) + erf(0.5 * b1/sqrt(-b2))) +
     2 * b2 * (exp(b1 * x + b2 * x^2) - 1))
+  ans[ans <= 0] <- 0
+  ans
 }
 
 #' @param x, q vector of quantiles
@@ -115,18 +158,17 @@ plogQ <- function(x, b1, b2){
 #' @rdname dmb
 #' @export
 #'
-dlogC <- function(x, b1, b2, b3, const = NULL){
+dxep123 <- function(x, b1, b2, b3, const = NULL){
   if (is.null(const)) const <- 1/integrate(
     f = function(x) x * exp(b1 * x + b2 * x^2 + b3 * x^3),
     lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
-  ans <- numeric(length(x))
-  ans[x >= 0] <- const * x * exp(b1 * x + b2 * x^2 + b3 * x^3)
-  ans
+  ans <- const * x * exp(b1 * x + b2 * x^2 + b3 * x^3)
+  ans[x <= 0] <- 0
 }
 
 #' @rdname dmb
 #' @export
-plogC <- function(x, b1, b2, b3, const = NULL){
+pxep123 <- function(x, b1, b2, b3, const = NULL){
   if (is.null(const)) const <- tryCatch(1/integrate(
     f = function(x) x * exp(b1 * x + b2 * x^2 + b3 * x^3),
       lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
@@ -158,7 +200,7 @@ plogC <- function(x, b1, b2, b3, const = NULL){
 #' @rdname dmb
 #' @export
 #'
-digam <- function(x, shape, scale){
+dxepi0 <- function(x, shape, scale){
   ans <- numeric(length(x))
   xx <- x
   if (any(x <= 0)) xx[x <= 0] <- 1e-4
@@ -171,7 +213,7 @@ digam <- function(x, shape, scale){
 
 #' @rdname dmb
 #' @export
-pigam <- function(x, shape, scale){
+pxepi0 <- function(x, shape, scale){
   ans <- numeric(length(x))
   xx <- x
   if (any(x <= 0)) xx[x <= 0] <- 1e-4
@@ -188,14 +230,14 @@ pigam <- function(x, shape, scale){
 #'  f(x; b0, b1, b2, b3) = const * x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3).
 #'  Calculation is cumbersome and done via numerical integration and is not
 #'  vectorized yet.
-#' @return \code{dpng} gives the density, \code{ppng} gives the distribution function.
+#' @return \code{dxep0123} gives the density, \code{ppng} gives the distribution function.
 #'  The length of the result is the maximum of the lengths of the numerical arguments
 #'  for the other functions. The numerical arguments are recycled to the length of
 #'  the result.
 #' @rdname dmb
 #' @export
 #'
-dpng <- function(x, b0, b1, b2, b3, const = NULL){
+dxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
   if (is.null(const)) const <- 1/integrate(
     f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3),
     lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
@@ -206,7 +248,7 @@ dpng <- function(x, b0, b1, b2, b3, const = NULL){
 
 #' @rdname dmb
 #' @export
-ppng <- function(x, b0, b1, b2, b3, const = NULL){
+pxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
   # works for vector x but not beta parameters
   if (is.null(const)) const <- tryCatch(1/integrate(
     f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3),
@@ -225,8 +267,50 @@ ppng <- function(x, b0, b1, b2, b3, const = NULL){
 }
 
 #' @param x, q vector of quantiles
-#' @param s2 \code{s2} parameter in the Rayleigh distribution
-#' @details The pdf of the Rayleigh distribution is defined as
+#' @param b0, b1, b2, const parameters in the xep012 distribution
+#' @details The pdf of the xep012 distribution is defined as
+#'  f(x; b0, b1, b2) = const * x * exp(b0 * log(x) + b1 * x + b2 * x^2).
+#'  Calculation is cumbersome and done via numerical integration and is not
+#'  vectorized (yet).
+#' @return \code{dxep012} gives the density, \code{pxep012} gives the distribution function.
+#'  The length of the result is the maximum of the lengths of the numerical arguments
+#'  for the other functions. The numerical arguments are recycled to the length of
+#'  the result.
+#' @rdname dmb
+#' @export
+#'
+dxep012 <- function(x, b0, b1, b2, const = NULL){
+  if (is.null(const)) const <- 1/integrate(
+    f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2),
+    lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
+  ans <- const * x * exp(b0*log(x) + b1*x + b2*x^2)
+  ans[x <= 0] <- 0
+  ans
+}
+
+#' @rdname dmb
+#' @export
+pxep012 <- function(x, b0, b1, b2, const = NULL){
+  # works for vector x but not beta parameters
+  if (is.null(const)) const <- tryCatch(1/integrate(
+    f = function(x) x * exp(b0 * log(x) + b1 * x + b2 * x^2),
+    lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
+    error = function(e) NA)
+  if(is.na(const)) return(rep(NA, length(x)))
+  ans <- numeric(length(x))
+  for (xi in which(x > 0)){
+    ans[xi] <- const * integrate(
+      f = function(r) r * exp(b0*log(r) + b1*r + b2*r^2),
+      lower = 0, upper = x[xi]
+    )$val
+  }
+  ans[x <= 0] <- 0
+  ans
+}
+
+#' @param x, q vector of quantiles
+#' @param s2 \code{s2} parameter in the xep2 distribution
+#' @details The pdf of the xep2 distribution is defined as
 #'  f(x; s2) = x/s2 * exp(-x^2/(2 * s2))
 #' @return \code{dRay} gives the density, \code{pRay} gives the distribution
 #'  function. The length of the result is the maximum of the lengths of the
@@ -235,14 +319,14 @@ ppng <- function(x, b0, b1, b2, b3, const = NULL){
 #' @rdname dmb
 #' @export
 #'
-dRay <- function(x, s2) x/as.vector(s2) * exp(-x^2/(2 * as.vector(s2)))
+dxep2 <- function(x, s2) x/as.vector(s2) * exp(-x^2/(2 * as.vector(s2)))
 
 #' @rdname dmb
 #' @export
-pRay <- function(x, s2)  1 - exp(-x^2/(2 * as.vector(s2)))
+pxep2 <- function(x, s2)  1 - exp(-x^2/(2 * as.vector(s2)))
 
 #' @param x, q vector of quantiles
-#' @param a \code{a} parameter in the Pareto distribution with \code{scale = x_m}
+#' @param a \code{a} parameter in the xep0 distribution with \code{scale = x_m}
 #'  fixed at 1.
 #' @details The pdf of the Pareto distribution with scale = 1 is defined as
 #'  f(x; a) = a/x^(a + 1)
@@ -253,7 +337,7 @@ pRay <- function(x, s2)  1 - exp(-x^2/(2 * as.vector(s2)))
 #' @rdname dmb
 #' @export
 #'
-dPare1 <- function(x, a){
+dxep0 <- function(x, a){
   ans <- numeric(length(x))
   ans[x > 1] <- as.vector(a)/x^(as.vector(a) + 1)
   ans
@@ -261,7 +345,7 @@ dPare1 <- function(x, a){
 
 #' @rdname dmb
 #' @export
-pPare1 <- function(x, a){
+pxep0 <- function(x, a){
   ans <- numeric(length(x))
   ans[x > 1] <- 1 - (1/x)^as.vector(a)
   ans
@@ -277,19 +361,21 @@ pPare1 <- function(x, a){
 #' @export
 rmat <- function(r, distr){
   switch(distr,
-    gamma = cbind(1, log(r), r),
+    xep01 = cbind(1, log(r), r),
+    xep012 = cbind(1, log(r), r, r^2),
+    xep02 = cbind(1, log(r), r^2),
     lognormal = cbind(1, log(r), log(r)^2),
-    logLinear = cbind(1, r),
-    logQuadratic = cbind(1, r, r^2),
-    logCubic = cbind(1, r, r^2, r^3),
-    inverse_gamma = cbind(1, 1/r, log(r)),
-    paranormal_gamma = cbind(1, log(r), r, r^2, r^3),
-    Rayleigh = cbind(1, r^2),
+    xep1 = cbind(1, r),
+    xep12 = cbind(1, r, r^2),
+    xep123 = cbind(1, r, r^2, r^3),
+    xepi0 = cbind(1, 1/r, log(r)),
+    xep0123 = cbind(1, log(r), r, r^2, r^3),
+    xep2 = cbind(1, r^2),
     MaxwellBoltzmann = cbind(1, r^2),
     constant = matrix(1, nrow = length(r)) ,
     tnormal = cbind(1, r, r^2),
     exponential = cbind(1, r),
-    Pareto = cbind(1, log(r)),
+    xep0 = cbind(1, log(r)),
     chisq = cbind(1, log(r)),
     inverse_gaussian = cbind(1, 1/r, r)
   )
@@ -330,7 +416,6 @@ cofOK <- function(cof, distr){
   output <- rep(TRUE, nrow(cof))
   lim <- constraints[[distr]]
   for (ci in rownames(lim)){
-#    if (distr == "constant") next
     output[cof[, ci] <= lim[ci, "lower"] | cof[, ci] >= lim[ci, "upper"]] <- FALSE
   }
   output

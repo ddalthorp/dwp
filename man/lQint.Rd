@@ -2,7 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{lQint}
 \alias{lQint}
-\title{Integral in logQuadratic distribution}
+\title{Integral in xep12 distribution}
 \usage{
 lQint(x, b1, b2)
 }
@@ -16,7 +16,7 @@ scalar or vector of length = max(length(x), length(a)), with values
  of the shorter recycled to match the length of the longer a la pnorm etc.
 }
 \description{
-Integral in logQuadratic distribution
+Integral in xep12 distribution
 }
 \details{
 The upper incomplete gamma function, following Wolfram Alpha, namely,

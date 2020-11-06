@@ -4,7 +4,7 @@
 \alias{prepRing}
 \title{Create ringData structure for fitting distance models}
 \usage{
-prepRing(siteLayout, scVar = NULL, notSearched = NULL)
+prepRing(shapeLayout, scVar = NULL, notSearched = NULL)
 }
 \arguments{
 \item{scVar}{(optional) name of a column with search class delineator in
@@ -13,26 +13,26 @@ prepRing(siteLayout, scVar = NULL, notSearched = NULL)
 \item{notSearched}{name(s) of the search classes that are not searched
 (vector of character strings)}
 
-\item{site_layout}{a \code{siteLayout} object, which summarizes the spatial
+\item{site_layout}{a \code{shapeLayout} object, which summarizes the spatial
 characteristics of the site as listed in the associated GIS shape files
 (search area polygons, turbine centers, and carcass discovery locations)}
 }
 \value{
 List containing:
  \describe{
-   \item{\code{$ringData}}{data frame with a turbine-aggregated layout with distance
+   \item{\code{$rdat}}{data frame with a turbine-aggregated layout with distance
      (outer radius of 1m rings), carcass counts, exposure (area seached in
      each ring), and an optional search class column;}
-   \item{code{$dwpArea}}{list of turbines with the area searched in at each
+   \item{code{$rA}}{list of turbines with the area searched in at each
      distance from 1 to maximim distance searched at any turbine;}
-   \item{\code{$searchMax}}{maximum distance searched at any turbine (numeric
+   \item{\code{$srad}}{maximum distance searched at any turbine (numeric
      scalar);}
    \item{\code{$scVar}}{name of the search class column (if any);}
-   \item{\code{$X}}{number of carcasses found at each turbine (vector}
+   \item{\code{$ncarc}}{number of carcasses found at each turbine (vector}
  }
 }
 \description{
-Create necessary data structures from \code{siteLayout} object
+Create necessary data structures from \code{shapeLayout} object
  for modeling carcass density as a function of distance from turbine and for
  modeling DWP.
 }
