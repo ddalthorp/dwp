@@ -4,7 +4,10 @@
 \alias{readLayout}
 \title{Create a shapeLayout}
 \usage{
-readLayout(file_layout, file_CO, file_turbine = NULL, unitCol = NULL)
+readLayout(file_layout, dataType = "simple", unitCol = "turbine",
+  file_turbine = NULL, radCol = "radius", shapeCol = "shape",
+  padCol = "padrad", roadwidCol = "roadwidth", nRoadCol = "n_road",
+  xCol = "x", yCol = "y", scCol = NULL, notSearched = NULL)
 }
 \arguments{
 \item{file_layout}{name of a shape file (polygons or multipolygons) that
@@ -17,19 +20,27 @@ turbine), each turbine should have a syntactically valid name. Search class
 polygons at each turbine should be non-intersecting; otherwise, the function
 exits with an error.}
 
-\item{file_CO}{name of a shape file (points) for carcass observations
-containing carcass discovery locations. If a \code{unitCol} name is provided,
-turbine IDs must be provided for  carcass discoveries. Search classes are
-optional.}
-
-\item{file_turbine}{a shape file (points) giving the locations of the turbine
-centers for turbines listed in the \code{unitCol} column in the \code{file_layout}}
-
 \item{unitCol}{(optional) column name for turbine IDs. If a \code{unitCol} is
 provided, a \code{file_turbine} with the turbine centers must also be
 provided and the \code{unitCol} must be present in \code{file_turbine},
 \code{file_layout}, and \code{file_CO}. Turbine IDs in the \code{unitCol}
 must be syntactically valid R names (see Description above).}
+
+\item{file_turbine}{a shape file (points) giving the locations of the turbine
+centers for turbines listed in the \code{unitCol} column in the \code{file_layout}}
+
+\item{scCol}{name of column in file_layout with names of search classes. This
+is used for excluding unsearched areas from the grid data (x, y). It is used
+ONLY with \code{dataType = "xy"} and used to remove rows with
+\code{x[, scCol] == notSearched}, where \code{x} is the search grid data frame.}
+
+\item{notSearched}{a companion to \code{scCol} for removing unsearched areas
+from the search grid.}
+
+\item{file_CO}{name of a shape file (points) for carcass observations
+containing carcass discovery locations. If a \code{unitCol} name is provided,
+turbine IDs must be provided for  carcass discoveries. Search classes are
+optional.}
 }
 \value{
 A \code{shapeLayout} object, which is a list with spatial

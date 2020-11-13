@@ -1,4 +1,5 @@
 #' @importFrom GenEst logit
+#' @importFrom gpclib area.poly intersect
 #' @importFrom gtools mixedsort
 #' @importFrom invgamma dinvgamma pinvgamma
 #' @importFrom matrixStats colQuantiles

@@ -4,21 +4,14 @@
 \alias{ddFit}
 \title{Fit Distance Distribution Model(s)}
 \usage{
-ddFit(rdat, distr = "standard", scVar = NULL, rCol = "r",
-  expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE)
+ddFit(x, ...)
 }
 \arguments{
+\item{...}{ignored}
+
 \item{rdat}{Data frame with a tally of carcasses within 1 m rings, along
 with outer radii of the rings, (optional) search class column, and the amount
 of area searched in each search class and ring.}
-
-\item{scVar}{name of column in \code{rdat} with (optional) subdivisions
-of rings into search classes (character strings)}
-
-\item{rCol}{name of column in \code{rdat} with outer radius for 1m rings}
-
-\item{expoCol}{name of "exposure" column of total area in each ring belonging
-to each search class.}
 
 \item{model}{names (vector of character strings) of glm distribution templates
 to fit. Default is \code{"all"}, which fits \code{xep01}, \code{lognormal},
@@ -27,6 +20,36 @@ to fit. Default is \code{"all"}, which fits \code{xep01}, \code{lognormal},
 \code{tnormal}, \code{exponential}, \code{xep0}, \code{chisq}, and
 \code{inverse_gaussian}. Any subset of these may also be fit with a single
 call to \code{ddFit}.}
+
+\item{scVar}{name of column in \code{rdat} with (optional) subdivisions
+of rings into search classes (character strings)}
+
+\item{rCol}{name of column in \code{rdat} with outer radius for 1m rings}
+
+\item{expoCol}{name of "exposure" column of total area in each ring belonging
+to each search class.}
+}
+\value{
+A list of fitted glm models as \code{dd} objects in a \code{ddArray}
+ object if a vector of distributions is fit or a single \code{dd} object if a
+ single model is fit. The \code{dd} objects are lists with all the standard
+ \code{\link[stats]{glm}} components, in addition to the following elements:
+ \describe{
+   \item{\code{$distr}}{name of the distribution ("xep01", etc.)}
+   \item{\code{$parms}}{vector of distribution parameter estimates (or \code{NA}
+     if the model based on the MLE is not extensible)}
+   \item{\code{$varbeta}}{the variance-covariance matrix of the glm parameter
+     estimates. NOTE: This is identical to the covariance matrix from the glm,
+     which can be extracted via \code{summary(x)$cov.unscaled}}
+   \item{\code{$scVar}}{name of the (optional) search class variable (or \code{NULL})}
+   \item{\code{$ncarc}}{number of carcasses}
+   \item{\code{$n}}{number of rings}
+   \item{\code{$k}}{number of parameters}
+   \item{\code{$srad}}{search radius}
+ }
+ When a \code{dd} object is printed, only a small subset of the elements are
+ shown. To see a full list of the objects, use \code{names(x)}. The elements
+ can be extracted in the usual R way via \code{$} or \code{[[x]]}.
 }
 \description{
 Fit glm's for distance distribution models corresponding to

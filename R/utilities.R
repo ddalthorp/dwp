@@ -421,6 +421,39 @@ cofOK <- function(cof, distr){
   output
 }
 
+#' check whether glm coefficients give proper distribution
+#' @param cof vector or matrix of named glm parameters (with \code{"r"} as the
+#'  distance variable.
+#' @param distr name of the distribution
+#' @return boolean vector (or scalar)
+#' @rdname cofOK
+#' @export
+cofOK0 <- function(cof, distr){
+  if (is.vector(cof))
+    cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
+  output <- rep(TRUE, nrow(cof))
+  lim <- constraints[[distr]]
+  ci <- grep("log(r)", rownames(lim))
+  if (length(ci) > 0) output[cof[, ci] <= lim[ci, "lower"]] <- FALSE
+  ci <- grep("I(1/r)", rownames(lim))
+  if (length(ci) > 0) output[cof[, ci] <= lim[ci, "lower"]] <- FALSE
+  output
+}
+
+#' @rdname cofOK
+#' @export
+cofOKInf <- function(cof, distr){
+  if (is.vector(cof))
+    cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
+  output <- rep(TRUE, nrow(cof))
+  lim <- constraints[[distr]]
+  ci <- rownames(lim)[nrow(lim)]
+  for (ci in rownames(lim)){
+    output[cof[, ci] >= lim[ci, "upper"]] <- FALSE
+  }
+  output
+}
+
 #' remove particular distribution names from a longer list (for subsetting \code{ddArray})
 #' @param what vector of distribution names to exclude
 #' @param from vector of distribution names to be excluded from

@@ -3,7 +3,8 @@
 \name{estpsi}
 \alias{estpsi}
 \alias{estpsi.data.frame}
-\alias{estpsi.tlist}
+\alias{estpsi.rpA}
+\alias{estpsi.xyLayout}
 \alias{estdwp.psiHat}
 \title{Estimate Probability Carcass lands in Searched Area}
 \usage{
@@ -12,10 +13,14 @@ estpsi(x, ...)
 \method{estpsi}{data.frame}(x, model, extent = "full", nsim = 1000,
   zrad = 150, ...)
 
-\method{estpsi}{tlist}(x, model, extent = "full", nsim = 1000,
+\method{estpsi}{rpA}(x, model, extent = "full", nsim = 1000,
   zrad = 150, ...)
 
-\method{estdwp}{psiHat}(x, nboot = NULL, ...)
+\method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000,
+  zrad = 150, ...)
+
+\method{estdwp}{psiHat}(x, ncarc, nboot = NULL, forGenEst = FALSE,
+  silent = TRUE, ...)
 }
 \arguments{
 \item{x}{data. Either \code{rdat} data frame for a single turbine, site,
@@ -28,10 +33,10 @@ or other entity, or a list of such entities.}
 \item{extent}{calculate dwp within searched area only (\code{"win"}) or
 for fulss complement of carcasses (\code{"full"}).}
 
-\item{nboot}{number of parametric bootstrap iterations for estimating CIs}
+\item{nsim}{number of parametric bootstrap iterations for estimating CIs}
 }
 \value{
-Data frame with AIC, AICc, deltaAICc for all models in \code{x}
+\code{psiHat} object = list with
 }
 \description{
 Estimated probability that carcass lands in searched area. This

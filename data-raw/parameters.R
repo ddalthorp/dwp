@@ -1,24 +1,24 @@
 mod_color = c(
-  xep1 = colors()[97], #darkorchid2 #colors()[35], #brown3
+  xep1 = colors()[35], #brown3 colors()[585], #darkorchid2 #
   xep01 = 2,
-  xep2 = colors()[123],
-  xep02 = colors()[6],
-  xep12 = 4,
-  xep012 = 1,
-  xep123 = 3,
+  xep2 = colors()[50],
+  xep02 = 1,
+  xep12 = colors()[122],
+  xep012 = 4,
+  xep123 = colors()[148],
   xep0123 = colors()[657], #yellowgreen
   tnormal = 4,
-  MaxwellBoltzmann = colors()[123], #deepskyblue2 [dashed]
-  lognormal = 1,
-  xepi0 = colors()[148],  #goldenrod1
-  xep0 = 7,
+  MaxwellBoltzmann = colors()[257], #deepskyblue2 [dashed]
+  lognormal = colors()[96],
+  xepi0 = 5,
+  xep0 = colors()[369],
   chisq = 1,
-  exponential = colors()[35], #brown3
+  exponential = colors()[123], #brown3
   inverse_gaussian = 2,
   constant = 8
 )
 mod_all = names(mod_color)
-mod_standard = list(
+mod_standard = c(
   "xep1",
   "xep01",
   "xep2",
@@ -31,6 +31,16 @@ mod_standard = list(
   "MaxwellBoltzmann",
   "lognormal",
   "constant"
+)
+mod_xy = c(
+  "xep1",
+  "xep01",
+  "xep2",
+  "xep02",
+  "xep12",
+  "xep012",
+  "xep123",
+  "xep0123"
 )
 parm_name <- list(
   xep1 = "b1",
@@ -194,12 +204,13 @@ par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FAL
 usethis::use_data(
   cof_name,
   constraints,
-  mod_color,
   mod_all,
+  mod_color,
   mod_offset,
-  parm_name,
+  mod_standard,
+  mod_xy,
   natural,
   par_default,
-  mod_standard,
+  parm_name,
   internal = FALSE, overwrite = TRUE
 )

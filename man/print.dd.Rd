@@ -12,5 +12,11 @@
 \item{...}{ignored}
 }
 \description{
-Print dd and ddArray objects
+\code{dd} objects are lists consisting of all the elements of
+ \code{glm} objects and several additional elements related to the distribution
+ and its extensibility. Only a few of the elements are printed automatically.
+ Others elements of object \code{x} can be viewed and extracted as with other
+ lists in R, namely, by using the \code{x$element} or \code{x[[element]]}
+ operator, where \code{element} is the name of one of the elements of
+ \code{x} which can be viewed via \code{names(x)}.
 }

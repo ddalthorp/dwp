@@ -2,11 +2,22 @@
 % Please edit documentation in R/utilities.R
 \name{cofOK}
 \alias{cofOK}
+\alias{cofOK0}
+\alias{cofOKInf}
 \title{check whether glm coefficients give proper distribution}
 \usage{
 cofOK(cof, distr)
+
+cofOK0(cof, distr)
+
+cofOKInf(cof, distr)
 }
 \arguments{
+\item{cof}{vector or matrix of named glm parameters (with \code{"r"} as the
+distance variable.}
+
+\item{distr}{name of the distribution}
+
 \item{cof}{vector or matrix of named glm parameters (with \code{"r"} as the
 distance variable.}
 
@@ -14,7 +25,11 @@ distance variable.}
 }
 \value{
 boolean vector (or scalar)
+
+boolean vector (or scalar)
 }
 \description{
+check whether glm coefficients give proper distribution
+
 check whether glm coefficients give proper distribution
 }
