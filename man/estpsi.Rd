@@ -5,6 +5,7 @@
 \alias{estpsi.data.frame}
 \alias{estpsi.rpA}
 \alias{estpsi.xyLayout}
+\alias{estpsi.rings}
 \alias{estdwp.psiHat}
 \title{Estimate Probability Carcass lands in Searched Area}
 \usage{
@@ -17,6 +18,9 @@ estpsi(x, ...)
   zrad = 150, ...)
 
 \method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000,
+  zrad = 150, ...)
+
+\method{estpsi}{rings}(x, model, extent = "full", nsim = 1000,
   zrad = 150, ...)
 
 \method{estdwp}{psiHat}(x, ncarc, nboot = NULL, forGenEst = FALSE,

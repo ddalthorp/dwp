@@ -1,4 +1,4 @@
-#' Create a shapeLayout
+#' Create a Data Structure or "Map" for the Site Layout
 #' @description Read shape files for search area polygons, turbine locations,
 #'  and carcass discovery locations. If there is more than 1 turbine, there must
 #'  be a turbine ID column (\code{unitCol}) in each of the files. The individual
@@ -8,7 +8,7 @@
 #'  spaces, hyphens, parentheses, etc. All three shape files (search area
 #'  polygons, turbine locations, carcass discovery locations) must have their
 #'  three standard component files (.shp, .shx, .dbf) stored in the same folder.
-#' @param file_layout name of a shape file (polygons or multipolygons) that
+#' @param data_layout name of a shape file (polygons or multipolygons) that
 #'  delineates areas searched at each turbine. Search areas may be defined for
 #'  any number of search classes (associated with different detection
 #'  probabilities) and turbines. Search classes are listed the \code{scVar}
@@ -22,23 +22,26 @@
 #'  turbine IDs must be provided for  carcass discoveries. Search classes are
 #'  optional.
 #' @param file_turbine a shape file (points) giving the locations of the turbine
-#'  centers for turbines listed in the \code{unitCol} column in the \code{file_layout}
+#'  centers for turbines listed in the \code{unitCol} column in the \code{data_layout}
 #' @param unitCol (optional) column name for turbine IDs. If a \code{unitCol} is
 #'  provided, a \code{file_turbine} with the turbine centers must also be
 #'  provided and the \code{unitCol} must be present in \code{file_turbine},
-#'  \code{file_layout}, and \code{file_CO}. Turbine IDs in the \code{unitCol}
+#'  \code{data_layout}, and \code{file_CO}. Turbine IDs in the \code{unitCol}
 #'  must be syntactically valid R names (see Description above).
-#' @param scCol name of column in file_layout with names of search classes. This
+#' @param scCol name of column in data_layout with names of search classes. This
 #'  is used for excluding unsearched areas from the grid data (x, y). It is used
 #'  ONLY with \code{dataType = "xy"} and used to remove rows with
 #'  \code{x[, scCol] == notSearched}, where \code{x} is the search grid data frame.
 #' @param notSearched a companion to \code{scCol} for removing unsearched areas
 #'  from the search grid.
+#' @param dcCol a categorical interacting class variable with levels of factors
+#'  that may affect the distribution of carcasses, for example turbine size, wind
+#'  regime, operational constraints (like curtailment).
 #' @return A \code{shapeLayout} object, which is a list with spatial
 #'  characteristics of the site, including
 #'  \describe{
 #'    \item{\code{$layout}}{turbine search area configurations (polygons and multipolygons)
-#'      from \code{file_layout} shape file as an \code{sf} object.}
+#'      from \code{data_layout} shape file as an \code{sf} object.}
 #'    \item{\code{$layoutAdj}}{polygons from \code{$layout} but all recentered at (0, 0)}
 #'    \item{\code{$turbines}}{turbine centers (as \code{sf} object)}
 #'    \item{\code{$carcasses}}{carcass discovery locations along with (optional)
@@ -50,18 +53,17 @@
 #'      turbine centers, extracted and simplified from \code{$turbines}}
 #'  }
 #' @export
-#'
-readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
+initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     file_turbine = NULL, radCol = "radius", shapeCol = "shape", padCol = "padrad",
     roadwidCol = "roadwidth", nRoadCol = "n_road", xCol = "x", yCol = "y",
-    scCol = NULL, notSearched = NULL){
+    scCol = NULL, notSearched = NULL, quiet = FALSE){
   # traffic directing
   dataType <- tolower(dataType)
-  if (dataType == "gis" || (length(file_layout) == 1 &&
-      is.character(file_layout) && grepl(".shp", file_layout))){
-    plotLayout <- sf::st_read(file_layout, stringsAsFactors = FALSE)
+  if (dataType == "gis" || (length(data_layout) == 1 &&
+      is.character(data_layout) && grepl(".shp", data_layout))){
+    plotLayout <- sf::st_read(data_layout, stringsAsFactors = FALSE, quiet = quiet)
     plotLayout0 <- sf::st_drop_geometry(plotLayout) # easier quick subsetting
-    turbines <- sf::st_read(file_turbine, stringsAsFactors = FALSE)
+    turbines <- sf::st_read(file_turbine, stringsAsFactors = FALSE, quiet = quiet)
     turbines0 <- sf::st_drop_geometry(turbines)
     if (!is.null(unitCol) && !is.na(unitCol)){
       if (is.null(file_turbine))
@@ -71,7 +73,7 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
       if (!unitCol %in% names(plotLayout))
         stop(unitCol, " column not included in plot layout data")
       if (!all(plotLayout0[, unitCol] %in% turbines0[, unitCol])){
-        stop("a turbine that is included in ", file_layout,
+        stop("a turbine that is included in ", data_layout,
              " is missing from ", file_turbine
         )
       }
@@ -81,14 +83,15 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
         badind <- which(make.names(turbines0[, unitCol]) != turbines0[, unitCol])
         badnm <- unique(turbines0[badind, unitCol])
         badnm <- badnm[1:min(length(badnm), 3)]
-        goodnm <- gsub("^X", "t", badnm)
+        goodnm <- gsub("^X", "t", make.names(badnm))
         message(
           "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
           "These (", paste(badnm, collapse = ", "),
-          "...) can be converted to syntactically valid names (", goodnm, "...) ",
+          "...) can be converted to syntactically valid names (",
+          paste(goodnm, collapse = ", "), "...) ",
           "if desired."
         )
-        tmp <- readline("convert [<enter>]? or not [n]? ")
+        tmp <- readline("convert [y]? or not [n]? ")
         if (!identical(tolower(tmp), "y") & tmp != "") stop("aborting...")
         mknm <- make.names(turbines0[, unitCol])
         badind <- which(mknm != turbines0[, unitCol])
@@ -104,7 +107,7 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
       tcenter <- sf::st_coordinates(turbines) # turbine centers (matrix with "X", "Y")
       rownames(tcenter) <- tset
     } else {
-      stop("readLayout with shape files must have file_turbine and unitCol.")
+      stop("initLayout with shape files must have file_turbine and unitCol.")
     }
     layoutAdj <- plotLayout # Adj => coordinates relative to turbine centers
     for (ai in 1:nrow(plotLayout)){
@@ -113,27 +116,27 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
         sf::st_geometry(plotLayout[ai, ]) - tcenter[ti,]) # recentering
     }
     # maximum distance from turbine to a searched point (radius of interpolation)
-   output <- list(layout = plotLayout, layoutAdj = layoutAdj, turbines = turbines,
-      unitCol = unitCol, tset = tset, tcenter = tcenter)
+    output <- list(layout = plotLayout, layoutAdj = layoutAdj,
+      turbines = turbines, unitCol = unitCol, tset = tset, tcenter = tcenter)
     class(output) <- "shapeLayout"
     return(output)
   } else if (dataType == "simple"){
-    if (length(file_layout) == 1 && is.character(file_layout)){
-      slayout <- read.csv(file_layout, stringsAsFactors = FALSE)
-    } else if (is.data.frame(file_layout)){
-      slayout <- file_layout
+    if (length(data_layout) == 1 && is.character(data_layout)){
+      slayout <- read.csv(data_layout, stringsAsFactors = FALSE)
+    } else if (is.data.frame(data_layout)){
+      slayout <- data_layout
     }
-    if ("simpleLayout" %in% class(file_layout)) return(file_layout)
+    if ("simpleLayout" %in% class(data_layout)) return(data_layout)
     # rudimentary error-checking:
     if (!all(c(unitCol, radCol, shapeCol) %in% names(slayout))){
       stop("Simple layout must include columns for unit, radius, and shape ",
-           "with column names specified in arg list for readLayout.")
+           "with column names specified in arg list for initLayout.")
     }
     if (any(slayout[, shapeCol] == "RP") &&
        !all(c(padCol, roadwidCol, nRoadCol) %in% names(slayout))){
       stop(
         "Simple layout that includes RP turbines must include columns for pad ",
-        "radius, road width, and number of roads in the arg list for readLayout."
+        "radius, road width, and number of roads in the arg list for initLayout."
       )
     }
     if (!is.numeric(slayout[, radCol]) || any(slayout[, radCol] <= 0))
@@ -143,37 +146,40 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
     srad <- slayout[ , radCol]
     ind <- which(slayout[, shapeCol] == "square")
     srad[ind] <- sqrt(2) * srad[ind]
-    colnm <- c(unitCol = unitCol, radCol = radCol, shapeCol = shapeCol,
-      padCol = padCol, roadwidCol = roadwidCol, nRoadcol = nRoadCol)
-    slayout <- slayout[, colnm]
-    names(slayout) <- c("turbine", "radius", "shape", "padrad", "roadwidth", "n_road")
+    # sterotype the names:
+    names(slayout)[match(unitCol, names(slayout))] <- "turbine"
+    names(slayout)[match(radCol, names(slayout))] <- "radius"
+    names(slayout)[match(shapeCol, names(slayout))] <- "shape"
+    names(slayout)[match(padCol, names(slayout))] <- "padrad"
+    names(slayout)[match(roadwidCol, names(slayout))] <- "roadwidth"
+    names(slayout)[match(nRoadCol, names(slayout))] <- "n_road"
     attr(slayout, "srad") <- ceiling(max(srad))
     attr(slayout, "colnm") <- colnm
     class(slayout) <- c("simpleLayout", "data.frame")
     return(slayout)
   } else if (dataType == "polygon"){
-    if (is.data.frame(file_layout) || is.matrix(file_layout)){
-      playout <- file_layout
-    } else if (length(file_layout) == 1 && is.character(file_layout)){
-      playout <- read.csv(file_layout, stringsAsFactors = FALSE)
+    if (is.data.frame(data_layout) || is.matrix(data_layout)){
+      playout <- data_layout
+    } else if (length(data_layout) == 1 && is.character(data_layout)){
+      playout <- read.csv(data_layout, stringsAsFactors = FALSE)
     } else {
-      stop("file_layout must be a name of a file; alternatively, ",
-           "file_layout may be a properly formatted data frame or matrix"
+      stop("data_layout must be a name of a file; alternatively, ",
+           "data_layout may be a properly formatted data frame or matrix"
       )
     }
     if (!is.matrix(playout) && !is.data.frame(playout))
-      stop("Data in file_layout must be a properly formatted matrix or data frame")
+      stop("Data in data_layout must be a properly formatted matrix or data frame")
     if (!xCol %in% colnames(playout) || !yCol %in% colnames(playout))
-      stop("Data in file_layout must have columns for x and y coordinates")
+      stop("Data in data_layout must have columns for x and y coordinates")
     if (is.data.frame(playout)){
       rnm <- playout[, unitCol]
       playout <- as.matrix(playout[, c(xCol, yCol)], ncol = 2)
       rownames(playout) <- rnm
     } else {
       if (is.null(row.names(playout)))
-        stop("If file_layout is a matrix, row names must be turbine names")
+        stop("If data_layout is a matrix, row names must be turbine names")
       if (min(table(rownames(playout))) < 3)
-        stop("file_layout data must be polygons")
+        stop("data_layout data must be polygons")
       playout <- playout[, c(xCol, yCol)]
       rnm <- rownames(playout)
     }
@@ -183,15 +189,15 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
     class(pgon) <- "polygonLayout"
     return(pgon)
   } else if (dataType == "xy"){
-    if (is.character(file_layout)){
-      xylayout <- read.csv(file_layout, stringsAsFactors = FALSE)
-    } else if (is.data.frame(file_layout)){
-      xylayout <- file_layout
+    if (is.character(data_layout)){
+      xylayout <- read.csv(data_layout, stringsAsFactors = FALSE)
+    } else if (is.data.frame(data_layout)){
+      xylayout <- data_layout
     }
     if (!unitCol %in% names(xylayout))
-      stop("unitCol must be included in file_layout")
+      stop("unitCol must be included in data_layout")
     if (!identical(make.names(xylayout[, unitCol]), xylayout[, unitCol])){
-      stop("Turbine names in file_layout must be sytactically valid names in R.",
+      stop("Turbine names in data_layout must be sytactically valid names in R.",
            "Must not start with a number or dot (.) followed by a number, and ",
            "must contain combinations of letters, numbers, dots( . ), and ",
            "underscores ( _ )."
@@ -213,7 +219,7 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
     if (!unitCol %in% names(xyturbine))
       stop("unitCol must be included in file_turbine")
     if (!all(xylayout[, unitCol] %in% xyturbine[, unitCol]))
-      stop("Some units in file_layout are missing their counterparts in ",
+      stop("Some units in data_layout are missing their counterparts in ",
            "file_turbine")
 
     for (ti in unique(xylayout[, unitCol])){
@@ -244,11 +250,11 @@ readLayout <- function(file_layout, dataType = "simple",  unitCol = "turbine",
 #'  (by turbine) with r, x, y, scVar
 #' @param rCol column for carcass distances from turbine
 #' @export
-readCarcass <- function(file_cod, unitCol = "turbine"){
+readCarcass <- function(file_cod, unitCol = "turbine", quiet = FALSE){
   if (grepl(".shp", file_cod)){
 #    if (is.null(file_turbine))
 #      stop("readCarcass with shape files must include a file_turbine")
-    carcasses <- sf::st_read(file_cod, stringsAsFactors = FALSE)
+    carcasses <- sf::st_read(file_cod, stringsAsFactors = FALSE, quiet = quiet)
     carcasses0 <- sf::st_drop_geometry(carcasses)
     if (!unitCol %in% names(carcasses))
       stop("readCarcass: unitCol = ", unitCol, " not included in carcass data")
@@ -256,14 +262,14 @@ readCarcass <- function(file_cod, unitCol = "turbine"){
       badind <- which(make.names(carcasses0[, unitCol]) != carcasses0[, unitCol])
       badnm <- unique(carcasses0[badind, unitCol])
       badnm <- badnm[1:min(length(badnm), 3)]
-      goodnm <- gsub("^X", "t", badnm)
+      goodnm <- gsub("^X", "t", make.names(badnm))
       message(
         "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
         "These (", paste(badnm, collapse = ", "),
         "...) can be converted to syntactically valid names (", goodnm, "...) ",
         "if desired."
       )
-      tmp <- readline("convert [<enter>]? or not [n]? ")
+      tmp <- readline("convert [y]? or not [n]? ")
       if (!identical(tolower(tmp), "y") & tmp != "") stop("aborting...")
       mknm <- make.names(carcasses0[, unitCol])
       badind <- which(mknm != carcasses0[, unitCol])
@@ -283,7 +289,8 @@ readCarcass <- function(file_cod, unitCol = "turbine"){
 
 #' @export
 prepRing<- function(x, ...) UseMethod("prepRing", x)
-#' @rdname aic
+
+#' @rdname prepRing
 #' @export
 prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   silent = FALSE, ...){
@@ -423,7 +430,9 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
 #'  simulation of carcasses counts using the predefined template for turbines.
 #'  A "total" is added for the site...sums the carcasses and exposures
 #' @param (optional) data frame or vector with carcass distances and turbine names
+#' @rdname prepRing
 #' @export
+#'
 prepRing.simpleLayout <- function(x){
   rdat <- list()
   rpA <- list()
@@ -474,6 +483,9 @@ prepRing.simpleLayout <- function(x){
   return(output)
 }
 
+#' @rdname prepRing
+#' @export
+#'
 prepRing.numeric <- function(x, srad, ...){
   if (!is.vector(dim(x))) stop("x must be a vector in prepRing.numeric")
   if (!is.numeric(srad) || length(srad) != 1 || srad <= 1)
@@ -494,6 +506,9 @@ prepRing.numeric <- function(x, srad, ...){
   return(output)
 }
 
+#' @rdname prepRing
+#' @export
+#'
 prepRing.polygonLayout <- function(x, ...){
   srad <- attr(x, "srad")
   rdat <- list()
@@ -595,9 +610,10 @@ prepRing.polygonLayout <- function(x, ...){
 #'  shown. To see a full list of the objects, use \code{names(x)}. The elements
 #'  can be extracted in the usual R way via \code{$} or \code{[[x]]}.
 #' @export
-
+#'
 ddFit <- function(x, ...) UseMethod("ddFit", x)
 
+#' @rdname ddFit
 #' @export
 ddFit.data.frame <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
@@ -631,22 +647,27 @@ ddFit.data.frame <- function(x, distr = "standard", scVar = NULL, rCol = "r",
   }
   if (!silent){
     anybad <- FALSE
+    cat("Extensible models:\n")
     for (di in distr){
-      if (!silent && anyNA(output[[di]]$parms)){
-        if (!anybad){
-          anybad <- TRUE
-          cat("Non-extensible models:\n")
-        }
+      if (!anyNA(output[[di]]$parms)) cat(" ", di, "\n")
+    }
+    cat("\nNon-extensible models:\n")
+    for (di in distr){
+      if (anyNA(output[[di]]$parms)){
+        anybad <- TRUE
         cat(" ", di, "\n")
       }
     }
-    if (anybad) flush.console()
+    if (!anybad) cat(" none\n")
+    flush.console()
   }
+
   if(length(output) == 1) return(output[[1]])
   class(output) <- "ddArray"
   return(output)
 }
 
+#' @rdname ddFit
 #' @export
 ddFit.rings <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
@@ -656,6 +677,7 @@ ddFit.rings <- function(x, distr = "standard", scVar = NULL, rCol = "r",
   do.call(ddFit, arglist)
 }
 
+#' @rdname ddFit
 #' @export
 ddFit.list <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
@@ -665,6 +687,7 @@ ddFit.list <- function(x, distr = "standard", scVar = NULL, rCol = "r",
   do.call(ddFit, arglist)
 }
 
+#' @rdname ddFit
 #' @export
 ddFit.xyLayout <- function(x, distr = "standard", scVar = NULL, notSearched = NULL,
     rCol = "r", ncarcCol = "ncarc", unitCol = "turbine", silent = FALSE, ...){
@@ -731,6 +754,7 @@ aic <- function(x, ...) UseMethod("aic", x)
 
 #' @rdname aic
 #' @export
+#'
 aic.ddArray <- function(x, extent = "full", ...){
   # column names for data frame to be returned
   nm <- c("model", "k", "AIC", "AICc", "deltaAICc")
@@ -759,8 +783,13 @@ aic.ddArray <- function(x, extent = "full", ...){
   return(output)
 }
 
+aic.ddArraycc <- function(x, extent = "full", ...){
+  lapply(x, aic, extent = extent)
+}
+
 #' @rdname aic
 #' @export
+#'
 aic.dd <- function(x, ...){
   aic0 <- x$aic
   return(c(
@@ -809,6 +838,7 @@ aic.dd <- function(x, ...){
 #'
 #' @name plot
 #' @export
+#'
 plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
     xmax = NULL, resolution = 250, mod_highlight = NULL, par_reset = TRUE, ...){
   if (identical(distr, "all")) distr <- names(x)
@@ -885,7 +915,7 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   sz <- ifelse(round(nrow(aic_proper)/ncol) <= 3, 0.13,
           ifelse(round(nrow(aic_proper)/ncol) <= 5, 0.17,
             ifelse(round(nrow(aic_proper)/ncol) <= 7, 0.22, 0.26)))
-  par(fig = c(0, 1, 0, sz), mar = c(0, 1, 1.5, 0), family = "mono")
+  par(fig = c(0, 1, 0, sz), mar = c(0, 1, 1.2, 0), family = "mono")
   plot(0, type = "n", axes = F, xlab = "", ylab = "")
   leglab <- character(nrow(aic_proper))
   lwd <- numeric(nrow(aic_proper)) + 1
@@ -893,7 +923,8 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   if(mod_highlight %in% aic_proper$model) lwd[mod_highlight] <- 2
   for (i in 1:nrow(aic_proper))
    leglab[i] <- sprintf("%18-s%6.2f", aic_proper$model[i], aic_proper$deltaAIC[i])
-  mtext(side = 3, line = 0, adj = 0, sprintf("%19-s%s", "Distribution", "\u0394AICc"))
+#  mtext(side = 3, line = 0, adj = 0, sprintf("%19-s%s", "Distribution", "\u0394AICc"))
+  mtext(side = 3, line = 0, adj = 0, bquote("Distribution       " ~ Delta ~"AICc"))
   legend(x = "topleft", legend = leglab, cex = 0.8, lwd = lwd, bty = "n",
     ncol = ncol, lty = arglist$lty, col = arglist$col[aic_proper$model])
   ## part 2a: general plot layot
@@ -965,8 +996,9 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   }
 }
 
-#' @name plot
+#' @rdname plot
 #' @export
+#'
 plot.dd <- function(x, type = "CDF", extent = "full",
     xmax = NULL, resolution = 250, nsim = 1000, CL = 0.9, ...){
   if (extent == "full" && anyNA(x$parms))
@@ -1017,10 +1049,12 @@ plot.dd <- function(x, type = "CDF", extent = "full",
 #' @return array with simulated beta parameters from the glm model, and their
 #'  conversion to distribution parameters
 #' @export
+#'
 ddSim <- function(x, ...) UseMethod("ddSim", x)
 
 #' @rdname ddSim
 #' @export
+#'
 ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
   dd <- x
   bmean <- dd$coefficients
@@ -1056,6 +1090,7 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
 #'  or row. Also unlike with standard R arrays and matrices, the class structure
 #'  and attributes are preserved upon subsetting.
 #' @export
+#'
 "[.ddSim" <- function(x, i, j,...){
   y <- NextMethod("[")
   noclass <- FALSE
@@ -1089,6 +1124,7 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
 #' @details Subset the ddArray object as if it were a simple vector
 #' @return list of selected models with crucial statistics
 #' @export
+#'
 "[.ddArray" <- function(x, distr){
   if (!is.vector(distr)) stop("subsetting ddArray objects must be by a vector ",
     "of integer array indices or distribution names")
@@ -1128,6 +1164,7 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
 #' @param ... ignored
 #'
 #' @export
+#'
 print.dd <- function(x, ...){
   cat(paste0("Distribution: ", x$distr, "\n"))
   cat(paste0("Formula: ", deparse(x$formula), "\n\n"))
@@ -1500,13 +1537,17 @@ ddd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
           output[, i] <- NA
           next
         }
-        deno <- integrate(f = function(r)
+        deno <- try(integrate(f = function(r)
           exp(rmat(r, distr) %*% parms[i, cof_name[[distr]]] + off(r, distr)),
           lower = 0,
           upper = zrad
-        )$val
-        output[x > 0, i] <-
-          exp(rmat(x[x > 0], distr) %*% parms[i, cof_name[[distr]]] + off(x[x > 0], distr))/deno
+        )$val)
+        if ("try-error" %in% class(deno)){
+          output[x > 0, i] <- NA
+        } else {
+          output[x > 0, i] <- exp(rmat(x[x > 0], distr) %*%
+            parms[i, cof_name[[distr]]] + off(x[x > 0], distr))/deno
+        }
       }
       output[x > zrad, i0] <- 0
     }
@@ -1842,8 +1883,10 @@ stats.dd <- function(x, extent = "full", zrad = 150, ...){
   y <- ddd(x = xseq, model = x, extent = extent, zrad = zrad)
   mi <- which(y == max(y))
   ans[["stats"]]["mode"] <- ifelse(y[length(y)] %in% mi, NA, mean(xseq[mi]))
-  if(ans[["stats"]]["mode"] == 0.1) ans[["stats"]]["mode"] <- 0
-  ans[["stats"]] <- round(ans[["stats"]], 2)
+  if (ans[["stats"]]["mode"] == 0.1) ans[["stats"]]["mode"] <- 0
+  if (ans[["stats"]]["mode"] > ans[["stats"]]["95%"])
+    ans[["stats"]]["mode"] <- NA
+  ans[["stats"]] <- round(ans[["stats"]], 1)
   ans
 }
 
@@ -1862,6 +1905,10 @@ stats.ddArray <- function(x, extent = "full", zrad = 150, ...){
   ans
 }
 
+#' @export
+stats.ddArraycc <- function(x, extent = "full", zrad = 150, ...){
+  lapply(x, stats, extent = extent, zrad = zrad)
+}
 #' @export
 dd2ddSim <- function(dd){
   if (!"dd" %in% class(dd)) stop("dd2ddSim takes \"dd\" objects only")
@@ -2025,7 +2072,7 @@ estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 150
   output$psi[output$psi > 1] <- 1
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
-  class(output) <- "psiHat"
+  class(output) <- c("psiHat", "matrix")
   output
 }
 
@@ -2038,7 +2085,7 @@ estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
   output <- sapply(tmp, "[[", "psi")
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
-  class(output) <- "psiHat"
+  class(output) <- c("psiHat", "matrix")
   output
 }
 
@@ -2064,8 +2111,17 @@ estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 150,
   output[, "total"] <- rowMeans(output[, exclude("total", colnames(output))], na.rm = TRUE)
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
-  class(output) <- "psiHat"
+  class(output) <- c("psiHat", "matrix")
   return(output)
+}
+
+#' @rdname estpsi
+#' @export
+estpsi.rings <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
+  arglist <- as.list(match.call())
+  arglist[[1]] <- NULL
+  arglist$x <- x$rpA
+  return(do.call(estpsi, arglist))
 }
 
 #' Estimate DWP
@@ -2112,11 +2168,11 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
       names(x$psi) <- "total"
     }
     for (ti in names(ncarc)){
-      output$psi[, ti] <- findInterval(qtls, cumsum(eoa::postM(ncarc[ti], psi[ti])))
+      output$psi[, ti] <- findInterval(qtls, cumsum(postM(ncarc[ti], psi[ti])))
     }
     output$ncarc <- ncarc
-  } else if (is.null(nboot) || length(x)/length(ncarc) == nboot){
-    nboot <- ifelse(is.null(nboot), length(x)/length(ncarc), nboot)
+  } else if (is.null(nboot) || length(psi)/length(ncarc) == nboot){
+    nboot <- ifelse(is.null(nboot), length(psi)/length(ncarc), nboot)
     # CASE 2: nsim and nboot are equal
     # generate one random dwp for each psi
     if (length(ncarc) == 1) {
@@ -2127,34 +2183,58 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
     output <- array(0, dim = dim(psi), dimnames = list(NULL, colnames(psi)))
     for (ti in tname){
       # try fitting beta distribution to psi (increases speed by 100x or so)
-      muB <- mean(psi[, ti]); sig2B <- var(psi[, ti])
-      Ba <- muB^2/sig2B*(1 - muB) - muB; Bb <- Ba*(1/muB - 1)
-      ab <- suppressWarnings(try(MASS::fitdistr(x = psi[, ti], densfun = "beta",
-        start = list(shape1 = Ba, shape2 = Bb)), silent = T))
-      if (!"try-error" %in% class(ab)){
-        pm <- eoa::postM.ab(x = ncarc[ti], Ba = Ba, Bb = Bb, prior = "IbetabinRef")
-        qtls <- seq(0.5/nboot, 1 - 0.5/nboot, length = nboot)
-        output[, ti] <- ncarc[ti]/sample(findInterval(qtls, cumsum(pm)))
+      dotog <- TRUE
+      if (!any(is.na(psi[, ti]))){ # try doing them as betabinom
+        muB <- mean(psi[, ti])
+        sig2B <- var(psi[, ti])
+        Ba <- muB^2/sig2B*(1 - muB) - muB
+        Bb <- Ba*(1/muB - 1)
+        ab <- suppressWarnings(try(
+          MASS::fitdistr(x = psi[, ti], densfun = "beta",
+            start = list(shape1 = Ba, shape2 = Bb)),
+          silent = T
+        ))
+        if (!"try-error" %in% class(ab)){ # then betabinom works
+          pm <- postM.ab(x = ncarc[ti], Ba = Ba, Bb = Bb, prior = "IbetabinRef")
+          if (any(is.na(pm)) || mean(pm == 0) == 1){
+            dotog <- FALSE
+          } else {
+            qtls <- seq(0.5/nboot, 1 - 0.5/nboot, length = nboot)
+            output[, ti] <- ncarc[ti]/sample(findInterval(qtls, cumsum(pm)))
+          }
+        } else { # betabinom doesn't work, so do each separately
+          dotog <- FALSE
+        }
       } else {
+        dotog <- FALSE
+      }
+      if (!dotog){
         for (bi in 1:nboot){
-          pm <- cumsum(eoa::postM(ncarc[ti], psi[bi, ti]))
+          pm <- suppressWarnings(postM(ncarc[ti], psi[bi, ti]))
+          if (!any(is.na(pm)) && sum(pm > 0) > 0){
+            output[bi, ti] <- ncarc[ti]/sample(x = 1:length(pm) - 1, size = 1,
+              prob = pm)
+          }
+        }
+      }
+    }
+  } else if (nrow(psi) != nboot){
+    tname <- names(ncarc)
+    output <- array(0, dim = dim(psi), dimnames = list(NULL, colnames(psi)))
+    for (ti in tname){
+      for (bi in 1:nboot){
+        pm <- postM(ncarc[ti], x$psi[bi, ti])
+        if (!any(is.na(pm)) && sum(pm > 0) > 0){
           output[bi, ti] <- ncarc[ti]/sample(x = 1:length(pm) - 1, size = 1,
             prob = pm)
         }
       }
     }
-  } else if (attr(x, "nsim") != nboot){
-    tname <- names(ncarc)
-    output <- array(0, dim = dim(psi), dimnames = list(NULL, colnames(psi)))
-    for (ti in tname){
-      for (bi in 1:nboot){
-        pm <- cumsum(eoa::postM(ncarc[ti], x$psi[bi, ti]))
-        output[bi, ti] <- ncarc[ti]/sample(x = 1:length(pm) - 1, size = 1,
-          prob = pm)
-      }
-    }
   }
-  if (ncol(output) == 1) { # single turbine, nsim reps
+  output <- round(output, 3)
+  output[output > 1] <- 1
+  output[is.na(output)] <- 0
+  if (ncol(output) == 1){ # single turbine, nsim reps
     if (!forGenEst){
       output <- c(output)
       names(output) <- names(ncarc)
@@ -2163,29 +2243,48 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
     }
   }
   if (forGenEst){
-    nms <- exclude("total", names(ncarc))
-    output <- data.frame(
-      turbine = rep(nms, each = nboot),
-      dwp = c(output[, exclude("total", names(ncarc))])
-    )
+   class(output) <- c("dwphat", "matrix")
+   output <- formatGenEst(output)
+  } else {
+   class(output) <- c("dwphat", "notGenEst", "matrix")
   }
-  output
+  return(output)
 }
 
-#' Read and Format Simple Polygons Data
 #' @export
-readLayout_polygons <- function(filename, unitCol = "turbine"){
-  tmp <- read.csv(filename, stringsAsFactors = F)
-  rnm <- tmp[, unitCol]
-  tmp <- as.matrix(tmp[, c("x", "y")], ncol = 2)
-  rownames(tmp) <- rnm
-  pgon <- list()
-  for (ti in unique(rnm)) pgon[[ti]] <- tmp[which(rnm == ti), c("x", "y")]
-  attr(pgon, "srad") <- ceiling(sqrt(max(rowSums(tmp^2))))
-  class(pgon) <- "polygonLayout"
-  pgon
+formatGenEst <- function(dwphat){
+  if (!"dwphat" %in% class(dwphat))
+    stop("formatGenEst: dwphat must be a dwphat object")
+  if ("GenEst" %in% class(dwphat)) return(dwphat)
+  if (is.matrix(dwphat)){
+    nboot <- nrow(dwphat)
+    nms <- exclude("total", colnames(dwphat))
+    output <- data.frame(
+      turbine = rep(nms, times = nboot),
+      dwp = c(matrix(dwphat[, exclude("total", colnames(dwphat))], nrow = length(nms),
+        byrow = T)),
+      stringsAsFactors = FALSE
+    )
+  } else if (is.list(dwphat)){
+    ccnm <- names(dwphat) # carcass classes
+    tnm <- dwphat[[1]][, 1]
+    nsim <- nrow(dwphat[[1]])
+    nms <- c("turbine", ccnm)
+    tmp <- data.frame(
+      array(dim = c(length(tnm), length(nms)), dimnames = list(NULL, nms)),
+      stringsAsFactors = FALSE
+    )
+    tmp[, "turbine"] <- unique(tnm)
+    tmp[, -1] <- sapply(dwphat,
+      FUN = function(sz){
+        c(matrix(sz$dwp, nrow = length(unique(tnm)), byrow = T))
+      }
+    )
+    output <- tmp
+  }
+  class(output) <- c("dwphat", "GenEst", "data.frame")
+  return(output)
 }
-
 #' @export
 plot.layoutSimple <- function(x, ...){
   par(mfrow = c(ceiling(sqrt(nrow(x))), round(sqrt(nrow(x)))),
@@ -2250,63 +2349,6 @@ plot.layoutSimple <- function(x, ...){
   }
 }
 
-
-
-
-#' Prepare Ring Data for Data Frames of Simple Turbine Layouts
-#' @param x a data frame with simple characterizations of turbines
-#' @param cod carcass observation distances. Data frame with columns for
-#'  distances that carcasses were found at and which turbines. If \code{cod = NULL},
-#'  an empty template is created for carcass with descriptions of the turbines
-#'  (i.e., \code{r}, \code{exposure}, \code{ncarc}, \code{pinc}), and (optional)
-#'  \code{scVar}. A separate function can then be used to add carcasses distances later. This setup allows for easier
-#'  simulation of carcasses counts using the predefined template for turbines.
-#'  A "total" is added for the site...sums the carcasses and exposures
-#' @param (optional) data frame or vector with carcass distances and turbine names
-#' @export
-prepRing_simple <- function(x, cod = NULL, unitCol = "turbine", rCol = "r"){
-  rdat <- list()
-  rpA <- list()
-  rownames(x) <- x[, unitCol]
-  srad <- ceiling(max(
-    slayout[, "radius"] * ifelse(slayout[, "shape"] == "square", sqrt(2), 1)
-  ))
-  totA <- data.frame(r = 1:srad, pinc = 0)
-  totr <- data.frame(r = 1:srad, exposure = 0, ncarc = 0)
-  for (ti in x[, unitCol]){
-    rmax <- ceiling(ifelse(x[ti, "shape"] %in% c("circular", "square"),
-      x[ti, "radius"], sqrt(2) * x[ti, "radius"]))
-    rdat[[ti]] <- data.frame(r = 1:rmax, exposure = 0, ncarc = 0)
-    expo <- rdat[[ti]]$exposure
-    rdat[[ti]]$exposure = switch(x[ti, "shape"],
-      circular = 2*pi*(rdat[[ti]]$r - 1/2) * (rdat[[ti]]$r <= x[ti, "radius"]),
-      square = diff(Acins(r = 0:rmax, s = x[ti, "radius"])),
-      RP = {
-        expo <- numeric(rmax) # 1 exposure for each radius = 1, ..., rmax
-        rout <- ceiling(x[ti, "pad_rad"]:rmax)
-        expo[rout] <- x[ti, "width_road"] * x[ti, "n_road"]
-        rin <- which(rdat[[ti]]$r < x[ti, "rad_pad"])
-        expo[rin] <- 2*pi*(rin - 1/2)
-        expo
-      }
-    )
-    rpA[[ti]] <- rdat[[ti]][, c("r", "exposure")]
-    names(rpA[[ti]]) <- c("r", "pinc")
-    rpA[[ti]][, "pinc"] <- pmin(rdat[[ti]][, "exposure"]/(2*pi*(1:rmax - 1/2)), 1)
-    totA[1:rmax, "pinc"] <- totA[1:rmax, "pinc"] + rpA[[ti]][, "pinc"]
-    totr[1:rmax, "exposure"] <- totr[1:rmax, "exposure"] + rpA[[ti]][, "exposure"]
-  }
-  totA[, "pinc"] <- pmin(totA[, "pinc"]/nrow(x), 1)
-  totr[, "exposure"] <- totr[, "exposure"]/nrow(x)
-  rpA[["total"]] <- totA
-  rdat[["total"]] <- totr
-  ncarc <- numeric(nrow(x))
-  names(ncarc) <- x[, unitCol]
-  output <- list(rdat = rd, rpA = rpA, srad = srad, ncarc = ncarc, scVar = NULL)
-  class(output) <- "rings"
-  return(output)
-}
-
 #' Calculate Area of Intersection of Circle and Square with Common Center
 #' @param r radius of the circle (vector or scalar)
 #' @param s half-width of the square (scalar)
@@ -2331,21 +2373,35 @@ Acins <- function(r, s){
 #'
 # addCarcasses:
 #' @export
-addCarcass<- function(x, ...) UseMethod("addCarcass", x)
+addCarcass <- function(x, ...) UseMethod("addCarcass", x)
+
 #' @rdname addCarcass
 #' @export
 addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
-    ncarcReset = TRUE, ...){
+    ncarcReset = TRUE, ccCol = NULL, ...){
   unitCol <- x$unitCol
   scVar <- data_ring$scVar
-  turbi <- x$carcasses[, unitCol, drop = T]
-  if (any(!x$carcasses[, unitCol, drop = T] %in% names(data_ring$ncarc))){
-    catturb <- x$carcasses[, unitCol, drop = T]
+  turbi <- x$carcasses[, unitCol, drop = TRUE]
+  if (any(!x$carcasses[, unitCol, drop = TRUE] %in% names(data_ring$ncarc))){
+    catturb <- x$carcasses[, unitCol, drop = TRUE]
     turbnot <- catturb[!catturb %in% names(data_ring$ncarc)]
     warning("Carcasses found at unsearched turbines.")
-    if (all(!x$carcasses[, unitCol, drop = T] %in% names(data_ring$ncarc)))
+    if (all(!x$carcasses[, unitCol, drop = TRUE] %in% names(data_ring$ncarc)))
       stop("All carcasses were found at unsearched turbines. Mismatched ",
            "turbine names in carcass data (x) and data_ring?")
+  }
+  if (!is.null(ccCol)){ # carcass class superstructure
+    if (!ccCol %in% names(x$carcasses)) stop("ccCol not in carcass data frame")
+    if (!is.character(x$carcasses[, ccCol, drop = TRUE]))
+      stop("carcass classes must be class names (character)")
+    szoutput <- list()
+    for (sz in unique(x$carcasses[, ccCol, drop = TRUE])){
+      # subset cod by ccCol
+      szoutput[[sz]] <- addCarcass(subset(x, subset = sz, select = ccCol),
+        data_ring = data_ring, plotLayout = plotLayout, ncarcReset = ncarcReset)
+    }
+    class(szoutput) <- "ringscc"
+    return(szoutput)
   }
   if (!is.null(scVar)){
     # need layout data (in addition to rings) OR carcasses in x to have scVar
@@ -2372,7 +2428,7 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
       # check whether carcass search classes are represented at the distances
       # given in x
       if (!scVar %in% names(x$carcasses))
-        stop("scVar not a column in carcass data in addCarcass.shapeCarcass")
+        stop("scVar not a column in carcass data in x in addCarcass.shapeCarcass")
       if (any(!x$carcasses[, scVar, drop = T] %in% unique(data_ring$rdat$total[, scVar])))
         stop("Search classes in x$carcasses do not match those of plotLayout")
       rdat0 <- data.frame(
@@ -2425,12 +2481,22 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
   data_ring
 }
 
-#' @param x data frame with carcass turbines and distances
-#' @param data_ring ring data for adding carcasses to
 #' @rdname addCarcass
 #' @export
-addCarcass.data.frame <- function(x, data_ring,
+addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
     ncarcReset = TRUE, unitCol = "turbine", rCol = "r", ...){
+  if (!is.null(ccCol)){
+    if (!ccCol %in% names(x)) stop("ccCol not in carcass data frame")
+    if (!is.character(x[, ccCol]))
+      stop("carcass class must be a vector of names of carcass classes (char)")
+    output <- list()
+    for (sz in unique(ccCol)){
+      output[[sz]] <- addCarcass(x[x[, ccCol == sz], ], data_ring = data_ring,
+        ncarcReset = ncarcReset, unitCol = unitCol, rCol = rCol)
+    }
+    class(output) <- "ringscc"
+    return(output)
+  }
   if (ncarcReset){
     data_ring$rdat <- lapply(data_ring$rdat, FUN = function(ri){
       ri$ncarc <- 0
@@ -2447,6 +2513,226 @@ addCarcass.data.frame <- function(x, data_ring,
   }
   data_ring$ncarc <- sapply(data_ring$rdat, FUN = function(ti) sum(ti[, "ncarc"]))
   class(data_ring$rdat) <- "rings"
-  data_ring
+  return(data_ring)
 }
 
+
+#' @export
+subset.shapeCarcass <- function(x, subset, select, ...){
+  # like the previous subCarcass except S3 and substituting "subset" for "value"
+  # and "select" for "ccCol"
+  if (!select %in% names(x$carcasses)) stop("'select' not in carcass data")
+  output <- list()
+  output$carcasses <- x$carcasses[x$carcasses[, select, drop = TRUE] %in% subset,]
+  output$unitCol  <- x$unitCol
+  output$ncarc <- table(output$carcasses[, x$unitCol, drop = TRUE])
+  class(output) <- "shapeCarcass"
+  return(output)
+}
+
+#' @export
+subset.shapeLayout <- function(x, subset, select, ...){
+  if (length(select) != 1)
+    stop("subset: 'select' must be the name of a single column in x")
+  if (!select %in% names(x$layout))
+    stop("subset: 'select' not in layout data")
+  x$layout <- x$layout[x$layout[, select, drop = TRUE] %in% subset,]
+  x$layoutAdj <- x$layoutAdj[x$layoutAdj[, select, drop = TRUE] %in% subset,]
+  if (select %in% names(x$turbines)){
+    x$turbines <- x$turbines[x$turbines[, select, drop = TRUE] %in% subset,]
+    x$tset <- x$turbines[, x$unitCol, drop = TRUE]
+    x$tcenter <- x$tcenter[x$tset, ]
+  }
+  class(x) <- "shapeLayout"
+  return(x)
+}
+
+#' @export
+ddFit.ringscc <- function(x, distr = "standard", scVar = NULL, rCol = "r",
+    expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
+  output <- list()
+  arglist <- as.list(match.call())
+  arglist[[1]] <- NULL
+  for (sz in names(x)){
+    arglist$x <- x[[sz]]
+    output[[sz]] <- do.call(ddFit, arglist)
+  }
+  class(output) <- "ddArraycc"
+  return(output)
+}
+
+#' Estimate Probability that Carcass Lands in Searched Area
+#' rpA
+#' @param model one selected model for each carcass class or a \code{ddArraycc}
+#'  accompanied by a vector of model names for each carcass class
+#' @param modnames vector of names of model to use for each size class.
+#' @export
+estpsi.ringscc <- function(x, model, modnames = NULL, extent = "full",
+    nsim = 1000, zrad = 150, ...){
+  output <- list()
+  arglist <- as.list(match.call())
+  arglist[[1]] <- NULL
+  arglist[["modnames"]] <- NULL
+  if ("ddArraycc" %in% class(model) && any(sapply(model, length) > 1)){
+    if (is.null(modnames)){
+      stop("estpsi: modnames must be provided if list of ",
+           "models includes more than one model for any size class."
+      )
+    }
+  }
+  for (cc in names(x)){
+    # if model is ddArraycc:
+    if (!is.null(modnames)){ # then use modnames to select model
+      arglist[["model"]] <- model[[cc]][[modnames[cc]]]
+    } else { # then there is only one model for the given class
+      arglist[["model"]] <- model[[cc]]
+    }
+    arglist[["x"]] <- x[[cc]][["rpA"]]
+    output[[cc]] <- do.call(estpsi, arglist)
+  }
+  class(output) <- "psiHatcc"
+  output
+}
+
+#' @export
+estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
+    forGenEst = FALSE, silent = TRUE, ...){
+  if (!is.list(ncarc))
+    stop("estdwp: ncarc must be list with element names matching those of x")
+  if (!all(names(x) %in% names(ncarc)))
+    stop("estdwp: not all x names found in ncarc")
+  output <- list()
+  arglist <- as.list(match.call())
+  arglist[[1]] <- NULL
+  for (sz in names(x)){
+    arglist[["x"]] <- x[[sz]]
+    arglist[["ncarc"]] <- ncarc[[sz]]
+    output[[sz]] <- do.call(estdwp, arglist)
+  }
+  if (forGenEst){
+    class(output) <- "dwphat"
+    output <- formatGenEst(output)
+  }
+  class(output) <- c(
+    "dwphat",
+    ifelse(forGenEst, "GenEst", "notGenEst"),
+    ifelse(forGenEst, "data.frame", "list")
+  )
+  return(output)
+}
+
+#' @export
+getncarc <- function(x) UseMethod("getncarc", x)
+
+#' @export
+getncarc.ringscc <- function(x){
+  lapply(x, "[[", "ncarc")
+}
+
+#' @export
+getncarc.rings <- function(x){
+  x$ncarc
+}
+
+#' @export
+getncarc.xyLayout <- function(x){
+  x$ncarc
+}
+
+#' @export
+getncarc.ddArray <- function(x){
+  x[[1]]$ncarc
+}
+
+#' @export
+getncarc.ddArraycc <- function(x){
+  ncarc <- numeric(length(x))
+  names(ncarc) <- names(x)
+  for (sz in names(ncarc)) ncarc[sz] <- getncarc(x[[sz]])
+  return(ncarc)
+}
+
+#' @export
+getncarc.dd <- function(x){
+  return(x$ncarc)
+}
+
+#' @export
+plot.psiHat <- function(x, ...){
+  arglist <- list(...)
+  arglist$x <- 0
+  arglist$xlab <- "turbine"
+  if ("xlab" %in% names(arglist)){
+    xlab <- arglist$xlab
+    arglist$xlab <- ""
+  }
+  if ("col" %in% names(arglist)){
+    col <- arglist$col
+    arglist$col <- 1
+  } else {
+    col <- 1
+  }
+  if (!"type" %in% names(arglist)) arglist$type <- "n"
+  if (!"xlim" %in% names(arglist)) arglist$xlim <- c(0.5, ncol(x) + 0.5)
+  if (!"ylim" %in% names(arglist)) arglist$ylim <- range(x)
+  if (!"axes" %in% names(arglist)) arglist$axes <- FALSE
+  if (!"ylab" %in% names(arglist)) arglist$ylab  <- expression(hat(psi))
+  if (!"cex.lab" %in% names(arglist)) arglist$cex.lab <- 1.2
+  bxwd <- 0.4
+  par(mar = c(5.4, 5, 2, 1))
+  do.call(plot, arglist)
+#  plot(0, type = "n", xlim = c(1, ncol(x)), ylim = range(x), axes = FALSE,
+#    xlab = "", ylab = expression(hat(psi)), cex.lab = 1.2)
+  box()
+  mtext(side = 1, line = 4, xlab, cex = 1.3)
+  axis(1, at = 1:ncol(x), lab = FALSE)
+  text(x = 1:ncol(x), y = par("usr")[3] - diff(par("usr")[3:4] * 0.04),
+    labels = colnames(x), xpd = TRUE, srt = 40)
+  axis(2)
+  for (ti in 1:ncol(x)){
+    qtls <- quantile(x[, ti], prob = c(0.005, 0.05, 0.25, 0.5, 0.75, 0.95, 0.995))
+    rect(ti - bxwd, qtls[3], ti + bxwd, qtls[5], border = col)
+    lines(ti + bxwd * c(-1, 1), rep(qtls[4], 2), lwd = 2, col = col)
+    lines(rep(ti, 2), qtls[c(2, 3)], col = col)
+    points(rep(ti, 2), qtls[c(2, 6)], pch = 3, col = col)
+    lines(rep(ti, 2), qtls[c(5, 6)], col = col)
+    lines(rep(ti, 2), qtls[c(2, 3) - 1], lty = 3, col = col)
+    lines(rep(ti, 2), qtls[c(5, 6) + 1], lty = 3, col = col)
+  }
+}
+
+#' @export
+plot.dwphat <- function(x, ...){
+  bxwd <- 0.4
+  par(mar = c(5.4, 5, 2, 1))
+  plot(0, type = "n", xlim = c(1, ncol(x)), ylim = range(x, na.rm = TRUE),
+    axes = FALSE, xlab = "", ylab = expression(widehat(dwp)), cex.lab = 1.2)
+  box()
+  mtext(side = 1, line = 4, "turbine", cex = 1.3)
+  axis(1, at = 1:ncol(x), lab = FALSE)
+  text(x = 1:ncol(x), y = par("usr")[3] - diff(par("usr")[3:4] * 0.04),
+    labels = colnames(x), xpd = TRUE, srt = 40)
+  axis(2)
+  for (ti in 1:ncol(x)){
+    qtls <- quantile(x[, ti], prob = c(0.005, 0.05, 0.25, 0.5, 0.75, 0.95, 0.995),
+      na.rm = TRUE)
+    rect(ti - bxwd, qtls[3], ti + bxwd, qtls[5])
+    lines(ti + bxwd * c(-1, 1), rep(qtls[4], 2), lwd = 2)
+    points(rep(ti, 2), qtls[c(2, 6)], pch = 3)
+    lines(rep(ti, 2), qtls[c(2, 3)])
+    lines(rep(ti, 2), qtls[c(5, 6)])
+    lines(rep(ti, 2), qtls[c(2, 3) - 1], lty = 3)
+    lines(rep(ti, 2), qtls[c(5, 6) + 1], lty = 3)
+  }
+}
+
+#' @export
+plot.polygonLayout <- function(x, ...){
+
+}
+#' @export
+exportGenEst <- function(dwp, file){
+  if (!"dwphat" %in% class(dwp)) stop("exportGenEst: 'dwp' must be a dwphat object")
+  if (!"GenEst" %in% class(dwp)) dwp <- formatGenEst(dwp)
+  write.csv(dwp, file = file, quote = FALSE, row.names = FALSE)
+}

@@ -9,15 +9,10 @@
 addCarcass(x, ...)
 
 \method{addCarcass}{shapeCarcass}(x, data_ring, plotLayout = NULL,
-  ncarcReset = TRUE, ...)
+  ncarcReset = TRUE, ccCol = NULL, ...)
 
-\method{addCarcass}{data.frame}(x, data_ring, ncarcReset = TRUE,
-  unitCol = "turbine", rCol = "r", ...)
-}
-\arguments{
-\item{x}{data frame with carcass turbines and distances}
-
-\item{data_ring}{ring data for adding carcasses to}
+\method{addCarcass}{data.frame}(x, data_ring, ccCol = NULL,
+  ncarcReset = TRUE, unitCol = "turbine", rCol = "r", ...)
 }
 \description{
 Add Carcasses to a Site Layout

@@ -1,3 +1,34 @@
+layout_polygon <- read.csv(textConnection('
+"turbine","x","y"
+"t1",4.814164,69.209213
+"t1",-12.278842,17.930197
+"t1",-64.255532,15.139502
+"t1",-54.836937,-54.627868
+"t1",22.953680,-27.767431
+"t1",70.395491,14.092991
+"t1",20.162985,19.674381
+"t2",-19.604416,-3.000014
+"t2",-6.348615,-17.302325
+"t2",14.581596,-2.302341
+"t2",6.907185,10.255786
+"t2",2.372306,25.953444
+"t2",-1.116063,52.465045
+"t2",-5.302105,58.744108
+"t2",-17.860231,68.511540
+"t2",-23.441621,81.767340
+"t2",-35.650911,76.185950
+"t2",-25.883479,33.627855
+"t2",-35.999748,9.906949
+'), as.is = T)
+
+layout_simple <- read.csv(textConnection('
+  "turbine","radius","shape","padrad","roadwidth","n_road"
+  "t1",90,"circular",NA,NA,NA
+  "t2",65,"square",NA,NA,NA
+  "t3",120,"RP",15,5,2
+  "t4",100,"RP",20,4,1
+'), as.is = T)
+
 mod_color = c(
   xep1 = colors()[35], #brown3 colors()[585], #darkorchid2 #
   xep01 = 2,
@@ -204,6 +235,8 @@ par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FAL
 usethis::use_data(
   cof_name,
   constraints,
+  layout_polygon,
+  layout_simple,
   mod_all,
   mod_color,
   mod_offset,

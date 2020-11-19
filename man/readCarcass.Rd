@@ -5,7 +5,7 @@
 \title{different types of data but all end up in the same place: list of arrays by
  (by turbine) with r, x, y, scVar}
 \usage{
-readCarcass(file_cod, unitCol = "turbine")
+readCarcass(file_cod, unitCol = "turbine", quiet = FALSE)
 }
 \arguments{
 \item{rCol}{column for carcass distances from turbine}
