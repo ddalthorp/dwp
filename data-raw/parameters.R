@@ -22,11 +22,11 @@ layout_polygon <- read.csv(textConnection('
 '), as.is = T)
 
 layout_simple <- read.csv(textConnection('
-  "turbine","radius","shape","padrad","roadwidth","n_road"
-  "t1",90,"circular",NA,NA,NA
-  "t2",65,"square",NA,NA,NA
-  "t3",120,"RP",15,5,2
-  "t4",100,"RP",20,4,1
+"turbine","radius","shape","padrad","roadwidth","n_road"
+"t1",90,"circular",NA,NA,NA
+"t2",65,"square",NA,NA,NA
+"t3",120,"RP",15,5,2
+"t4",100,"RP",20,4,1
 '), as.is = T)
 
 mod_color = c(
@@ -47,6 +47,25 @@ mod_color = c(
   exponential = colors()[123], #brown3
   inverse_gaussian = 2,
   constant = 8
+)
+degOrder <-c(
+  "constant",
+  "chisq",
+  "xep0",
+  "exponential",
+  "xepi0",
+  "inverse_gaussian",
+  "lognormal",
+  "xep1",
+  "xep01",
+  "xep2",
+  "tnormal",
+  "MaxwellBoltzmann",
+  "xep02",
+  "xep12",
+  "xep012",
+  "xep123",
+  "xep0123"
 )
 mod_all = names(mod_color)
 mod_standard = c(
@@ -149,6 +168,7 @@ mod_offset <- c(
   inverse_gaussian = "log(exposure) - 2.5 * log(r)",
   constant = "log(exposure)"
 )
+
 constraints <- list(
   xep1 =  rbind(
     "(Intercept)" = c(lower = -Inf, upper = Inf, parscale = 5),
@@ -232,9 +252,44 @@ par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FAL
   xaxp = c(0, 1, 5), xaxs = "r", xaxt = "s", xpd = FALSE, yaxp = c(0, 1, 5),
   yaxs = "r", yaxt = "s", ylbias = 0.2)
 
+# parameters for generating example carcass data sets
+# these are not stored in the package database but are used to create data sets
+# that are
+dist_d = "gamma"
+dparm = c(f50 = 0.6, f100 = 0.9)
+dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){
+   max(abs(pgamma(50, shape = x[1], scale=x[2]) - dparm["f50"]),
+       abs(pgamma(100, shape = x[1], scale = x[2]) - dparm["f100"]))
+})$par)
+ncarc = 200
+set.seed(20201112)   # 20201111 leads to awful data set
+r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2]) # distance
+theta <- runif(ncarc) * 2 * pi # angle
+# create carcass data frame for polygons:
+turc <- sample(unique(layout_polygon$turbine), size = ncarc, replace = T)
+# check whether the given distance was searched at the given turbine;
+# if not, throw it out
+tmpind <- numeric(ncarc)
+for (ti in unique(turc)){
+  i <- which(turc == ti)
+  tmpind[i] <- splancs::inout(splancs::as.points(r[i] * cos(theta[i]), r[i] * sin(theta[i])),
+    layout_polygon[layout_polygon$turbine == ti, ])
+}
+i <- which(tmpind == 1)
+carcass_polygon <- data.frame(turbine = turc[i], r = round(r[i], 1),
+  stringsAsFactors = FALSE)
+
+sieve_default <- list(
+  aic = 10,
+  hin = T,
+  rtail = c(p80 = 0.50, p120 = 0.90, p150 = 0.95, p200 = 0.99),
+  ltail = c(p20 = 0.50, p50 = 0.90)
+)
+
 usethis::use_data(
   cof_name,
   constraints,
+  carcass_polygon,
   layout_polygon,
   layout_simple,
   mod_all,
@@ -245,5 +300,5 @@ usethis::use_data(
   natural,
   par_default,
   parm_name,
-  internal = FALSE, overwrite = TRUE
-)
+  internal = FALSE, overwrite = TRUE)
+

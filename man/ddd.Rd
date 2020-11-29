@@ -3,84 +3,137 @@
 \name{ddd}
 \alias{ddd}
 \alias{pdd}
-\alias{rcd}
 \alias{qdd}
-\title{Function to mimic dnorm, dexp, etc. for \code{dd} models}
+\alias{rdd}
+\alias{rcd}
+\title{Calculate Probability Functions for Distance Distributions}
 \usage{
-ddd(x, model, extent = "full", zrad = 150)
+ddd(x, model, extent = "full", zrad = 200)
 
-pdd(x, model, extent = "full", zrad = 150)
+pdd(q, model, extent = "full", zrad = 200)
 
-rcd(x, model, extent = "full", zrad = 150)
+qdd(p, model, extent = "full", zrad = 200, subdiv = 1000)
 
-qdd(p, model, extent = "full", zrad = 150, subdiv = 1000)
+rdd(n, model, extent = "full", zrad = 200, subdiv = 1000)
+
+rcd(x, model, extent = "full", zrad = 200)
 }
 \arguments{
-\item{x}{numeric x >= 0}
+\item{x, q, p, n}{numeric, \eqn{x \ge 0}}
 
-\item{model}{either a \code{dd} object or the name of a distance model
-(e.g., "xep01").}
+\item{model}{either a \code{dd} object or a \code{ddSim} object}
 
-\item{extent}{"full" or "win" to account for all carcasses or only those
-within the search radius.}
+\item{extent}{for a full distribution extrapolated beyond the search radius
+to account for all carcasses, use \code{extent = "full"}; for a distribution
+restricted solely to carcasses falling within the search radius, use
+\code{extent = "win"}.}
 
-\item{parms}{scalar, vector, or array of parameters. Or if \code{x} is a
-\code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}
- uses the MLE parameters found in the \code{dd} object.}
+\item{zrad}{the distance at which carcass density is assumed to be zero; to
+be used only in simulation reps in which simulated parameters do not yield
+extensible distributions, essentially returning 0 rather than NA for those
+pathological cases.}
 
-\item{srad}{the radius to use for truncated distributions
-(\code{srad = NULL} to use full, non-truncated distribution)}
-
-\item{x}{numeric x >= 0}
-
-\item{model}{either a \code{dd} object or the name of a distance model
-(e.g., "xep01").}
-
-\item{parms}{scalar, vector, or array of parameters. Or if \code{x} is a
-\code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}
-uses the MLE parameters found in the \code{dd} object.}
-
-\item{x}{numeric x >= 0}
-
-\item{model}{either a \code{dd} object or a set of simulated parameters
-(i.e., a \code{ddSim} object)}
-
-\item{srad}{the radius to use for truncated distributions
-(\code{srad = NULL} to use full, non-truncated distribution)}
+\item{subdiv}{if the number of values to calculate with \code{rdd} or \code{qdd}
+is >1 , the function uses breaks the PDF into \code{subdiv} subdivisions and
+interpolates to solve the inverse. More subdivisions gives greater accuracy
+but is slower.}
 }
 \value{
-vector of PDF values. If \code{srad = NULL} and a full distribution
- is used, the length of the output is equal to the maximum of the length of
- \code{x} and the number of parameter sets are included in \code{model} (i.e.
- 1 if \code{model} is a \code{dd} object, or \code{nrow(model)} if
- \code{model} is a \code{ddSim} object. If a truncated distribution is to be
- used, then \code{length(x) = 1} or the number of parameter sets must be 1
- (which occurs if \code{model} is a \code{dd} object or \code{nrow(model) = 1}
- if \code{model} is a \code{ddSim} object.
-
-answer
-
-vector or array of \code{rcd} values for every parameter set and
- distance. If there is only one parameter set (e.g., if \code{model} is a
- \code{dd} object), then the function returns a vector representing the
- \code{rcd} for each distance in \code{x}. If \code{model} is a \code{ddSim}
- object, then the function returns an array, with each column representing
- the vector \code{rcd(x)} values for all distances for a single parameter set,
- and the rows representing the \code{rcd} values for all parameter sets at a
- given distance. NOTE: \code{PDF(0)/0} is dengenerate in R, and \code{rcd}
- approximates x < 0.001 with x = 0.001 to streamline the calculations.
+vector or matrix of values; a vector is returned unless \code{model} 
+ is a \code{ddSim} object with more than one row and is to be calculated for
+ more than one value (\code{x}, \code{q}, \code{p}), in which case an array 
+ with dimensions \code{length(x)} by \code{nrow(model)} is returned (where 
+ "\code{x}" is \code{x}, \code{q}, or \code{p}, depending on whether \code{ddd},
+ \code{pdd}, or \code{qdd} is called).
 }
 \description{
-Function to mimic dnorm, dexp, etc. for \code{dd} models
-
-Function to mimic pnorm, pexp, etc. but
-
-Function to calculate relative carcass densities
+Calculate the standard d/p/q/r family of R probability functions for distance
+distributions (\code{\link[=ddFit]{dd}}) as well as the relative carcass 
+density (\code{rcd}). Usage broadly parallels that of the d/p/q/r probability 
+functions like \code{\link[=stats]{dnorm}}, \code{pnorm}, \code{qnorm}, and 
+\code{rnorm}.
 }
 \details{
-\code{rcd} gives relative carcass densities at a point \code{x}
- meters from a turbine. In general, rcd is proportional to PDF(x)/x,
- normalized so that the surface of rotation of rcd(x) has total area of 1.
- There are more stringent contstraints on the allowable parameters in the
- fitted (or simulated) glm's because the integral of PDF(x)/x must converge.
+The probability density function (PDF(\emph{x}) = \emph{f}(\emph{x}) = \code{ddd(x, ...)}) 
+gives the probability that a carcass falls in a 1 meter ring centered at the 
+turbine and with an outer radius of \code{x} meters. The cumulative distribution 
+function [CDF(\emph{x}) = \emph{F}(\emph{x}) = \code{ddd(x, ...)}] gives the 
+probability that a carcass falls within \code{x} meters from the turbine. For 
+a given probability, \code{p} the inverse CDF [\code{qdd(p,...)}] gives the 
+\code{p} quantile of carcass distances. For example, \code{qdd(0.5,...)} 
+gives the median carcass distance, and \code{qdd(0.9, ...)} gives the radius 
+that 90\% of the carcasses are expected to fall in. Random carcass distances 
+can be generated using \code{rdd}.
+
+The relative carcass density function(\code{rcd}) gives relative carcass 
+densities at a point \code{x} meters from a turbine. In general, rcd is 
+proportional to PDF(x)/x, normalized so that the surface of rotation of rcd(x) 
+has total area of 1. There are more stringent contstraints on the allowable 
+parameters in the fitted (or simulated) glm's because the integral of PDF(x)/x 
+must converge.
+
+Distributions may be extrapolated beyond the search radius to account for all
+carcasses, including those that land beyond the search radius 
+(\code{extent = "full"}), or may be restricted to carcasses falling within the
+searched area (\code{extent = "win"}). Typically, in estimating \code{dwp} for
+a fatality estimator like \code{eoa} or \code{GenEst}, the full distributions
+would be used.
+   
+The probability functions have a number of purposes. A few of the more commonly
+used are listed below.
+\describe{
+ \item{PDF and CDF (\code{ddd} and \code{pdd}):}{
+  \itemize{
+   \item{to calculate the probability that carcass lands at a distance
+    \code{x} meters from the turbine (or, more precisely, within 0.5 meters of 
+    \code{x}) or within \code{x} meters from the turbine, use a scalar value
+    of \code{x} and a single model (\code{\link[=ddFit]{dd}} or \code{\link{ddSim}})
+    with \code{ddd} or \code{pdd}, repspectively;}
+   \item{to account for uncertainty in the probabilities at \code{x}, use 
+    \code{ddd} or \code{pdd} for with scalar \code{x} and a simulated set of
+    parameters from the fitted model (\code{\link{ddSim}} object). This would 
+    be useful for calculating confidence intervals for the probabilities;}
+   \item{to calculate probabilities for a range of \code{x} values according 
+    to a single model, use a vector \code{x} with a \code{\link[=ddFit]{dd}} object or 
+    a \code{\link{ddSim}} object with one row. This would be useful for 
+    drawing graphs of PDFs or CDFs;}
+   \item{to calculate simulated probabilites for a range of \code{x} values,
+    use a vector \code{x} and a \code{ddSim} object of simulated parameter sets.
+    This would be useful for drawing confidence regions around a fitted PDF or
+    CDF.}
+ }}
+ \item{Inverse CDF (\code{qdd}):}{
+  \itemize{
+   \item{to calculate the distance that 100\code{p}\% of the carcasses are 
+    expected to fall, use a scalar \code{p} in the interval (0, 1) and a 
+    single model (\code{\link[=ddFit]{dd}}) or parameter set (\code{\link{ddSim}} with
+    one row);}
+   \item{to calculate account for the uncertainty in estimating the inverse 
+    CDF for a given \code{p}, use a scalar \code{p} and a \code{\link{ddSim}}
+    object. This would be useful for calculating a confidence interval for,
+    say, the median or the expected 90th percentile of carcass distances;}
+   \item{to calculate the inverse CDF for a range of probabilities for a single
+    model, use a vector \code{p} and a single model (\code{\link[=ddFit]{dd}} or 
+    \code{\link{ddSim}} object with one row.}
+  }  
+ }
+ \item{Random Carcasses Distances (\code{rdd}):}{
+   \itemize{
+    \item{to generate \code{n} random carcass distances for a given (fixed)
+     model, use a \code{\link[=ddFit]{dd}} object or a \code{\link{ddSim}} object with
+     a single row;}
+    \item{to generate \code{n} random carcass distances for a model and account
+     for the uncertainty in estimating the model, use a \code{\link{ddSim}} 
+     object with \code{n} rows, where \code{n} is also used as the \code{n}
+     argument in the call to \code{rdd}.}
+   }
+ }
+ \item{Relative Carcass Density (per m^2):}{
+   \itemize{
+    \item{to calculate the relative carcass density at a number of distances,
+     use a vector \code{x}. This would be useful in generating maps of carcass
+     density at a site.}
+   }
+ }
+}
 }

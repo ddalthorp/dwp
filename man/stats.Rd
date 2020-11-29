@@ -3,11 +3,17 @@
 \name{stats}
 \alias{stats}
 \alias{stats.dd}
-\title{Display a Table of Summary Statistics}
+\alias{stats.ddArray}
+\alias{stats.ddArraycc}
+\title{Display a Tables of Summary Statistics for Distance Distributions}
 \usage{
 stats(x, ...)
 
-\method{stats}{dd}(x, extent = "full", zrad = 150, ...)
+\method{stats}{dd}(x, extent = "full", zrad = 200, ...)
+
+\method{stats}{ddArray}(x, extent = "full", zrad = 200, ...)
+
+\method{stats}{ddArraycc}(x, extent = "full", zrad = 200, ...)
 }
 \arguments{
 \item{x}{list of models (\code{ddArray}) or single model (\code{dd}) to calculate summary statistics for}
@@ -22,8 +28,13 @@ stats(x, ...)
 \value{
 list (or list of lists if \code{x} is \code{ddArray}) with \code{$model}
  giving the model parameters and \code{$stats} giving the median, and 75th,
- 90th, and 95th quantiles of carcass distances
+ 90th, and 95th quantiles of carcass distances and the estimated probability
+ a carcass falls within the search area according to each model
 }
 \description{
-Display a Table of Summary Statistics
+Calculate summary statistics for a single distance distribution 
+(\code{\link[=ddFit]{dd}} object), an array of distance distributions all fit to the
+same data set (\code{\link[=ddFit]{ddArray}}), or a list of arrays of distance 
+distributions fit for different carcass classes but the same site layout
+(\code{\link[=ddFit]{ddArraycc}}).
 }

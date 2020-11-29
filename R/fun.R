@@ -1,56 +1,136 @@
-#' Create a Data Structure or "Map" for the Site Layout
-#' @description Read shape files for search area polygons, turbine locations,
-#'  and carcass discovery locations. If there is more than 1 turbine, there must
-#'  be a turbine ID column (\code{unitCol}) in each of the files. The individual
+#' Create a Data Structure or Map for the Site Layout
+#'
+#' @description Read and do premliminary error-checking and formatting of search
+#'  plot layout data. Search plot layout data can come in any of several different
+#'  formats, including shape files for search area polygons and turbine locations,
+#'  R polygons, (x, y) coordinates, or simple description of search plot type for
+#'  each turbine (square, circular, road & pad). A vector of distances along with
+#'  a search radius is also accommodated by \code{dwp}, but these can be directly
+#'  processed in \code{\link{prepRing}} without preprocessing in \code{initLayout}.
+#' @param data_layout Either the name of a shape file (polygons or multipolygons)
+#'  that delineates areas searched at each turbine; a .csv file with R polygons,
+#'  (x, y) coordinates, or simple descriptions of search parameters at each turbine;
+#'  or a data frame with r polygons, (x, y) coordinates, or simple plot layout
+#'  descriptions. See "Details" for details.
+#' @param dataType An identifier for the type of data to be imported: \code{"shape"},
+#'  \code{"polygon"}, \code{"xy"}, or \code{"simple"}. If \code{data_layout} is
+#'  the name of a shape file, the \code{dataType = "shape"} identifier is optional.
+#' @param unitCol Column name for turbine IDs. If \code{file_turbine} is the name
+#'  of a shape file, then \code{file_turbine} must also be provided, giving
+#'  turbine locations. The \code{unitCol} must be present in \code{data_layout}
+#'  and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
+#'  must be syntactically valid R names (see Details below).
+#' @param file_turbine The name of a shape file (points) giving the turbine
+#'  locations  for turbines listed in the \code{unitCol} column in the
+#'  \code{data_layout}. \code{file_turbine} is required for shape files and
+#'  not required (and is ignored) for other data types.
+#' @param radCol for \code{dataType = "simple"} layouts: the name of the column in
+#'  \code{data_layout} that gives the search radius for each turbine
+#' @param shapeCol for \code{dataType = "simple"} layouts: the name of the column in
+#'  \code{data_layout} that gives the plot shape for each turbine.
+#' @param padCol for \code{dataType = "simple"} layouts: the name of the column in
+#'  \code{data_layout} that gives the radius of the turbine pad
+#' @param roadwidCol for \code{dataType = "simple"} layouts: the name of the column in
+#'  \code{data_layout} that gives the width of the turbine access road(s)
+#' @param nRoadCol for \code{dataType = "simple"} layouts: the name of the column in
+#'  \code{data_layout} that gives the number of turbine access roads at each turbine
+#' @param xCol for \code{dataType = "xy"} layouts: the name of the column in
+#'  \code{data_layout} that gives \code{x} coordinates on the grid
+#' @param yCol for \code{dataType = "xy"} layouts: the name of the column in
+#'  \code{data_layout} that gives \code{y} coordinates on the grid
+#' @param scCol for \code{dataType = "xy"} layouts: the name of column in data_layout
+#'  with names of search classes. This is used for excluding unsearched areas
+#'  from the grid data (x, y). It is used ONLY with \code{dataType = "xy"} and
+#'  used to remove rows with \code{x[, scCol] == notSearched}, where \code{x}
+#'  is the search grid data frame.
+#' @param notSearched for \code{dataType = "xy"} layouts: the name(s) of search class(es)
+#'  in \code{scCol} that are not searched. Ignored for data types other than
+#'  \code{xy}.
+#' @param quiet boolean for controlling whether progress of calculations and other
+#'  notes are printed to the console as the function runs
+#'
+#' @details All the layout types (except for vector, which is addressed elsewhere)
+#'  can accommodate patterns of seached and not searched areas. If the searched
+#'  areas are subdivided into different search classes with different detection
+#'  probabilities, then search plot layout data must be input either from shape files
+#'  with non-intersecting polgons delineating the search classes or from x-y grid
+#'  data. If there is more than one search class variable (for example, ground
+#'  cover and search schedule), then the covariates may be entered in separate
+#'  columns if the layout files give grid coordinates or may be combined into
+#'  one column in the shape files. For example, ground visibility may be easy or
+#'  difficult and search schedule may be 1-day or 14-day. These can be combined
+#'  into a single column with values of, say, \code{easy1}, \code{easy14},
+#'  \code{difficult1}, and \code{difficult14}.
+#'
+#'  There must be a turbine ID column (\code{unitCol}) in each of the files. The individual
 #'  turbine ID's must be syntactically valid R names, i.e., contain combinations
 #'  of letters, numbers, dot ( . ), and underscores ( _ ) only and not begin with
 #'  a number or a dot followed by a number. Other characters are not allowed: no
-#'  spaces, hyphens, parentheses, etc. All three shape files (search area
-#'  polygons, turbine locations, carcass discovery locations) must have their
-#'  three standard component files (.shp, .shx, .dbf) stored in the same folder.
-#' @param data_layout name of a shape file (polygons or multipolygons) that
-#'  delineates areas searched at each turbine. Search areas may be defined for
-#'  any number of search classes (associated with different detection
-#'  probabilities) and turbines. Search classes are listed the \code{scVar}
-#'  column and turbine IDs are specified in the (\code{unitCol}) column. If a
-#'  \code{unitCol} is provided (required if the site consists of more than one
-#'  turbine), each turbine should have a syntactically valid name. Search class
-#'  polygons at each turbine should be non-intersecting; otherwise, the function
-#'  exits with an error.
-#' @param file_CO name of a shape file (points) for carcass observations
-#'  containing carcass discovery locations. If a \code{unitCol} name is provided,
-#'  turbine IDs must be provided for  carcass discoveries. Search classes are
-#'  optional.
-#' @param file_turbine a shape file (points) giving the locations of the turbine
-#'  centers for turbines listed in the \code{unitCol} column in the \code{data_layout}
-#' @param unitCol (optional) column name for turbine IDs. If a \code{unitCol} is
-#'  provided, a \code{file_turbine} with the turbine centers must also be
-#'  provided and the \code{unitCol} must be present in \code{file_turbine},
-#'  \code{data_layout}, and \code{file_CO}. Turbine IDs in the \code{unitCol}
-#'  must be syntactically valid R names (see Description above).
-#' @param scCol name of column in data_layout with names of search classes. This
-#'  is used for excluding unsearched areas from the grid data (x, y). It is used
-#'  ONLY with \code{dataType = "xy"} and used to remove rows with
-#'  \code{x[, scCol] == notSearched}, where \code{x} is the search grid data frame.
-#' @param notSearched a companion to \code{scCol} for removing unsearched areas
-#'  from the search grid.
-#' @param dcCol a categorical interacting class variable with levels of factors
-#'  that may affect the distribution of carcasses, for example turbine size, wind
-#'  regime, operational constraints (like curtailment).
-#' @return A \code{shapeLayout} object, which is a list with spatial
-#'  characteristics of the site, including
+#'  spaces, hyphens, parentheses, etc.
+#'
+#'  If shape files are to be imported, both shape files (search area polygons and
+#'  turbine locations) must have their three standard, mandatory component files
+#'  (.shp, .shx, .dbf) stored in the same folder. Only the name of the .shp should
+#'  be entered in the function call. Other components are automatically searched
+#'  for and processed if available.
+#'
+#' @return A list or data frame with components appropriate to the type of data
+#'  imported. The data structure is returned as an S3 class object, which other
+#'  functions in \code{dwp} can recognize and properly process. There is minimal
+#'  processing on the data after importing, but the structures are lightly error-checked
+#'  and formatted for more thorough processing, depending on data type and analysis
+#'  objectives. Typically, the layout data will be later processed by a call to
+#'  \code{\link{prepRing}} to create a characterization of the searched area at 
+#'  the site by "rings", with tallies of searched area, search classes, and 
+#'  fraction of area searched in concentric, 1 meter rings around each turbine. 
+#'  The format of the output depends on the format of the input. There are 
+#'  several possibilities, including, each of which is an S3 object with 
+#'  characteristics specific to the imported data:
 #'  \describe{
-#'    \item{\code{$layout}}{turbine search area configurations (polygons and multipolygons)
-#'      from \code{data_layout} shape file as an \code{sf} object.}
-#'    \item{\code{$layoutAdj}}{polygons from \code{$layout} but all recentered at (0, 0)}
-#'    \item{\code{$turbines}}{turbine centers (as \code{sf} object)}
-#'    \item{\code{$carcasses}}{carcass discovery locations along with (optional)
-#'      incidental information (turbine, visibility class, species,)}
-#'    \item{\code{$unitCol, $ncarc, $tset, $tcenter}}{name of the column with turbine IDs
-#'      (\code{$unitCol}, character string), number of carcasses found at each turbine
-#'      (\code{$ncarc}, vector), turbine names (\code{$tset}, vector of character strings),
-#'      locations of turbine centers (\code{$tcenter}, nturb by 2 array) UTMs of
-#'      turbine centers, extracted and simplified from \code{$turbines}}
+#'    \item{\code{shapeLayout}}{S3 object and list with elements:
+#'      \itemize{
+#'        \item \code{$layout} = turbine search area configurations (polygons 
+#'          and multipolygons) from \code{data_layout} shape file as an 
+#'          \code{\link[sf]{sf}} object.
+#'        \item \code{$layoutAdj} = polygons from \code{$layout} but recentered at (0, 0)
+#'        \item \code{$turbines} = turbine data (as \code{\link[sf]{sf}} object)
+#'        \item \code{$unitCol} = name of the column with turbine IDs (character string)
+#'        \item \code{$tset} = turbine names (vector of character strings)
+#'        \item \code{$tcenter} = locations of turbine centers (nturb by 2 array)
+#'          with UTMs of turbine locations, extracted and simplified from
+#'          \code{$turbines}. Column names are \code{X} and \code{Y}, measuring
+#'          meters from a reference point. Row names are the names of the turbines.
+#'      }
+#'    }
+#'    \item{\code{simpleLayout}}{S3 object and data frame with columns:
+#'      \itemize{
+#'        \item \code{turbine} = turbine IDs (syntactically valid R names)
+#'        \item \code{radius} = search radius. If \code{shape = "square"}, then
+#'          radius is 1/2 the width of the square, NOT the diagonal.
+#'        \item \code{shape} = general descriptor of the shape of the search plot
+#'        \item \code{padrad} = radius of the turbine pad (assumed circular)
+#'        \item \code{roadwidth} = width of the access road(s)
+#'        \item \code{n_road} = number of access roads
+#'      }
+#'    }
+#'    \item{\code{polygonLayout}}{
+#'      S3 object and list of polygons, one for each turbine. The maximum search
+#'      radius at any turbine is assigned as an attribute (\code{attr(, "rad")}).
+#'    }
+#'    \item{\code{xyLayout}}{S3 object and list with elements:
+#'      \itemize{
+#'        \item \code{xydat} = data frame with columns for turbine names, x and y
+#'          coordinates of 1m grid centers spanning the searched area, number of
+#'          carcasses found in each grid cell, and optional covariates.
+#'        \item \code{tcenter} = matrix giving turbine locations (\code{x, y}), with
+#'          row names = turbine names.
+#'        \item \code{ncarc} = vector giving the number of carcasses found at each
+#'          turbine.
+#'        \item \code{unitCol} = name of the column where turbine IDs are stored in
+#'          \code{xydat}.
+#'        \item \code{tset} = names of the searched turbines
+#'      }
+#'    }
 #'  }
 #' @export
 initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
@@ -59,7 +139,7 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     scCol = NULL, notSearched = NULL, quiet = FALSE){
   # traffic directing
   dataType <- tolower(dataType)
-  if (dataType == "gis" || (length(data_layout) == 1 &&
+  if (dataType == "shape" || (length(data_layout) == 1 &&
       is.character(data_layout) && grepl(".shp", data_layout))){
     plotLayout <- sf::st_read(data_layout, stringsAsFactors = FALSE, quiet = quiet)
     plotLayout0 <- sf::st_drop_geometry(plotLayout) # easier quick subsetting
@@ -154,7 +234,7 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     names(slayout)[match(roadwidCol, names(slayout))] <- "roadwidth"
     names(slayout)[match(nRoadCol, names(slayout))] <- "n_road"
     attr(slayout, "srad") <- ceiling(max(srad))
-    attr(slayout, "colnm") <- colnm
+    attr(slayout, "unitCol") <- unitCol
     class(slayout) <- c("simpleLayout", "data.frame")
     return(slayout)
   } else if (dataType == "polygon"){
@@ -245,15 +325,34 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
   }
 }
 
-
-#' different types of data but all end up in the same place: list of arrays by
-#'  (by turbine) with r, x, y, scVar
-#' @param rCol column for carcass distances from turbine
+#' Import Carcass Observations Locations from Shape Files
+#'
+#' Carcass coordiates (x, y) and turbine IDs are read using sf::st_read and
+#' formatted for adding to \code{rings} data structures for analysis.
+#'
+#' @param file_cod name of the file with carcass observation data. Currently, the
+#'  function requires a shape file, which gives the carcass locations on the same
+#'  coordinate system that is used for the turbines. The geometry is a simple
+#'  features points file, consisting of at least the three mandatory files standard
+#'  components (.shp, .shx, .dbf) stored in the same directory. Only the name of the
+#'  .shp is required (for example, \code{file_cod = "carcasses.shp"}). Other
+#'  components are automatically searched for and processed if available.
+#' @param unitCol name of column with turbine IDs. Column name and turbine IDs
+#'  must match those of the \code{data_layout} and \code{file_turbine} used in
+#'  the call to \code{\link{initLayout}}.
+#' @param quiet boolean for directing the function to print calculation progress
+#'  updates and messages to the console. This should be set to \code{FALSE} unless
+#'  you know clearly why you want to turn off the messaging.
+#'
+#' @return a \code{shapeCarcass} object, which is a list with \code{$carcasses},
+#'  which is a \code{sf} representation of the shape file \code{file_cod} data;
+#'  \code{$unitCol}, which is the name of the unit column; and \code{$ncarc}, which
+#'  is a vector of carcass counts at the turbines listed in \code{unitCol}. The
+#'  elements of the \code{$ncarc} are named by turbines at which they were found.
+#'
 #' @export
 readCarcass <- function(file_cod, unitCol = "turbine", quiet = FALSE){
   if (grepl(".shp", file_cod)){
-#    if (is.null(file_turbine))
-#      stop("readCarcass with shape files must include a file_turbine")
     carcasses <- sf::st_read(file_cod, stringsAsFactors = FALSE, quiet = quiet)
     carcasses0 <- sf::st_drop_geometry(carcasses)
     if (!unitCol %in% names(carcasses))
@@ -287,8 +386,69 @@ readCarcass <- function(file_cod, unitCol = "turbine", quiet = FALSE){
   }
 }
 
+#' Format a Search Layout into Rings for Analysis
+#'
+#' A function for creating a characterization of the search plot at each turbine by
+#'  rings. The ground around each turbine is divided into 1 meter concentric rings
+#'  out to the limit of the search plot. The amount of area searched in each ring
+#'  and search class (if a search class column is present in the data) at each
+#'  turbine is calculated, along with the fraction of area searched in each ring.
+#'  In addition, sum totals of the area in each ring and the average fraction of
+#'  the area searched in each ring across all turbines at the site are tallied as well.
+#'  This is a convenient structure for the Poisson regressions that are used to
+#'  estimate the carcass distributions with respect to distance from the turbines,
+#'  the probabilities of carcasses landing in the searched areas, and the fraction
+#'  of carcasses in the searched area.
+#'
+#' @param x a search plot layout as imported and processed by 
+#'  \code{\link{initLayout}} into a \code{shapeLayout}, \code{polygonLayout}, or 
+#'  \code{simpleLayout} object, or a bare vector of carcass distances if search 
+#'  plots are all circular with the same radius and no unsearched area within 
+#'  the search radius.
+#' @param scVar name of the search class variable (optional), a column in the
+#'  shape file for the search polygons. \code{scVar} is ignored if \code{x} is not
+#'  a \code{shapeLayout} object.
+#' @param notSearched name of the search class(es) in \code{scVar} that represent
+#'  unsearched areas. Applicable only if \code{x} is a \code{shapeLayout} object
+#'  and \code{scVar} is provided. Polygons associated with \code{scVar} values in
+#'  \code{notSearched} are not included in the rings characterization of the site.
+#'  Also, turbines with no polygons that are not \code{notSearched} are not included
+#'  in the rings.
+#' @param silent Processing shape files into rings may take several minutes. By
+#'  default, \code{prepRing} prints periodic notice of the progress of the
+#'  calculations for shape files. To suppress these notices, use 
+#'  \code{silent = TRUE}.
+#' @param srad search radius for data when \code{x} = bare vector of carcass
+#'  observation distances.
+#' @param ... ignored
+#' @return an object of class \code{rings}, which is a list with components
+#'  \describe{
+#'    \item{\code{$rdat}}{list of data frames giving the area searched 
+#'      (\code{"exposure"}), in a 1 meter ring with outer radius \code{"r"} and 
+#'      the number of carcasses found \code{"ncarc"} in each ring, with search 
+#'      class \code{scVar} optional. There is also a summary data frame 
+#'      \code{$rdat[["total"]]} that sums the exposures and carcass counts for 
+#'      all turbines across the site. The \code{$rdat[["total"]]} is the data 
+#'      frame used in fitting the GLMs.}
+#'    \item{\code{$rpA}}{list of data frames giving the proportion of area 
+#'      included in the searches (\code{"pinc"}) in each ring (\code{"r"}). and 
+#'      the number of carcasses found \code{"ncarc"} in each ring, with search 
+#'      class \code{scVar} optional. There is also a summary data frame that 
+#'      sums the exposures and carcass counts for all turbines across the site. 
+#'      The \code{$rpA} data frames are used in estimating the probability of 
+#'      carcasses falling in the searched area at each turbine, which, in turn 
+#'      is used for calculating \code{dwp}}
+#'    \item{\code{$srad}}{the maximum search radius at any of the turbines}
+#'    \item{\code{$ncarc}}{vector of the number of carcasses at each turbine with
+#'      names equal to the turbine names.}
+#'    \item{\code{$scVar}}{name of the search class variable(s) or \code{NULL}}
+#'    \item{\code{$tcenter}}{locations of turbine centers (nturb x 2 matrix) with
+#'      UTMs of turbine locations. Column names are \code{X} and \code{Y}. Row
+#'      names are the names of the turbines.}
+#'  }
+#'
 #' @export
-prepRing<- function(x, ...) UseMethod("prepRing", x)
+prepRing <- function(x, ...) UseMethod("prepRing", x)
 
 #' @rdname prepRing
 #' @export
@@ -384,7 +544,7 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
       }
     }
   }
-
+  class(rdat) <- "rdat"
   ## search coverage probability by ring and turbine
   rpA <- lapply(rdat, FUN = function(x) aggregate(exposure ~ r, x, FUN = sum))
   for (ti in names(rpA)){
@@ -420,20 +580,11 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   return(output)
 } # prepRing.shapeLayout
 
-#' Prepare Ring Data for Data Frames of Simple Turbine Layouts
-#' @param x a data frame with simple characterizations of turbines
-#' @param cod carcass observation distances. Data frame with columns for
-#'  distances that carcasses were found at and which turbines. If \code{cod = NULL},
-#'  an empty template is created for carcass with descriptions of the turbines
-#'  (i.e., \code{r}, \code{exposure}, \code{ncarc}, \code{pinc}), and (optional)
-#'  \code{scVar}. A separate function can then be used to add carcasses distances later. This setup allows for easier
-#'  simulation of carcasses counts using the predefined template for turbines.
-#'  A "total" is added for the site...sums the carcasses and exposures
-#' @param (optional) data frame or vector with carcass distances and turbine names
+
 #' @rdname prepRing
 #' @export
 #'
-prepRing.simpleLayout <- function(x){
+prepRing.simpleLayout <- function(x, ...){
   rdat <- list()
   rpA <- list()
   rownames(x) <- x$turbine
@@ -475,9 +626,10 @@ prepRing.simpleLayout <- function(x){
   rpA[["total"]] <- totA
   class(rpA) <- "rpA"
   rdat[["total"]] <- totr
+  class(rdat) <- "rdat"
   # cull the rows with radii beyond the edge
   ncarc <- numeric(nrow(x) + 1)
-  names(ncarc) <- c(x[, unitCol], "total")
+  names(ncarc) <- c(x[, "turbine"], "total")
   output <- list(rdat = rdat, rpA = rpA, srad = srad, ncarc = ncarc, scVar = NULL)
   class(output) <- "rings"
   return(output)
@@ -487,7 +639,7 @@ prepRing.simpleLayout <- function(x){
 #' @export
 #'
 prepRing.numeric <- function(x, srad, ...){
-  if (!is.vector(dim(x))) stop("x must be a vector in prepRing.numeric")
+  if (!is.vector(x)) stop("x must be a vector in prepRing.numeric")
   if (!is.numeric(srad) || length(srad) != 1 || srad <= 1)
     stop("srad must be numeric scalar > 1")
   srad <- ceiling(srad)
@@ -500,6 +652,7 @@ prepRing.numeric <- function(x, srad, ...){
   rdat[["total"]]$ncarc[as.numeric(names(tbl))] <- unname(tbl)
   rpA[["total"]] <- data.frame(r = r, pinc = 1)
   class(rpA) <- "rpA"
+  class(rdat) <- "rdat"
   output <- list(rdat = rdat, rpA = rpA, srad = srad, ncarc = length(rvec),
     scVar = NULL)
   class(output) <- "rings"
@@ -542,7 +695,9 @@ prepRing.polygonLayout <- function(x, ...){
   rpA[["total"]] <- Atot
   rpA[["total"]][, "pinc"] %<>% `/` (., length(x))
   rpA <- lapply(rpA, round, 4)
+  rpA <- lapply(rpA, FUN = function(ti) ti[ti[, "pinc"] > 0, ])
   class(rpA) <- "rpA"
+  class(rdat) <- "rdat"
   ncarc <- numeric(length(rdat))
   names(ncarc) <- names(rdat)
   output <- list(rdat = lapply(rdat, round, 4), rpA = rpA,
@@ -554,15 +709,11 @@ prepRing.polygonLayout <- function(x, ...){
 
 #' Fit Distance Distribution Model(s)
 #'
-#' @description Fit glm's for distance distribution models corresponding to
-#'  xep01 (gamma), xep012, lognormal, xep1, xep12, xep123, truncated normal,
-#'  exponential, xep2 (Rayleigh), xep0 (Pareto), xepi0 (inverse gamma), xep0123
-#'  (normal gamma with x = tau), Maxwell Boltzmann, chi-squared, and/or inverse
-#'  Gaussian distributions. By default, \code{ddFit} fits all the aforementioned
-#'  models, but any subset of the models may be fit as well by using, for example,
-#'  \code{model = exclude(c("xep123", "constant"))} to fit all except the
-#'  \code{"xep123"} and \code{"constant"} models or \code{model = c("xep01", "lognormal")}
-#'  to fit just the \code{"xep01"} and \code{"lognormal"} models.
+#' @description Fit glm's for distance distribution models corresponding to standard
+#'  forms [xep1, xep01 (gamma), xep2 (Rayleigh), xep02, xep12, xep012, xep123,
+#'  xep0123 (normal-gamma with x = tau), lognormal,  truncated normal, Maxwell
+#'  Boltzmann, and constant] and supplentary forms [exponential, chi-squared,
+#'  inverse gamma, and inverse Gaussian].
 #'
 #'  The glm is converted to a probability distribution by dividing by a
 #'  normalizing constant, namely the integral of the glm evaluated from 0 to
@@ -570,30 +721,52 @@ prepRing.polygonLayout <- function(x, ...){
 #'  glm is positive so the fitted curve does not converge to zero as x increases),
 #   the integral does not converge to a finite value and the glm cannot be
 #'  converted to a probability distribution. In these cases, the distribution
-#'  parameters are given as \code{NA}.
+#'  parameters are given as \code{NA}, but the fitted model itself is saved.
 #'
-#' @param rdat Data frame with a tally of carcasses within 1 m rings, along
-#'  with outer radii of the rings, (optional) search class column, and the amount
-#'  of area searched in each search class and ring.
-#' @param model names (vector of character strings) of glm distribution templates
-#'  to fit. Default is \code{"all"}, which fits \code{xep01}, \code{lognormal},
-#'  \code{xep1}, \code{xep12}, \code{xep123}, \code{xepi0},
-#'  \code{xep0123}, \code{xep012}, \code{xep2}, \code{MaxwellBoltzmann}, \code{constant},
-#'  \code{tnormal}, \code{exponential}, \code{xep0}, \code{chisq}, and
-#'  \code{inverse_gaussian}. Any subset of these may also be fit with a single
-#'  call to \code{ddFit}.
-#' @param scVar name of column in \code{rdat} with (optional) subdivisions
-#'  of rings into search classes (character strings)
-#' @param rCol name of column in \code{rdat} with outer radius for 1m rings
-#' @param expoCol name of "exposure" column of total area in each ring belonging
-#'  to each search class.
+#' @param x a search plot layout object to fit carcass distribution models to. The
+#'  layout may be a data frame with columns for ring radii, exposure (or searched
+#'  area in each ring), search class variable (optional), and number of carcasses
+#'  in each ring;
+#'
+#' @param distr names (vector of character strings) of glm distribution templates
+#'  to fit. Default is \code{model = "standard"} to fit the standard models listed in the
+#'  description above. Setting \code{model = "all"} will fit both the standard
+#'  models and the supplementary models. Also, any subset of the models may be fit
+#'  by using, for example, \code{model = c("xep01", "lognormal")} to fit only
+#'  the \code{"xep01"} and \code{"lognormal"} models, or
+#'  \code{model = exclude(c("xep123", "constant"))} to fit all models except
+#'  \code{"xep123"} and \code{"constant"}, or \code{model = exclude("lognormal", mod_standard)}
+#'  to fit all standard models except the lognormal.
+#' @param scVar Search class variable to include in the model (optional). \code{scVar}
+#'  is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.
+#'  If \code{x} is a \code{shapeLayout} object, \code{scVar} may be either \code{NULL}
+#'  or the name of a single column with search class data. If \code{x} is an \code{xyLayout}
+#'  object, \code{scVar} may be either NULL or a vector of names of search class
+#'  variables to include in the models.
+#' @param notSearched the name of the level (if any) in \code{scVar} that
+#'  indicates an unsearched area
+#' @param rCol name of the distance column (which gives the outer radii of the rings).
+#'  This will be correct by default for objects coming from \code{\link{prepRing}} 
+#'  unmodified and will rarely need to be explicitly specified.
+#' @param expoCol name of the column with the exposure, which is the area in the ring
+#'  with outer radius \code{rCol}. This will be correct by default for objects
+#'  coming from \code{\link{prepRing}} unmodified and will rarely need to be 
+#'  explicitly specified.
+#' @param ncarcCol name of the column with tallies of carcasses by ring. This
+#'  will be correct by default for objects coming from \code{\link{prepRing}} 
+#'  unmodified and will rarely need to be explicitly specified.
+#' @param silent set \code{silent = TRUE} to suppress information printed to the
+#'  console as the calculations proceed. May be useful when running simulations.
+#' @param unitCol name of the column with turbine IDs
 #' @param ... ignored
 #'
-#' @return A list of fitted glm models as \code{dd} objects in a \code{ddArray}
-#'  object if a vector of distributions is fit or a single \code{dd} object if a
-#'  single model is fit. The \code{dd} objects are lists with all the standard
-#'  \code{\link[stats]{glm}} components, in addition to the following elements:
+#' @return A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a 
+#'  \code{\link[=ddFit]{ddArray}}
+#'  object if a vector of distributions is fit or a single \code{\link[=ddFit]{dd}} 
+#'  object if a single model is fit. The \code{\link[=ddFit]{dd}} objects are 
+#'  lists that include the following elements:
 #'  \describe{
+#'    \item{code{\link[stats]{glm}}}{the fitted model}
 #'    \item{\code{$distr}}{name of the distribution ("xep01", etc.)}
 #'    \item{\code{$parms}}{vector of distribution parameter estimates (or \code{NA}
 #'      if the model based on the MLE is not extensible)}
@@ -602,6 +775,7 @@ prepRing.polygonLayout <- function(x, ...){
 #'      which can be extracted via \code{summary(x)$cov.unscaled}}
 #'    \item{\code{$scVar}}{name of the (optional) search class variable (or \code{NULL})}
 #'    \item{\code{$ncarc}}{number of carcasses}
+#'    \item{\code{$aic}}{the AIC value of the fit}
 #'    \item{\code{$n}}{number of rings}
 #'    \item{\code{$k}}{number of parameters}
 #'    \item{\code{$srad}}{search radius}
@@ -609,6 +783,7 @@ prepRing.polygonLayout <- function(x, ...){
 #'  When a \code{dd} object is printed, only a small subset of the elements are
 #'  shown. To see a full list of the objects, use \code{names(x)}. The elements
 #'  can be extracted in the usual R way via \code{$} or \code{[[x]]}.
+#'
 #' @export
 #'
 ddFit <- function(x, ...) UseMethod("ddFit", x)
@@ -630,20 +805,24 @@ ddFit.data.frame <- function(x, distr = "standard", scVar = NULL, rCol = "r",
   if (identical(distr, "all")) distr <- mod_all # see parameters.r
   if (identical(distr, "standard")) distr <- mod_standard # see parameters.r
   for (di in distr){
+    output[[di]] <- list()
     form <- formula(paste0("ncarc ~ ", paste(cof_name[[di]][-1], collapse = " + "),
       scl, " + ", paste0("offset(", mod_offset[[di]], ")")))
-    output[[di]] <- suppressWarnings(glm(
+    output[[di]]$glm <- suppressWarnings(glm(
       formula = form, data = dat, family = "poisson"
     ))
     output[[di]]$distr <- di
     output[[di]]$form <- form
     output[[di]]$scVar <- scVar
-    output[[di]]$parms <- cof2parms(output[[di]]$coefficients, distr = di)
-    output[[di]]$varbeta <- summary(output[[di]])$cov.unscaled
+    output[[di]]$coefficients <- output[[di]]$glm$coefficients
+    output[[di]]$parms <- cof2parms(output[[di]]$glm$coefficients, distr = di)
+    output[[di]]$varbeta <- summary(output[[di]]$glm)$cov.unscaled
     output[[di]]$ncarc <- sum(dat$ncarc)
+    output[[di]]$aic <- output[[di]]$glm$aic
     output[[di]]$n <- nrow(dat)
-    output[[di]]$k <- output[[di]]$n - output[[di]]$df.residual
-    class(output[[di]]) <- c("dd", class(output[[di]]))
+    output[[di]]$k <- output[[di]]$n - output[[di]]$glm$df.residual
+    output[[di]]$extensible <- cofOK(output[[di]]$coefficients, di)
+    class(output[[di]]) <- "dd"
   }
   if (!silent){
     anybad <- FALSE
@@ -671,10 +850,8 @@ ddFit.data.frame <- function(x, distr = "standard", scVar = NULL, rCol = "r",
 #' @export
 ddFit.rings <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
-  arglist <- as.list(match.call())
-  arglist[[1]] <- NULL
-  arglist$x <- x$rdat$total
-  do.call(ddFit, arglist)
+  ddFit(x$rdat$total, distr = distr, scVar = scVar, rCol = rCol,
+    expoCol = expoCol, ncarcCol = ncarcCol, silent = silent)
 }
 
 #' @rdname ddFit
@@ -743,7 +920,8 @@ ddFit.xyLayout <- function(x, distr = "standard", scVar = NULL, notSearched = NU
 #'
 #' @description functions for calculating AIC and AICc for carcass dispersion
 #'  models.
-#' @param x list of models (\code{ddArray}) or single model (\code{dd}) to calculate AICs for
+#' @param x list of models (\code{\link[=ddFit]{ddArray}}) or single model 
+#'  (\code{\link[=ddFit]{dd}}) to calculate AICs for
 #' @param extent Include only the extensible models (\code{extent = "full"}) or
 #'  all models, regardless of whether they can be extended beyond the search
 #'  radius (\code{extent = "win"}).
@@ -783,6 +961,9 @@ aic.ddArray <- function(x, extent = "full", ...){
   return(output)
 }
 
+#' @rdname aic
+#' @export
+#'
 aic.ddArraycc <- function(x, extent = "full", ...){
   lapply(x, aic, extent = extent)
 }
@@ -800,21 +981,21 @@ aic.dd <- function(x, ...){
   ))
 }
 
-#'  plot dd and ddArray objects
+#'  Plot dd and ddArray Objects
+#'
 #' @description Plot CDF, PDF, or rcd (relative carcass density) for a single
-#'  carcass dispersion glm model (\code{dd} object) or a list of models
-#'  (\code{ddArray} object).
+#'  carcass dispersion glm model (\code{\link[=ddFit]{dd}} object) or a list of 
+#'  models (\code{\link[=ddFit]{ddArray}} object).
 #' @param x model(s) to plot
 #' @param type Type or representation of carcass dispersion to plot:
 #'  \code{"CDF"}, \code{"PDF"}, or \code{"rcd"}. The \code{"CDF"} gives the
 #'  fraction of carcasses falling within \code{r} meters from a turbine and
 #'  \code{"PDF"} is the associated probability density. The \code{"rcd"} gives the
 #'  relative carcass density at a point \code{r} meters from a turbine and is
-#'  PDF/(2 * \pi * r).
+#'  PDF/(2 * pi * r).
 #' @param extent Plot dispersions as fraction of total carcasses (\code{"full"})
 #'  or as fraction of carcasses within the searched area (\code{"win"}).
-#' @param set To show lines for all fitted models, use \code{set = "all"}; or
-#'  \code{set} = vector of model names to show lines for.
+#' @param distr vector of names of distributions to plot or \code{set = "all"}
 #' @param xmax maximum distance to show in the graph; if \code{xmax = NULL}, the
 #'  maximum distance is taken as the max distance in the data set to which the
 #'  models were fit.
@@ -824,23 +1005,25 @@ aic.dd <- function(x, ...){
 #' @param mod_highlight Character string giving the name of the model to
 #'  highlight by plotting it last and with \code{lwd = 2}. If \code{NULL}, the
 #'  curve associated with the lowest (best) AICc score is highlighted.
-#' @param CL confidence level to show in a \code{dd} plot (ignored for
-#'  \code{ddArray} objects)
+#' @param CL confidence level to show in a \code{\link[=ddFit]{dd}} plot (ignored 
+#'  for \code{\link[=ddFit]{ddArray}} objects)
 #' @param nsim Number of simulation reps to use for estimating confidence bounds
-#'  for \code{dd} plot (ignored for \code{ddArray} objects)
-#' @details \code{ddArray} objects are plotted with lines in order of decreasing
-#'  AICc, so that the "better" models are closer to the top and more prominent.
-#'  The model with the lowest AICc ("best" model) is plotted last with a heavier
-#'  line than the others.
+#'  for \code{\link[=ddFit]{dd}} plot (ignored for \code{\link[=ddFit]{ddArray}}
+#'  objects)
+#' @details \code{\link[=ddFit]{ddArray}} objects are plotted with lines in order 
+#'  of decreasing AICc, so that the "better" models are closer to the top and 
+#'  more prominent. The model with the lowest AICc ("best" model) is plotted 
+#'  last with a heavier line than the others.
 #'
-#'  \code{dd} plots the curve for the MLE of the parameters, along with a
-#'  100\code{CL}\% confidence bounds determined for \code{nsim} simulation reps
+#'  For \code{\link[=ddFit]{dd}} objects, the curve for the MLE of the parameters
+#'  is plotted, along with a 100\code{CL}\% confidence bounds determined for 
+#'  \code{nsim} simulation reps
 #'
-#' @name plot
+#' @rdname plot
 #' @export
 #'
 plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
-    xmax = NULL, resolution = 250, mod_highlight = NULL, par_reset = TRUE, ...){
+    xmax = NULL, resolution = 250, mod_highlight = NULL, ...){
   if (identical(distr, "all")) distr <- names(x)
   if (extent == "full")
     distr <- distr[sapply(x[distr], function(tmp) !any(is.na(tmp$parm)))]
@@ -903,7 +1086,7 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
     }
   }
   if (!"xlim" %in% names(arglist)){
-    if (is.null(xmax) || !is.finite(xmax)) xmax <- max(dd[[1]]$data[, "r"])
+    if (is.null(xmax) || !is.finite(xmax)) xmax <- max(dd[[1]]$glm$data[, "r"])
     xmin <- 0
     arglist$xlim = c(0, xmax)
   }
@@ -939,7 +1122,6 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
       arglist$ylab = "P(carcass falls within x meters from turbine)"
     if (!"ylim" %in% names(arglist)) arglist$ylim <- 0:1
     do.call(plot, arglist)
-#      plot(0, type = "n", xlim = xlim, ylim = 0:1, xlab = xlab, ylab = ylab, ...)
     for (fi in aic_proper$model[nrow(aic_proper):1])
       lines(xseq, pdd(xseq, model = dd[fi], extent = extent),
         lty = arglist$lty[fi], col = arglist$col[fi])
@@ -1033,18 +1215,22 @@ plot.dd <- function(x, type = "CDF", extent = "full",
   msg <- switch(extent, win = "limited to carcasses within search radius  ")
   if (type == "PDF"){
     lines(xseq, ddd(xseq, x, extent = extent), col = mod_color[x$distr], lwd = 2)
-    mtext(side = 3, line = -1, adj = 1, msg, family = "serif", lty = 1 + !natural[distr])
+    mtext(side = 3, line = -1, adj = 1, msg, family = "serif", lty = 1 + !natural[x$distr])
   } else {
-    lines(xseq, pdd(x = xseq, model = x, extent = extent),
+    lines(xseq, pdd(xseq, model = x, extent = extent),
       col = mod_color[x$distr], lwd = 2)
     mtext(side = 1, line = -1, adj = 1, msg, family = "serif")
   }
   box()
 }
 
-#' Simulation of dispersion parameters
+#' Simulation of Dispersion Parameters
+#'
 #' @param x object to simulate from
 #' @param nsim number of simulation draws
+#' @param extent simulate according to full distribution, including extrapolation
+#'  beyond the search radius (\code{extent = "full"}); or restrict the
+#'  distribution to the area within the search radius (\code{extent = "win"}).
 #' @param ... ignored (but required format for CRAN)
 #' @return array with simulated beta parameters from the glm model, and their
 #'  conversion to distribution parameters
@@ -1073,13 +1259,15 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
   ans <- cbind(beta_sim, cof2parms(beta_sim, distr), extensible =
     ifelse(distr %in% c("exponential", "tnormal"), 1, 2) * cofOK(beta_sim, distr))
   attr(ans, "distr") <- distr
-  attr(ans, "srad") <- max(dd$data$r, na.rm = TRUE)
+  attr(ans, "srad") <- max(dd$glm$data$r, na.rm = TRUE)
   class(ans) <- "ddSim"
   ans
 }
 
-#' Subset simulated dispersion parameters while preserving attributes
+#' Subset Simulated Dispersion Parameters while Preserving Attributes
+#'
 #' @param x object to subset
+#' @param i,j row and column indices to subset
 #' @param ... ignored (but required format for CRAN)
 #' @details Subset the ddSim object as if it were a simple matrix or array
 #' @return array with simulated beta parameters from the glm model, their
@@ -1117,10 +1305,11 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
   return(y)
 }
 
-#' Subset set of fitted dispersion models (ddArray)
+#' Subset a Set of Fitted Dispersion Models (\code{ddArray})
+#'
 #' @param x object to subset
-#' @param distr vector of names of distributions to extract from fitted models
-#' @param ... ignored (but required format for CRAN)
+#' @param distr vector of names or integer indices of distributions to extract 
+#'  from fitted models
 #' @details Subset the ddArray object as if it were a simple vector
 #' @return list of selected models with crucial statistics
 #' @export
@@ -1150,24 +1339,25 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
   return(output)
 }
 
-#' Print dd and ddArray objects
+#' Print \code{dd} and \code{ddArray} Objects
 #'
-#' @description \code{dd} objects are lists consisting of all the elements of
-#'  \code{glm} objects and several additional elements related to the distribution
-#'  and its extensibility. Only a few of the elements are printed automatically.
-#'  Others elements of object \code{x} can be viewed and extracted as with other
-#'  lists in R, namely, by using the \code{x$element} or \code{x[[element]]}
-#'  operator, where \code{element} is the name of one of the elements of
-#'  \code{x} which can be viewed via \code{names(x)}.
+#' @description \code{\link[=ddFit]{dd}} objects are lists consisting of all the 
+#'  elements of \code{glm} objects and several additional elements related to 
+#'  the distribution and its extensibility. Only a few of the elements are 
+#'  printed automatically. Others elements of object \code{x} can be viewed and 
+#'  extracted as with other lists in R, namely, by using the \code{x$element} or 
+#'  \code{x[[element]]} operator, where \code{element} is the name of one of the 
+#'  elements of \code{x} which can be viewed via \code{names(x)}.
 #'
-#' @param x a \code{dd} or \code{ddArray} object
+#' @param x a \code{\link[=ddFit]{ddArray}} or \code{\link[=ddFit]{ddArray}} object
 #' @param ... ignored
 #'
+#' @rdname print
 #' @export
 #'
 print.dd <- function(x, ...){
   cat(paste0("Distribution: ", x$distr, "\n"))
-  cat(paste0("Formula: ", deparse(x$formula), "\n\n"))
+  cat(paste0("Formula: ", deparse(x$glm$formula), "\n\n"))
   cat("Parameters:\n")
   print(x$parms)
   cat("\nCoefficients:\n")
@@ -1182,7 +1372,7 @@ print.dd <- function(x, ...){
   }
 }
 
-#' @rdname dd
+#' @rdname print
 #' @export
 print.ddArray <- function(x, ...){
   for (distr in names(x)) {
@@ -1191,18 +1381,26 @@ print.ddArray <- function(x, ...){
   }
 }
 
-#'  Calculate CI for CDF, PDF, or quantile
-#' @param mod a \code{dd} object
+#' Calculate CI for CDF, PDF, or quantile
+#'
+#' @param mod a \code{\link[=ddFit]{dd}} object
 #' @param x distance from turbine (scalar or vector) or probability (for quantile)
 #' @param type "CDF", "PDF", or "quantile"
 #' @param CL confidence level for the confidence interval(s)
 #' @param nsim number of simulation draws to base the estimate of CI on
+#' @param extent whether to calculate \code{CI} based on the full range of
+#'  possible data and extrapolating beyond the search radius
+#'  (\code{extent = "full"}) or restricting the distribution to the area within
+#'  the search radius (\code{extent = "win"}).
+#' @param zrad an ad hoc radius to integrate to when the (uncommon) simulated
+#'  parameter estimates do not result in an extensible distribution. In effect,
+#'  This replaces NAs with 1s in CDFs and with 0s in PDFs.
 #' @param na.tol maximum fraction of invalid parameter sets to discard when
 #'  constructing CIs; abort if \code{mean(mod[, "extensible"]) > na.tol}
 #' @return array (\code{ddCI} class) with columns for distance and the CI bounds
 #' @export
 ddCI <- function(mod, x, type = "CDF", CL = 0.9, nsim = 1000,
-    extent = "full", zrad = 150, na.tol = 0.1){
+    extent = "full", zrad = 200, na.tol = 0.1){
   if (!"dd" %in% class(mod))
     stop("mod (", deparse(substitute(mod)), ") must be a dd object")
   p0 <- ddSim(mod, nsim = nsim, extent = extent)
@@ -1224,7 +1422,7 @@ ddCI <- function(mod, x, type = "CDF", CL = 0.9, nsim = 1000,
     if(pNA <= na.tol) {
       warning(paste0(100*round(pNA, 3), "% NAs in CIs"))
     } else {
-      warning(paste0("cannot calculate meaningful CI for ", distr, ": ",
+      warning(paste0("cannot calculate meaningful CI for ", mod$distr, ": ",
         100*round(pNA, 3), "% NAs in CIs"))
 #      CI[, 2:3] <- NA
     }
@@ -1233,7 +1431,8 @@ ddCI <- function(mod, x, type = "CDF", CL = 0.9, nsim = 1000,
   CI
 }
 
-#' Convert glm distance parameters into named distribution parameters
+#' Convert GLM Coefficients into Named Distribution Parameters
+#'
 #' @param x object (vector or matrix of parameters, dmod, or glm)
 #'  with named glm parameters ("r", "I(r^2)", "I(r^3)", "log(r)", or "I(1/r)")
 #' @param distr name of the distribution
@@ -1369,25 +1568,118 @@ cof2parms.dd <- function(x, ...){
   return(cof2parms(x$coef, x$distr))
 }
 
-#' Function to mimic dnorm, dexp, etc. for \code{dd} models
-#' @param x numeric x >= 0
-#' @param model either a \code{dd} object or the name of a distance model
-#'  (e.g., "xep01").
-#' @param parms scalar, vector, or array of parameters. Or if \code{x} is a
-#'  \code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}
-#'   uses the MLE parameters found in the \code{dd} object.
-#' @param srad the radius to use for truncated distributions
-#'  (\code{srad = NULL} to use full, non-truncated distribution)
-#' @return vector of PDF values. If \code{srad = NULL} and a full distribution
-#'  is used, the length of the output is equal to the maximum of the length of
-#'  \code{x} and the number of parameter sets are included in \code{model} (i.e.
-#'  1 if \code{model} is a \code{dd} object, or \code{nrow(model)} if
-#'  \code{model} is a \code{ddSim} object. If a truncated distribution is to be
-#'  used, then \code{length(x) = 1} or the number of parameter sets must be 1
-#'  (which occurs if \code{model} is a \code{dd} object or \code{nrow(model) = 1}
-#'  if \code{model} is a \code{ddSim} object.
+#' Calculate Probability Functions for Distance Distributions
+#'
+#' Calculate the standard d/p/q/r family of R probability functions for distance
+#' distributions (\code{\link[=ddFit]{dd}}) as well as the relative carcass 
+#' density (\code{rcd}). Usage broadly parallels that of the d/p/q/r probability 
+#' functions like \code{\link[=stats]{dnorm}}, \code{pnorm}, \code{qnorm}, and 
+#' \code{rnorm}. 
+#' 
+#' The probability density function (PDF(\emph{x}) = \emph{f}(\emph{x}) = \code{ddd(x, ...)}) 
+#' gives the probability that a carcass falls in a 1 meter ring centered at the 
+#' turbine and with an outer radius of \code{x} meters. The cumulative distribution 
+#' function [CDF(\emph{x}) = \emph{F}(\emph{x}) = \code{ddd(x, ...)}] gives the 
+#' probability that a carcass falls within \code{x} meters from the turbine. For 
+#' a given probability, \code{p} the inverse CDF [\code{qdd(p,...)}] gives the 
+#' \code{p} quantile of carcass distances. For example, \code{qdd(0.5,...)} 
+#' gives the median carcass distance, and \code{qdd(0.9, ...)} gives the radius 
+#' that 90\% of the carcasses are expected to fall in. Random carcass distances 
+#' can be generated using \code{rdd}.
+#' 
+#' The relative carcass density function(\code{rcd}) gives relative carcass 
+#' densities at a point \code{x} meters from a turbine. In general, rcd is 
+#' proportional to PDF(x)/x, normalized so that the surface of rotation of rcd(x) 
+#' has total area of 1. There are more stringent contstraints on the allowable 
+#' parameters in the fitted (or simulated) glm's because the integral of PDF(x)/x 
+#' must converge.
+#' 
+#' Distributions may be extrapolated beyond the search radius to account for all
+#' carcasses, including those that land beyond the search radius 
+#' (\code{extent = "full"}), or may be restricted to carcasses falling within the
+#' searched area (\code{extent = "win"}). Typically, in estimating \code{dwp} for
+#' a fatality estimator like \code{eoa} or \code{GenEst}, the full distributions
+#' would be used.
+#'    
+#' The probability functions have a number of purposes. A few of the more commonly
+#' used are listed below.
+#' \describe{
+#'  \item{PDF and CDF (\code{ddd} and \code{pdd}):}{
+#'   \itemize{
+#'    \item{to calculate the probability that carcass lands at a distance
+#'     \code{x} meters from the turbine (or, more precisely, within 0.5 meters of 
+#'     \code{x}) or within \code{x} meters from the turbine, use a scalar value
+#'     of \code{x} and a single model (\code{\link[=ddFit]{dd}} or \code{\link{ddSim}})
+#'     with \code{ddd} or \code{pdd}, repspectively;}
+#'    \item{to account for uncertainty in the probabilities at \code{x}, use 
+#'     \code{ddd} or \code{pdd} for with scalar \code{x} and a simulated set of
+#'     parameters from the fitted model (\code{\link{ddSim}} object). This would 
+#'     be useful for calculating confidence intervals for the probabilities;}
+#'    \item{to calculate probabilities for a range of \code{x} values according 
+#'     to a single model, use a vector \code{x} with a \code{\link[=ddFit]{dd}} object or 
+#'     a \code{\link{ddSim}} object with one row. This would be useful for 
+#'     drawing graphs of PDFs or CDFs;}
+#'    \item{to calculate simulated probabilites for a range of \code{x} values,
+#'     use a vector \code{x} and a \code{ddSim} object of simulated parameter sets.
+#'     This would be useful for drawing confidence regions around a fitted PDF or
+#'     CDF.}
+#'  }}
+#'  \item{Inverse CDF (\code{qdd}):}{
+#'   \itemize{
+#'    \item{to calculate the distance that 100\code{p}\% of the carcasses are 
+#'     expected to fall, use a scalar \code{p} in the interval (0, 1) and a 
+#'     single model (\code{\link[=ddFit]{dd}}) or parameter set (\code{\link{ddSim}} with
+#'     one row);}
+#'    \item{to calculate account for the uncertainty in estimating the inverse 
+#'     CDF for a given \code{p}, use a scalar \code{p} and a \code{\link{ddSim}}
+#'     object. This would be useful for calculating a confidence interval for,
+#'     say, the median or the expected 90th percentile of carcass distances;}
+#'    \item{to calculate the inverse CDF for a range of probabilities for a single
+#'     model, use a vector \code{p} and a single model (\code{\link[=ddFit]{dd}} or 
+#'     \code{\link{ddSim}} object with one row.}
+#'   }  
+#'  }
+#'  \item{Random Carcasses Distances (\code{rdd}):}{
+#'    \itemize{
+#'     \item{to generate \code{n} random carcass distances for a given (fixed)
+#'      model, use a \code{\link[=ddFit]{dd}} object or a \code{\link{ddSim}} object with
+#'      a single row;}
+#'     \item{to generate \code{n} random carcass distances for a model and account
+#'      for the uncertainty in estimating the model, use a \code{\link{ddSim}} 
+#'      object with \code{n} rows, where \code{n} is also used as the \code{n}
+#'      argument in the call to \code{rdd}.}
+#'    }
+#'  }
+#'  \item{Relative Carcass Density (per m^2):}{
+#'    \itemize{
+#'     \item{to calculate the relative carcass density at a number of distances,
+#'      use a vector \code{x}. This would be useful in generating maps of carcass
+#'      density at a site.}
+#'    }
+#'  }
+#' }
+#' @param x,q,p,n numeric, \eqn{x \ge 0}
+#' @param model either a \code{dd} object or a \code{ddSim} object
+#' @param extent for a full distribution extrapolated beyond the search radius
+#'  to account for all carcasses, use \code{extent = "full"}; for a distribution
+#'  restricted solely to carcasses falling within the search radius, use
+#'  \code{extent = "win"}.
+#' @param zrad the distance at which carcass density is assumed to be zero; to
+#'  be used only in simulation reps in which simulated parameters do not yield
+#'  extensible distributions, essentially returning 0 rather than NA for those
+#'  pathological cases.
+#' @param subdiv if the number of values to calculate with \code{rdd} or \code{qdd}
+#'  is >1 , the function uses breaks the PDF into \code{subdiv} subdivisions and
+#'  interpolates to solve the inverse. More subdivisions gives greater accuracy
+#'  but is slower.
+#' @return vector or matrix of values; a vector is returned unless \code{model} 
+#'  is a \code{ddSim} object with more than one row and is to be calculated for
+#'  more than one value (\code{x}, \code{q}, \code{p}), in which case an array 
+#'  with dimensions \code{length(x)} by \code{nrow(model)} is returned (where 
+#'  "\code{x}" is \code{x}, \code{q}, or \code{p}, depending on whether \code{ddd},
+#'  \code{pdd}, or \code{qdd} is called).
 #' @export
-ddd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim or dd
+ddd <- function(x, model, extent = "full", zrad = 200){ # model is either ddSim or dd
   if("dd" %in% class(model)) model <- dd2ddSim(model)
   if ("ddSim" %in% class(model)){
     parms <- model
@@ -1428,14 +1720,17 @@ ddd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
           const <- numeric(length(i1))
           tmp <- matrix(0, nrow = length(x), ncol = length(i1))
           for (i in i1){
+            b1 = c(parms[i, "b1"])
+            b2 = c(parms[i, "b2"])
+            b3 = c(parms[i, "b3"])
             const <- tryCatch(1/integrate(
               f = function(r)
-                x * exp(b1 * x + b2 * x^2 + b3 * x^3),
+                r * exp(b1 * r + b2 * r^2 + b3 * r^3),
               lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
               error = function(e) NA
             )
             tmp[, which(i1 == i)] <- dxep123(x,
-              b1 = c(parms[i, "b1"]), b2 = c(parms[i, "b2"]), b3 = c(parms[i, "b3"]),
+              b1 = b1, b2 = b2, b3 = b3,
               const = const
             )
           }
@@ -1533,7 +1828,7 @@ ddd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
           output[, i] <- NA
           next
         }
-        if(distr == "xepi0" && parms[i, "log(r)"] > -2){
+        if(distr == "xepi0" && !cofOK0(parms, distr)){
           output[, i] <- NA
           next
         }
@@ -1576,19 +1871,9 @@ ddd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
   output
 }
 
-#' Function to mimic pnorm, pexp, etc. but
-#' @param x numeric x >= 0
-#' @param model either a \code{dd} object or the name of a distance model
-#'  (e.g., "xep01").
-#' @param parms scalar, vector, or array of parameters. Or if \code{x} is a
-#'  \code{dd} object, then \code{parms} may be NULL, in which case, \code{ddd}
-#'  uses the MLE parameters found in the \code{dd} object.
-#' @param extent "full" or "win" to account for all carcasses or only those
-#'  within the search radius.
-#' @return answer
 #' @rdname ddd
 #' @export
-pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim or dd
+pdd <- function(q, model, extent = "full", zrad = 200){ # model is either ddSim or dd
   if("dd" %in% class(model)) model <- dd2ddSim(model)
   if ("ddSim" %in% class(model)){
     distr <- attr(model, which = "distr")
@@ -1597,38 +1882,39 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
     stop("pdd: model must be dd or ddSim object")
   }
   parms <- model
+  x <- q
   if (extent == "full"){ # intent to integrate to Inf; use zrad if parms improper
-    # output has dimensions length(x) x nrow(parms) [or a vector]
+    # output has dimensions length(q) x nrow(parms) [or a vector]
     # calculations must be split into two parts:
     #  1) proper parms integrate to Inf
     #  2) improper parms are integrated to zrad
-    output <- matrix(0, nrow = length(x), ncol = nrow(parms))
+    output <- matrix(0, nrow = length(q), ncol = nrow(parms))
     i0 <- unname(which(parms[, "extensible"] == 0))
     i1 <- unname(which(parms[, "extensible"] > 0))
     if(length(i1) > 0){ # extensible parms
-      xx <- rep(x, length(i1))
-      ppi <- rep(i1, each = length(x))
+      xx <- rep(q, length(i1))
+      ppi <- rep(i1, each = length(q))
       output[, i1] <- switch(distr,
         xep01 = matrix(
           pgamma(xx, shape = parms[ppi, "shape"], rate = parms[ppi, "rate"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         lognormal = matrix(
           plnorm(xx, meanlog = parms[ppi, "meanlog"], sdlog = parms[ppi, "sdlog"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         xep1 = matrix(pxep1(xx, b1 = parms[ppi, "b1"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         xep12 = matrix(pxep12(xx, b1 = parms[ppi, "b1"], b2 = parms[ppi, "b2"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         xep02 = matrix(pxep02(xx, b0 = parms[ppi, "b0"], b2 = parms[ppi, "b2"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         xep123 = {
           const <- numeric(length(i1))
-          tmp <- matrix(0, nrow = length(x), ncol = length(i1))
+          tmp <- matrix(0, nrow = length(q), ncol = length(i1))
           for (i in i1){
             const <- tryCatch(1/integrate(
               f = function(r)
@@ -1637,7 +1923,7 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
               lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
               error = function(e) NA
             )
-            tmp[, which(i1 == i)] <- pxep123(x,
+            tmp[, which(i1 == i)] <- pxep123(q,
               b1 = c(parms[i, "b1"]), b2 = c(parms[i, "b2"]), b3 = c(parms[i, "b3"]),
               const = const
             )
@@ -1646,11 +1932,11 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
         },
         xepi0 = matrix(
           pxepi0(xx, shape = parms[ppi, "shape"], scale = parms[ppi, "scale"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
         xep012 = { # assumes b0, b1, b2, b3 are scalars
           const <- numeric(length(i1))
-          tmp <- matrix(0, nrow = length(x), ncol = length(i1))
+          tmp <- matrix(0, nrow = length(q), ncol = length(i1))
           for (i in i1){
             b0 <- c(parms[i, "b0"])
             b1 <- c(parms[i, "b1"])
@@ -1660,7 +1946,7 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
               lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
               error = function(e) NA
             )
-            tmp[, which(i1 == i)] <- pxep012(x,
+            tmp[, which(i1 == i)] <- pxep012(q,
               b0 = b0,
               b1 = b1 ,
               b2 = b2,
@@ -1671,7 +1957,7 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
         },
         xep0123 = { # assumes b0, b1, b2, b3 are scalars
           const <- numeric(length(i1))
-          tmp <- matrix(0, nrow = length(x), ncol = length(i1))
+          tmp <- matrix(0, nrow = length(q), ncol = length(i1))
           for (i in i1){
             b0 <- c(parms[i, "b0"])
             b1 <- c(parms[i, "b1"])
@@ -1682,7 +1968,7 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
               lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val,
               error = function(e) NA
             )
-            tmp[, which(i1 == i)] <- pxep0123(x,
+            tmp[, which(i1 == i)] <- pxep0123(q,
               b0 = b0,
               b1 = b1 ,
               b2 = b2,
@@ -1692,33 +1978,33 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
           }
           tmp
         },
-        xep2 = matrix(pxep2(xx, s2 = parms[ppi, "s2"]), nrow = length(x)),
-        MaxwellBoltzmann = matrix(pmb(xx, a = parms[ppi, "a"]), nrow = length(x)),
+        xep2 = matrix(pxep2(xx, s2 = parms[ppi, "s2"]), nrow = length(q)),
+        MaxwellBoltzmann = matrix(pmb(xx, a = parms[ppi, "a"]), nrow = length(q)),
         constant = {
           tmp <- (xx/zrad)^2
           tmp[xx > zrad] <- 1
-          matrix(tmp, nrow = length(x))
+          matrix(tmp, nrow = length(q))
         },
-        xep0 = matrix(pxep0(xx, a = parms), nrow = length(x)),
+        xep0 = matrix(pxep0(xx, a = parms), nrow = length(q)),
         tnormal = {
           mu <- parms[ppi, "mean"]
           sig  <- parms[ppi, "sd"]
           Fa <- pnorm(0, mean = mu, sd = sig)
           ans <- numeric(length(xx))
           ans[xx >= 0] <- (pnorm(xx[xx >= 0], mean = mu, sd = sig) - Fa)/(1 - Fa)
-          matrix(ans, nrow = length(x))
+          matrix(ans, nrow = length(q))
         },
-        exponential = matrix(pexp(xx, rate = parms[ppi, "rate"]), nrow = length(x)),
+        exponential = matrix(pexp(xx, rate = parms[ppi, "rate"]), nrow = length(q)),
         inverse_gaussian = matrix(statmod::pinvgauss(xx,
             mean = parms[ppi, "mean"], dispersion = parms[ppi, "dispersion"]),
-          nrow = length(x)
+          nrow = length(q)
         ),
-        chisq = matrix(pchisq(xx, df = parms[ppi, "df"]), nrow = length(x))
+        chisq = matrix(pchisq(xx, df = parms[ppi, "df"]), nrow = length(q))
       )
     }
     if (length(i0) > 0){
       for(i in i0){
-        if(distr == "constant") output[, i] <- (x/zrad)^2
+        if(distr == "constant") output[, i] <- (q/zrad)^2
         if(distr %in% c("xep01", "xep02", "xep0123", "xep012")){
           if(parms[i, "log(r)"] <= -2){
             output[, i] <- NA
@@ -1737,25 +2023,25 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
           )$val,
           error = function(e) NA
         )
-        if (any(x > 0)){
-          for (xi in which(x > 0 & x < zrad)){
+        if (any(q > 0) & !is.na(deno)){
+          for (xi in which(q > 0 & q < zrad)){
             output[xi, i] <- tryCatch(
               integrate(function(r)
                 exp(rmat(r, distr) %*% parms[i, cof_name[[distr]]] + off(r, distr)),
                 lower = 0,
-                upper = x[xi], rel.tol = .Machine$double.eps^0.5
+                upper = q[xi], rel.tol = .Machine$double.eps^0.5
               )$val/deno,
               error = function(e) NA
             )
           }
         }
       }
-      output[x >= zrad, i0] <- 1
+      output[q >= zrad, i0] <- 1
     }
   } else if (extent == "win"){ # truncation radius is numeric scalar 0 < srad < Inf
     srad <- attr(model, "srad")
-    output <- matrix(0, nrow = length(x), ncol = nrow(parms))
-    if (all(x <= 0)){
+    output <- matrix(0, nrow = length(q), ncol = nrow(parms))
+    if (all(q <= 0)){
       if (nrow(output) == 1 | ncol(output) == 1) output <- unname(as.vector(output))
       return(output)
     }
@@ -1772,50 +2058,152 @@ pdd <- function(x, model, extent = "full", zrad = 150){ # model is either ddSim 
         error = function(e) NA
       )
       if (!is.na(deno)){
-        for (xi in which(x > ifelse(distr == "xep0", 1, 0) & x <= srad)){
+        for (xi in which(q > ifelse(distr == "xep0", 1, 0) & q <= srad)){
           output[xi, i] <- integrate(function(r)
             exp(rmat(r, distr) %*% parms[i, cof_name[[distr]]] + off(r, distr)),
             lower = ifelse(distr == "xep0", 1, 0),
-            upper = x[xi]
+            upper = q[xi]
           )$val/deno
         }
       } else {
         output[, i] <- NA
       }
     }
-    output[x > srad, ] <- 1
+    output[q > srad, ] <- 1
   } else {
     stop("extent must be \"full\" or \"win\"")
   }
-  if (nrow(parms) == 1 | length(x) == 1) output <- unname(as.vector(output))
+  if (nrow(parms) == 1 | length(q) == 1) output <- unname(as.vector(output))
   output[output > 1] <- 1
   output[output < 0] <- 0
   output
 }
 
-#' Function to calculate relative carcass densities
-#' @param x numeric x >= 0
-#' @param model either a \code{dd} object or a set of simulated parameters
-#'  (i.e., a \code{ddSim} object)
-#' @param srad the radius to use for truncated distributions
-#'  (\code{srad = NULL} to use full, non-truncated distribution)
-#' @details \code{rcd} gives relative carcass densities at a point \code{x}
-#'  meters from a turbine. In general, rcd is proportional to PDF(x)/x,
-#'  normalized so that the surface of rotation of rcd(x) has total area of 1.
-#'  There are more stringent contstraints on the allowable parameters in the
-#'  fitted (or simulated) glm's because the integral of PDF(x)/x must converge.
-#' @return vector or array of \code{rcd} values for every parameter set and
-#'  distance. If there is only one parameter set (e.g., if \code{model} is a
-#'  \code{dd} object), then the function returns a vector representing the
-#'  \code{rcd} for each distance in \code{x}. If \code{model} is a \code{ddSim}
-#'  object, then the function returns an array, with each column representing
-#'  the vector \code{rcd(x)} values for all distances for a single parameter set,
-#'  and the rows representing the \code{rcd} values for all parameter sets at a
-#'  given distance. NOTE: \code{PDF(0)/0} is dengenerate in R, and \code{rcd}
-#'  approximates x < 0.001 with x = 0.001 to streamline the calculations.
 #' @rdname ddd
 #' @export
-rcd <- function(x, model, extent = "full", zrad = 150){
+qdd <- function(p, model, extent = "full", zrad = 200, subdiv = 1000){ # model is ddSim or dd
+  # find r such that pdd(r) = p
+  if("dd" %in% class(model)) model <- dd2ddSim(model)
+  if (!"ddSim" %in% class(model)) stop("qdd: model must be dd or ddSim object")
+  srad <- attr(model, "srad")
+  distr <- attr(model, "distr")
+  if (nrow(model) == 1){
+    if ((distr %in% c("xep01", "xep012", "xep0123") && model[, "log(r)"] <= -2) |
+        (distr == "xepi0" && model[, "log(r)"] >= -2)){
+      return(rep(NA, length(p)))
+    }
+    if (length(p) == 1){
+      qval = tryCatch(
+        uniroot(
+          f = function(r) pdd(r, model = model, extent = extent, zrad = zrad) - p,
+          lower = 0.1, upper = ifelse(extent == "full", zrad, srad)
+        )$root,
+        error = function(e) NA
+      )
+      if(is.na(qval)){
+        r0 <- zrad
+        while(1){
+          r0 <- 2 * r0
+          if (pdd(r0, model = model, extent = extent, zrad = zrad) > p){
+            qval <- uniroot(
+              f = function(r)
+                pdd(r, model = model, extent = extent, zrad = zrad) - min(p),
+              lower = r0/2, upper = r0
+            )$root
+            break
+          }
+        }
+      }
+      return(qval)
+    } else if (length(p) > 1){
+      # p is a vector, solve by linear interpolation between minr and maxr
+      
+      minr <- tryCatch(uniroot( # try to find the root
+        f = function(r) pdd(r, model = model, extent = extent) - min(p),
+        lower = 0,
+        upper = ifelse(extent == "full", zrad, srad -1)
+      )$root,
+      error = function(e) NA
+      )
+      if (is.na(minr)){
+        # if unsuccessful in finding the root, expand the search interval
+        r0 <- zrad
+        while(1){
+          r0 <- 2 * r0
+          if (pdd(r0, model = model, extent = extent) > min(p)){
+            minr <- uniroot(
+              f = function(r)
+                pdd(r, model = model, extent = extent) - min(p),
+              lower = r0/2, upper = r0
+            )$root
+            break
+          }
+        }
+      }
+      maxr <- tryCatch(
+        uniroot(
+          f = function(r)
+            pdd(r, model = model, extent = extent, zrad = zrad) - max(p),
+          lower = 0, upper = ifelse(extent == "full", zrad, srad)
+        )$root,
+        error = function(e) NA
+      )
+      if (is.na(maxr)){
+        r0 <- zrad
+        while(1){
+          r0 <- 2 * r0
+          if (pdd(r0, model = model, extent = extent) > max(p)){
+            maxr <- uniroot(
+              f = function(r)
+                pdd(r, model = model, extent = extent, zrad = zrad) - max(p),
+              lower = r0/2, upper = r0
+            )$root
+            break
+          }
+        }
+      }
+      if ("try-error" %in% class(maxr))
+        stop(paste0("cannot invert CDF in qdd for p = ", max(p)))
+      y <- seq(minr, maxr, length.out = subdiv)
+      x <- pdd(y, model = model, extent = extent)
+      y <- c(0, y, min(50000, srad))
+      x <- c(0, x, 1)
+      return(approxfun(x, y)(p))
+    }
+  } else if (nrow(model) > 1){
+    pp <- rep(p, length.out = nrow(model))
+    qval <- numeric(nrow(model))
+    for (ppi in 1:length(pp)){
+      qval[ppi] = tryCatch(
+        uniroot(f = function(r)
+          pdd(r, model = model[ppi, ], extent = extent, zrad = zrad) - pp[ppi],
+          lower = 0, upper = ifelse(extent == "full", 50000, srad))$root,
+        error = function(e) NA
+      )
+    }
+    return(qval)
+  } else {
+    stop("dimension mismatch between p and simulated parameters (= model) in qdd")
+  }
+}
+
+#' @rdname ddd
+#' @export
+rdd <- function(n, model, extent = "full", zrad = 200, subdiv = 1000){ # model is ddSim or dd
+  if ("dd" %in% class(model)) {
+    model <- dd2ddSim(model)
+  } else if ("ddSim" %in% class(model)){
+    if (nrow(model) > 1 & nrow(model) != n)
+      stop("nrow(model) must be 1 or n in rdd")
+  } else {
+    stop ("class(model) in rdd must be dd or ddSim")
+  }
+  qdd(runif(n), model = model, extent = extent, zrad = zrad, subdiv = subdiv)
+}
+
+#' @rdname ddd
+#' @export
+rcd <- function(x, model, extent = "full", zrad = 200){
   x[x < 0.001] <- 0.001
   if("dd" %in% class(model)) model <- dd2ddSim(model)
   if ("ddSim" %in% class(model)){
@@ -1843,7 +2231,13 @@ rcd <- function(x, model, extent = "full", zrad = 150){
   return(output)
 }
 
-#' Display a Table of Summary Statistics
+#' Display a Tables of Summary Statistics for Distance Distributions
+#' 
+#' Calculate summary statistics for a single distance distribution 
+#' (\code{\link[=ddFit]{dd}} object), an array of distance distributions all fit to the
+#' same data set (\code{\link[=ddFit]{ddArray}}), or a list of arrays of distance 
+#' distributions fit for different carcass classes but the same site layout
+#' (\code{\link[=ddFit]{ddArraycc}}).
 #'
 #' @param x list of models (\code{ddArray}) or single model (\code{dd}) to calculate summary statistics for
 #' @param extent distributions within searched area (\code{"win"}) or extended beyond (\code{"full"})
@@ -1852,13 +2246,14 @@ rcd <- function(x, model, extent = "full", zrad = 150){
 #' @param ... ignored
 #' @return list (or list of lists if \code{x} is \code{ddArray}) with \code{$model}
 #'  giving the model parameters and \code{$stats} giving the median, and 75th,
-#'  90th, and 95th quantiles of carcass distances
+#'  90th, and 95th quantiles of carcass distances and the estimated probability
+#'  a carcass falls within the search area according to each model
 #' @export
 stats <- function(x, ...) UseMethod("stats", x)
 
 #' @rdname stats
 #' @export
-stats.dd <- function(x, extent = "full", zrad = 150, ...){
+stats.dd <- function(x, extent = "full", zrad = 200, ...){
   distr <- x$distr
 #  if (distr == "constant" & extent == "full") return(list(model = NA, stats = NA))
   cof <- numeric(length(cof_name[[distr]])) + NA
@@ -1878,37 +2273,50 @@ stats.dd <- function(x, extent = "full", zrad = 150, ...){
   ans[["model"]][1, names(c(cof, parms))] <- c(cof, parms)
   if (any(is.na(x$parms)) & extent == "full") return(ans)
   ans[["stats"]][names(qtls)] <- qdd(qtls, model = x, extent = extent, zrad = zrad)
-  xmax <- 1000
-  xseq <-seq(0.1, xmax, by = 0.1)
+  xseq <- seq(0.1, min(ans[["stats"]]["90%"], 1000), by = 0.1)
   y <- ddd(x = xseq, model = x, extent = extent, zrad = zrad)
   mi <- which(y == max(y))
   ans[["stats"]]["mode"] <- ifelse(y[length(y)] %in% mi, NA, mean(xseq[mi]))
+
+  ans[["stats"]]["p_win"] <- pdd(max(x$glm$data$r), x) * 100
   if (ans[["stats"]]["mode"] == 0.1) ans[["stats"]]["mode"] <- 0
   if (ans[["stats"]]["mode"] > ans[["stats"]]["95%"])
     ans[["stats"]]["mode"] <- NA
   ans[["stats"]] <- round(ans[["stats"]], 1)
+  ans[["stats"]]["p_win"] %<>% `*`(., 0.01)
   ans
 }
 
+#' @rdname stats
 #' @export
-stats.ddArray <- function(x, extent = "full", zrad = 150, ...){
+stats.ddArray <- function(x, extent = "full", zrad = 200, ...){
   aic0 <- aic(x, extent = extent)
   rnm <- aic0$model
-  cnm<- c("median", "75%", "90%", "95%", "mode", "deltaAICc")
+  cnm<- c("median", "75%", "90%", "95%", "mode", "p_win", "deltaAICc")
   ans <- data.frame(array(dim = c(length(rnm), length(cnm))))
   rownames(ans) <- rnm
   colnames(ans) <- cnm
   ans$deltaAICc <- aic0$deltaAICc
   for (distr in aic0$model)
-    ans[distr, c("median", "75%", "90%", "95%", "mode")] <-
+    ans[distr, c("median", "75%", "90%", "95%", "mode", "p_win")] <-
       stats(x[distr], extent = extent, zrad = zrad)$stats
   ans
 }
 
+#' @rdname stats
 #' @export
-stats.ddArraycc <- function(x, extent = "full", zrad = 150, ...){
+stats.ddArraycc <- function(x, extent = "full", zrad = 200, ...){
   lapply(x, stats, extent = extent, zrad = zrad)
 }
+
+#' Extract Parameters from a Distance Model (\code{dd}) and Format as \code{ddSim} Object
+#'
+#' This is primarily a utility function called internally by \code{dwp} functions
+#' to extract parameters from a fitted \code{\link[=ddFit]{dd}} model for analysis and
+#' calculation.
+#'
+#' @param dd \code{dd} object
+#' @return \code{ddSim} object with 1 row
 #' @export
 dd2ddSim <- function(dd){
   if (!"dd" %in% class(dd)) stop("dd2ddSim takes \"dd\" objects only")
@@ -1919,154 +2327,47 @@ dd2ddSim <- function(dd){
       c(names(dd$coefficients), names(dd$parms), "extensible")
     )
   )
-  attr(parms, "srad") <- ceiling(max(dd$data$r, na.rm = TRUE))
+  attr(parms, "srad") <- ceiling(max(dd$glm$data$r, na.rm = TRUE))
   attr(parms, "distr") <- dd$distr
   class(parms) <- "ddSim"
   parms
 }
 
-#' @rdname ddd
-#' @export
-qdd <- function(p, model, extent = "full", zrad = 150, subdiv = 1000){ # model is ddSim or dd
-# find r such that pdd(r) = p
-  if("dd" %in% class(model)) model <- dd2ddSim(model)
-  if (!"ddSim" %in% class(model)) stop("qdd: model must be dd or ddSim object")
-  srad <- attr(model, "srad")
-  distr <- attr(model, "distr")
-  if (nrow(model) == 1){
-    if ((distr %in% c("xep01", "xep012", "xep0123") && model[, "log(r)"] <= -2) |
-      (distr == "xepi0" && model[, "log(r)"] >= -2)){
-      return(rep(NA, length(p)))
-    }
-    if (length(p) == 1){
-      qval = tryCatch(
-        uniroot(
-          f = function(r) pdd(r, model = model, extent = extent, zrad = zrad) - p,
-          lower = 0.1, upper = ifelse(extent == "full", zrad, srad)
-        )$root,
-        error = function(e) NA
-      )
-      if(is.na(qval)){
-        r0 <- zrad
-        while(1){
-          r0 <- 2 * r0
-          if (pdd(r0, model = model, extent = extent, zrad = zrad) > p){
-            qval <- uniroot(
-              f = function(r)
-                pdd(r, model = model, extent = extent, zrad = zrad) - min(p),
-              lower = r0/2, upper = r0
-            )$root
-            break
-          }
-        }
-      }
-      return(qval)
-    } else if (length(p) > 1){
-    # p is a vector, solve by linear interpolation between minr and maxr
-
-      minr <- tryCatch(uniroot( # try to find the root
-          f = function(r) pdd(r, model = model, extent = extent) - min(p),
-          lower = 0,
-          upper = ifelse(extent == "full", zrad, srad -1)
-        )$root,
-        error = function(e) NA
-      )
-      if (is.na(minr)){
-        # if unsuccessful in finding the root, expand the search interval
-        r0 <- zrad
-        while(1){
-          r0 <- 2 * r0
-          if (pdd(r0, model = model, extent = extent) > min(p)){
-            minr <- uniroot(
-              f = function(r)
-                pdd(r, model = model, extent = extent) - min(p),
-              lower = r0/2, upper = r0
-            )$root
-            break
-          }
-        }
-      }
-      maxr <- tryCatch(
-        uniroot(
-          f = function(r)
-            pdd(r, model = model, extent = extent, zrad = zrad) - max(p),
-          lower = 0, upper = ifelse(extent == "full", zrad, srad)
-          )$root,
-        error = function(e) NA
-      )
-      if (is.na(maxr)){
-        r0 <- zrad
-        while(1){
-          r0 <- 2 * r0
-          if (pdd(r0, model = model, extent = extent) > max(p)){
-            maxr <- uniroot(
-              f = function(r)
-                pdd(r, model = model, extent = extent, zrad = zrad) - max(p),
-              lower = r0/2, upper = r0
-            )$root
-            break
-          }
-        }
-      }
-      if ("try-error" %in% class(maxr))
-        stop(paste0("cannot invert CDF in qdd for p = ", max(p)))
-      y <- seq(minr, maxr, length.out = subdiv)
-      x <- pdd(x = y, model = model, extent = extent)
-      y <- c(0, y, min(50000, srad))
-      x <- c(0, x, 1)
-      return(approxfun(x, y)(p))
-    }
-  } else if (nrow(model) > 1){
-    pp <- rep(p, length.out = nrow(model))
-    qval <- numeric(nrow(model))
-    for (ppi in 1:length(pp)){
-      qval[ppi] = tryCatch(
-        uniroot(f = function(r)
-          pdd(r, model = model[ppi, ], extent = extent, zrad = zrad) - pp[ppi],
-          lower = 0, upper = ifelse(extent == "full", 50000, srad))$root,
-        error = function(e) NA
-      )
-    }
-    return(qval)
-  } else {
-    stop("dimension mismatch between p and simulated parameters (= model) in qdd")
-  }
-}
-
-#' @export
-rdd <- function(n, model, extent = "full", zrad = 150, subdiv = 1000){ # model is ddSim or dd
-  if ("dd" %in% class(model)) parms <- dd2ddSim(model)
-  if ("ddSim" %in% class(model)){
-    if (nrow(model) > 1 & nrow(model) != n)
-      stop("nrow(model) must be 1 or n in rdd")
-  } else {
-    stop ("class(model) in rdd must be dd or ddSim")
-  }
-  qdd(runif(n), model = model, extent = extent, zrad = zrad, subdiv = subdiv)
-}
 
 #' Estimate Probability Carcass lands in Searched Area
+#'
 #' @description Estimated probability that carcass lands in searched area. This
 #'  is an intermediate step in estimating dwp but is also interesting in its own
 #'  right.
-#' @param x data. Either \code{rdat} data frame for a single turbine, site,
-#'  or other entity, or a list of such entities.
-#' @param model A fitted \code{dd} model
-#' @param extent calculate dwp within searched area only (\code{"win"}) or
-#'  for fulss complement of carcasses (\code{"full"}).
-#' @param nsim number of parametric bootstrap iterations for estimating CIs
+#' @param x data.
+#' @param model A fitted \code{dd} model or an array of estimated parameters
+#'  (\code{ddSim} object); or, if \code{x} is a \code{ringscc} object, a list
+#'  of \code{dd} models (one for each carcass class), or a \code{ddArraycc}
+#'  accompanied by a vector of model names to use (one for each carcass class).
+#' @param modnames if \code{x} is a \code{ringscc} object, a vector of names of 
+#' model to use for each carcass class; otherwise, \code{modnames} is ignored.
+#' @param extent calculate dwp within searched radius only (\code{"win"}) or
+#'  for full complement of carcasses (\code{"full"}), including those that fall
+#'  outside the search radius.
+#' @param nsim number of parametric bootstrap iterations for accounting for
+#'  uncertainty in the estimator. Default is \code{nsim = 1000}. Use 
+#'  \code{nsim = 0} for the estimate of \code{psi} based on the  MLE of
+#'  the given model without accounting for uncertainty. 
+#' @param zrad radius
 #' @param ... ignored
-#' @return \code{psiHat} object = list with
+#' @return \code{psiHat} object = array with \code{nsim} rows and one column for
+#' each turbine + one row for the total; or a list of such arrays, one for each
+#' carcass class if \code{x} is a \code{ringscc} object.
 #' @export
 estpsi <- function(x, ...) UseMethod("estpsi", x)
 
 #' @rdname estpsi
 #' @export
-estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
-  if ("dd" %in% class(model)) model <- ddSim(model, nsim = nsim)
-  if (!"ddSim" %in% class(model)) stop("estpsi: model must be dd or ddSim object")
+estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
+    ...){
+  parmsim <- prepmod(model, nsim)
   output <- list(
-    psi = as.vector(t(ddd(x$r - 1/2, model, extent = extent, zrad = zrad)) %*% x$pinc),
+    psi = c(t(ddd(x$r - 1/2, parmsim, extent = extent, zrad = zrad)) %*% x$pinc),
     ncarc = sum(x$ncarc)
   )
   output$psi[output$psi > 1] <- 1
@@ -2078,8 +2379,8 @@ estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 150
 
 #' @rdname estpsi
 #' @export
-estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
-  if ("dd" %in% class(model)) parmsim <- ddSim(model, nsim = nsim)
+estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
+  parmsim <- prepmod(model, nsim)
   tmp <- lapply(x, FUN = estpsi, model = parmsim,
     extent = extent, nsim = nsim, zrad = zrad)
   output <- sapply(tmp, "[[", "psi")
@@ -2091,10 +2392,10 @@ estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
 
 #' @rdname estpsi
 #' @export
-estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 150,
+estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
     ...){
-  if ("dd" %in% class(model)) parmsim <- ddSim(model, nsim = nsim)
-  di <- model$distr
+  parmsim <- prepmod(model = model, nsim = nsim)
+  di <- attr(parmsim, "distr")
   ep <- function(r, di, pco) c(exp(rmat(r, di) %*% pco[1, cof_name[[di]]]))
   tset <- x$tset
   output <- matrix(NA, nrow = nsim, ncol = length(tset) + 1)
@@ -2117,26 +2418,96 @@ estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 150,
 
 #' @rdname estpsi
 #' @export
-estpsi.rings <- function(x, model, extent = "full", nsim = 1000, zrad = 150, ...){
+estpsi.rings <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
+  estpsi(x$rpA, model = model, extent = extent, nsim = nsim, zrad = zrad)
+}
+
+#' @rdname estpsi
+#' @export
+estpsi.rdat <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
+  rpA <- lapply(x, FUN = function(x){
+    x[, "exposure"] <- x[, "exposure"]/((x[, "r"] - 0.5) * 2 * pi)
+    x
+  })
+  rpA$total$exposure <- rpA$total$exposure/(length(x) - 1)
+  rpA <- lapply(rpA, 
+    FUN = function(x){
+      colnames(x) <- gsub("exposure", "pinc", colnames(x))
+      x[, "pinc"] <- round(pmin(x[, "pinc"], 1), 4)
+      x[, "ncarc"] <- NULL
+    }
+  )
+  class(rpA) <- "rpA"
+  estpsi(rpA, model = model, extent = extent, nsim = nsim, zrad = zrad)
+}
+
+#' @rdname estpsi
+#' @export
+estpsi.ringscc <- function(x, model, modnames = NULL, extent = "full",
+                           nsim = 1000, zrad = 200, ...){
+  output <- list()
   arglist <- as.list(match.call())
   arglist[[1]] <- NULL
-  arglist$x <- x$rpA
-  return(do.call(estpsi, arglist))
+  arglist[["modnames"]] <- NULL
+  if ("ddArraycc" %in% class(model) && any(sapply(model, length) > 1)){
+    if (is.null(modnames)){
+      stop("estpsi: modnames must be provided if list of ",
+           "models includes more than one model for any size class."
+      )
+    }
+  }
+  for (cc in names(x)){
+    # if model is ddArraycc:
+    if (!is.null(modnames)){ # then use modnames to select model
+      arglist[["model"]] <- model[[cc]][[modnames[cc]]]
+    } else { # then there is only one model for the given class
+      arglist[["model"]] <- model[[cc]]
+    }
+    arglist[["x"]] <- x[[cc]][["rpA"]]
+    output[[cc]] <- do.call(estpsi, arglist)
+  }
+  class(output) <- "psiHatcc"
+  output
+}
+
+#'  Internal Utility Function to Parse and Format Model for Calculating Psihat
+#'
+#' @param model \code{dd} or \code{ddSim} object
+#' @param nsim number of simulation reps. If \code{nsim = 0}, return dd2ddSim
+#' @export
+prepmod <- function(model, nsim){
+  if ("dd" %in% class(model)){
+    if (is.null(nsim) || is.na(nsim) || nsim == 0){
+      parmsim <- dd2ddSim(model)
+    } else {
+      parmsim <- ddSim(model, nsim = nsim)
+    }
+  } else if ("ddSim" %in% class(model)){
+    parmsim <- model
+  } else {
+    stop("estpsi: model must be dd or ddSim object")
+  }
+  parmsim
 }
 
 #' Estimate DWP
-#' @param x \code{psiHat} object, which is a matrix \code{$psi} giving the
-#'  probability of a given carcass landing in the searched area at each turbine.
-#'  Column names = turbine IDs.
+#'
+#' @param x \code{\link[=estpsi]{psiHat}} object, which is a matrix \code{$psi} 
+#'  giving the probability of a given carcass landing in the searched area at 
+#'  each turbine. Column names = turbine IDs; or a \code{\link[=estpsi]{psiHatcc}} 
+#'  object, which is a list of \code{psiHat} objects, one for each carcass class.
 #' @param ncarc vector of total carcass count at each turbine represented in x.
 #' @param nboot number of parametric bootstrap iterations for estimating CIs
-#' @param GenEst format the results for importing into GenEst
+#' @param forGenEst format the results for importing into GenEst (boolean)
+#' @param silent suppress messages from the fitting of a beta distribution in
+#'  internal calculations that, if successful, increase the speed of the by
+#'  20-200x. The message would signal that this acceleration cannot be applied.
 #' @param ... ignored
 #' @return list
 #' @export
 estdwp <- function(x, ...) UseMethod("estdwp", x)
 
-#' @rdname estpsi
+#' @rdname estdwp
 #' @export
 estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
     silent = TRUE, ...){
@@ -2251,6 +2622,17 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
   return(output)
 }
 
+#' Format DWP Estimate for Use in GenEst
+#'
+#' GenEst requires \code{dwp} data to be formatted as a data frame with columns
+#'  for turbine ID and for estimated \code{dwp} for each carcass class. To
+#'  incorporate uncertainty in the estimates, \code{nsim} simulated copies of
+#'  the basic format are appended to the columns in the data set.
+#'
+#' @param dwphat a \code{dwphat} object
+#' @return an \code{nsim*nturbine} by \code{nclass + 1} data frame, with columns
+#'  for the turbine ID and for estimated \code{dwp} for each carcass class (e.g.,
+#'  \code{large}, \code{medium}, \code{small}, \code{bat}).
 #' @export
 formatGenEst <- function(dwphat){
   if (!"dwphat" %in% class(dwphat))
@@ -2285,6 +2667,61 @@ formatGenEst <- function(dwphat){
   class(output) <- c("dwphat", "GenEst", "data.frame")
   return(output)
 }
+
+#' @rdname plot
+#' @param ... arguments that may be passed to plotting functions
+#' @export
+plot.polygonLayout <- function(x, ...){
+  dotlist <- list(...)
+  arg_par <- list()
+  arg_par[["mfrow"]] <- c(ceiling(sqrt(length(x))), round(sqrt(length(x))))
+  arg_par[["oma"]] <- c(2, 2, 1, 1)
+  arg_par[["mar"]] <- c(0, 0, 0, 0)
+  for (nm in names(arg_par))
+    if (nm %in% names(dotlist)) arg_par[[nm]] <- dotlist[[nm]]
+  arg_par[["mgp"]] <- c(2, 0.7, 0)
+  arg_par[["tck"]] <- -0.015
+  do.call(par, arg_par)
+
+  lmx <- max(sapply(x, FUN = function(ti) max(abs(ti))))
+  arg_plot <- list()
+  arg_plot[["xlim"]] <- lmx * c(-1, 1) * 1.1
+  arg_plot[["ylim"]] <- lmx * c(-1, 1) * 1.1
+  arg_plot[["bg"]] <- "white"
+  arg_plot[["main"]] <- ""
+  arg_plot[["sub"]] <- ""
+  arg_plot[["asp"]] <- NA
+  arg_plot[["asp"]] <- 1
+  for (nm in names(arg_plot))
+    if (nm %in% names(dotlist)) arg_plot[[nm]] <- dotlist[[nm]]
+  arg_plot[["x"]] <- 0
+  arg_plot[["type"]] <- "n"
+  arg_plot[["axes"]] <- FALSE
+  arg_polygon <- list()
+  arg_polygon[["col"]] <- colors()[647]
+  arg_polygon[["border"]] <- NA
+  for (nm in names(arg_polygon))
+    if (nm %in% names(dotlist)) arg_polygon[[nm]] <- dotlist[[nm]]
+
+  arg_turb <- list()
+  arg_turb[["pch"]] <- 1
+  arg_turb[["cex"]] <- 1
+  for (nm in names(arg_turb))
+    if (nm %in% names(dotlist)) arg_turb[[nm]] <- dotlist[[nm]]
+  arg_turb[["x"]] <- 0
+  arg_turb[["y"]] <- 0
+  for (ti in names(x)){
+    do.call(plot, arg_plot)
+    arg_polygon[["x"]] <- x[[ti]]
+    do.call(polygon, arg_polygon)
+    axis(1, at = pretty(par("usr")[1:2], n = 8))
+    axis(2, at = pretty(par("usr")[3:4], n = 8))
+    do.call(points, arg_turb)
+    box()
+    mtext(side = 1, line = -1.8, adj = 0.04, text = ti, cex = 1.4)
+  }
+}
+
 #' @export
 plot.layoutSimple <- function(x, ...){
   par(mfrow = c(ceiling(sqrt(nrow(x))), round(sqrt(nrow(x)))),
@@ -2350,6 +2787,7 @@ plot.layoutSimple <- function(x, ...){
 }
 
 #' Calculate Area of Intersection of Circle and Square with Common Center
+#'
 #' @param r radius of the circle (vector or scalar)
 #' @param s half-width of the square (scalar)
 #' @examples
@@ -2368,10 +2806,24 @@ Acins <- function(r, s){
   ans
 }
 
-############
 #' Add Carcasses to a Site Layout
 #'
-# addCarcasses:
+#' After the site layout is analyzed and structured by rings for analysis,
+#'  carcass data may still need to be added to the site data. \code{addCarcass}
+#'  grabs carcass location data from a shape file or data frame and inserts it
+#'  into ring data.
+#'
+#' @param x carcass data to insert into \code{data_ring}
+#' @param data_ring ring data for receiving carcass data from \code{x}
+#' @param plotLayout (optional) \code{shapeLayout} object to facilitate proper
+#'  insertion of carcass data into ring structure.
+#' @param ncarcReset boolean to direct the function to set the carcass counts
+#'  in all the rings to 0 before adding the new carcasses (default) or to add the
+#'  new carcasses to the old totals (\code{ncarcReset = FALSE}).
+#' @param ccCol name of carcass class column (optional)
+#' @param unitCol name of unit column
+#' @param rCol name of column with carcass distances
+#' @param ... ignored
 #' @export
 addCarcass <- function(x, ...) UseMethod("addCarcass", x)
 
@@ -2490,8 +2942,8 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
     if (!is.character(x[, ccCol]))
       stop("carcass class must be a vector of names of carcass classes (char)")
     output <- list()
-    for (sz in unique(ccCol)){
-      output[[sz]] <- addCarcass(x[x[, ccCol == sz], ], data_ring = data_ring,
+    for (sz in unique(x[, ccCol])){
+      output[[sz]] <- addCarcass(x[x[, ccCol] == sz, ], data_ring = data_ring,
         ncarcReset = ncarcReset, unitCol = unitCol, rCol = rCol)
     }
     class(output) <- "ringscc"
@@ -2516,7 +2968,19 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
   return(data_ring)
 }
 
-
+#' Subset Data from an Imported and Formatted Shape File
+#'
+#' @param x object to be subsetted
+#' @param subset values to subset by. For example, to subset \code{x} to include
+#'  only turbines \code{"t1"} and \code{"t2"}, then \code{subset = c("t1", "t2")}.
+#'  The name of the column with turbine names is given in \code{select}.
+#' @param select the name of the column with the values to subset by. For example,
+#'  to subset \code{x} by turbines names "t1" and "t2" as found in the "turbine"
+#'  column in the data, use \code{select = "turbine"} and \code{subset = c("t1", "t2")}.
+#' @param ... ignored
+#' @return object of the same class as \code{x}, subsetted to values of \code{select}
+#'  equal to some element in \code{subset}.
+#' @rdname subset
 #' @export
 subset.shapeCarcass <- function(x, subset, select, ...){
   # like the previous subCarcass except S3 and substituting "subset" for "value"
@@ -2530,6 +2994,7 @@ subset.shapeCarcass <- function(x, subset, select, ...){
   return(output)
 }
 
+#' @rdname subset
 #' @export
 subset.shapeLayout <- function(x, subset, select, ...){
   if (length(select) != 1)
@@ -2547,6 +3012,7 @@ subset.shapeLayout <- function(x, subset, select, ...){
   return(x)
 }
 
+#' @rdname ddFit
 #' @export
 ddFit.ringscc <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...){
@@ -2561,39 +3027,7 @@ ddFit.ringscc <- function(x, distr = "standard", scVar = NULL, rCol = "r",
   return(output)
 }
 
-#' Estimate Probability that Carcass Lands in Searched Area
-#' rpA
-#' @param model one selected model for each carcass class or a \code{ddArraycc}
-#'  accompanied by a vector of model names for each carcass class
-#' @param modnames vector of names of model to use for each size class.
-#' @export
-estpsi.ringscc <- function(x, model, modnames = NULL, extent = "full",
-    nsim = 1000, zrad = 150, ...){
-  output <- list()
-  arglist <- as.list(match.call())
-  arglist[[1]] <- NULL
-  arglist[["modnames"]] <- NULL
-  if ("ddArraycc" %in% class(model) && any(sapply(model, length) > 1)){
-    if (is.null(modnames)){
-      stop("estpsi: modnames must be provided if list of ",
-           "models includes more than one model for any size class."
-      )
-    }
-  }
-  for (cc in names(x)){
-    # if model is ddArraycc:
-    if (!is.null(modnames)){ # then use modnames to select model
-      arglist[["model"]] <- model[[cc]][[modnames[cc]]]
-    } else { # then there is only one model for the given class
-      arglist[["model"]] <- model[[cc]]
-    }
-    arglist[["x"]] <- x[[cc]][["rpA"]]
-    output[[cc]] <- do.call(estpsi, arglist)
-  }
-  class(output) <- "psiHatcc"
-  output
-}
-
+#' @rdname estdwp
 #' @export
 estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
     forGenEst = FALSE, silent = TRUE, ...){
@@ -2621,42 +3055,60 @@ estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
   return(output)
 }
 
+#' Simple Function to Extract Carcass Counts
+#'
+#' Carcass counts are easy to extract from any of the data structures, but it
+#'  may be difficult to remember where to retrieve the data from for any particular
+#'  structure. \code{getncarc} simplifies the task by having the same usage for
+#'  all data types.
+#'
+#' @param x a data structure with \code{ncarc} buried in it somewhere
+#' @param ... ignored
+#'
 #' @export
-getncarc <- function(x) UseMethod("getncarc", x)
+getncarc <- function(x, ...) UseMethod("getncarc", x)
 
+#' @rdname getncarc
 #' @export
-getncarc.ringscc <- function(x){
+getncarc.ringscc <- function(x, ...){
   lapply(x, "[[", "ncarc")
 }
 
+
+#' @rdname getncarc
 #' @export
-getncarc.rings <- function(x){
+getncarc.rings <- function(x, ...){
   x$ncarc
 }
 
+#' @rdname getncarc
 #' @export
-getncarc.xyLayout <- function(x){
+getncarc.xyLayout <- function(x, ...){
   x$ncarc
 }
 
+#' @rdname getncarc
 #' @export
-getncarc.ddArray <- function(x){
+getncarc.ddArray <- function(x, ...){
   x[[1]]$ncarc
 }
 
+#' @rdname getncarc
 #' @export
-getncarc.ddArraycc <- function(x){
+getncarc.ddArraycc <- function(x, ...){
   ncarc <- numeric(length(x))
   names(ncarc) <- names(x)
   for (sz in names(ncarc)) ncarc[sz] <- getncarc(x[[sz]])
   return(ncarc)
 }
 
+#' @rdname getncarc
 #' @export
-getncarc.dd <- function(x){
+getncarc.dd <- function(x, ...){
   return(x$ncarc)
 }
 
+#' @rdname plot
 #' @export
 plot.psiHat <- function(x, ...){
   arglist <- list(...)
@@ -2685,7 +3137,7 @@ plot.psiHat <- function(x, ...){
 #    xlab = "", ylab = expression(hat(psi)), cex.lab = 1.2)
   box()
   mtext(side = 1, line = 4, xlab, cex = 1.3)
-  axis(1, at = 1:ncol(x), lab = FALSE)
+  axis(1, at = 1:ncol(x), labels = FALSE)
   text(x = 1:ncol(x), y = par("usr")[3] - diff(par("usr")[3:4] * 0.04),
     labels = colnames(x), xpd = TRUE, srt = 40)
   axis(2)
@@ -2701,6 +3153,7 @@ plot.psiHat <- function(x, ...){
   }
 }
 
+#' @rdname plot
 #' @export
 plot.dwphat <- function(x, ...){
   bxwd <- 0.4
@@ -2709,7 +3162,7 @@ plot.dwphat <- function(x, ...){
     axes = FALSE, xlab = "", ylab = expression(widehat(dwp)), cex.lab = 1.2)
   box()
   mtext(side = 1, line = 4, "turbine", cex = 1.3)
-  axis(1, at = 1:ncol(x), lab = FALSE)
+  axis(1, at = 1:ncol(x), labels = FALSE)
   text(x = 1:ncol(x), y = par("usr")[3] - diff(par("usr")[3:4] * 0.04),
     labels = colnames(x), xpd = TRUE, srt = 40)
   axis(2)
@@ -2726,13 +3179,266 @@ plot.dwphat <- function(x, ...){
   }
 }
 
-#' @export
-plot.polygonLayout <- function(x, ...){
-
-}
+#' Export Estimated Density-Weighted Proportion to File in Proper GenEst Format
+#'
+#' @param dwp a \code{dwphat} object
+#' @param file name of file to export the \code{dwp} estimates to
 #' @export
 exportGenEst <- function(dwp, file){
   if (!"dwphat" %in% class(dwp)) stop("exportGenEst: 'dwp' must be a dwphat object")
   if (!"GenEst" %in% class(dwp)) dwp <- formatGenEst(dwp)
   write.csv(dwp, file = file, quote = FALSE, row.names = FALSE)
+}
+
+#' Run Models through a Sieve to Filter out Dubious Fits
+#'
+#' A set of fitted models (\code{ddArray}) is filtered according to a set of
+#'  criteria that test for high AIC, points of high-influence points, and
+#'  plausibility of the tail probabilities of each fitted distribution.
+#'  \code{modelFilter} will either auto-select the best model according to a set
+#'  of pre-defined, objective criteria or will will return all models that meet
+#'  a set of user-defined or default criteria. A table of how the models
+#'  score according to each criterion is printed to the console.
+#'
+#' After eliminating non-extensible models, the criteria to test are entered in
+#'  a list (\code{sieve}) with components:
+#'
+#' 1. \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
+#'  Models with AIC scores exceeding the minimum AIC among all the fitted models
+#'  by \code{sieve$aic} or more are rejected. The default value is 10. Users may
+#'  override the default by using, for example, \code{sieve = list(aic = 7)} in
+#'  in the argument list to use an AIC score of 7 as the cutoff or may forego the
+#'  test altogether by setting \code{sieve = list(aic = FALSE)}
+#' 2. \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
+#'  the presence of which cast doubt on the reliability of the model. The function
+#'  defines "high influence" as models with high leverage points (namely, points
+#'  with \code{h/(1 - h) >  2*p/(n - 2*p)}, where \code{h} is leverage, \code{p}
+#'  is the number of parameters in the model, and \code{n} is the search radius)
+#'  with large Cook's distances [namely, Cook's distance \code{> 8/(n - 2*p)}]). The
+#'  criteria for high influence points were adapted from Brian Ripley's GLM
+#'  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is
+#'  perhaps most valuable in identifying distributions with high probability of
+#'  carcasses landing well beyond what could reasonably be expected.
+#' 3. \code{$rtail} = vector of probabilities that define a checkpoints on distributions
+#'  to avoid a situation where a model that may fit well within the range of data
+#'  is implausible because it predicts a significant or substantial probability
+#'  of carcasses falling 200 m or more from the nearest turbine. The default is
+#'  to check whether or not a distribution predicts that less than 50% of carcasses
+#'  fall within 80 meters, 90% within 120 meters, 95% within 150 meters, or 99%
+#'  within 200 meters. Distributions that fall below any of these points (for
+#'  example predicting only 42% within 80 meters or only 74% within 120 meters)
+#'  are eliminated by the default \code{rtail} test. The format of the default for
+#'  the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
+#'  Users may override the default by using, for example,
+#'  \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999)}
+#'  in the argument list for a more stringent test or for a situation where
+#'  turbines are small or winds are light. Alternatively, users may forego the
+#'  test altogether by entering \code{sieve = list(rtail = FALSE)}. If specific
+#'  probabilities are provided, they must be in a vector of length 4 with names
+#'  "\code{p80}" etc. as in the examples above.
+#' 4. \code{$ltail} = vector of probabilities that define checkpoints on distributions
+#'  to avoid situations where the search radius is short and a distribution that
+#'  fits the limited data set well but crashes to zero just outside the search
+#'  radius. The default is to check whether or not a distribution predicts that
+#'  greater than 50% of carcasses fall with 20 meters or 90% within 50 meters.
+#'  Distributions that pass above either of these checkpoints (for example
+#'  predicting 61% of carcasses within 20 meters or 93% within 50 meters)
+#'  are eliminated by the default \code{ltail} test. The format of the default for
+#'  the test is \code{$ltail = c(p20 = 0.5, p50 = 0.90)}. Users may override the
+#'  default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8)}
+#'  in the argument list for a situation where it is known that carcasses beyond
+#'  50 meters are common.
+#'
+#' Setting \code{sieve = "auto_select"} will result in \code{modelFilter} returning
+#'  the model with the lowest AIC that meets the default criteria. If none of the
+#'  models meet all four tests, the \code{"auto_select"} routine returns the
+#'  the distribution with the lower AIC among 1) the model with the greatest
+#'  \code{Pr(r < 120)} among those models that pass the \code{ltail} test, and 2)
+#'  the model with the least \code{Pr(r < 50)} among those that pass the \code{rtail}
+#'  test. If no models pass either the right tail test or left tail test, the
+#'  the \code{"auto_select"} routine returns an error.
+#'
+#' If \code{sieve = NULL}, \code{modelFilter} filters out the non-extensible
+#'  models only.
+#'
+#' @param dmod a \code{ddArray} object
+#' @param sieve a list of criteria for filtering out "bad" models
+#' @return A \code{ddArray} object consisting of all the models that meet the
+#'  criteria defined in the \code{sieve}, a \code{dd} object if
+#'  \code{sieve = "auto_select"} or if there is only one model that meets the
+#'  \code{sieve} criteria, or an error if no models meet the criteria and
+#'  \code{sieve} is not \code{"auto_select"}. An error is also returned if the
+#'  \code{"auto_select"} routine is unable to converge on a model.
+#'
+#' @export
+modelFilter <- function(dmod, sieve = "auto_select"){
+  if (!"ddArray" %in% class(dmod)) stop("modelFilter: dmod must be a ddArray")
+  if (is.null(sieve))
+    return(dmod[which(sapply(dmod, function(di) di[["extensible"]] == 1))])
+  if (sieve == "default" || sieve == "auto_select"){
+    fil <- sieve_default
+  } else if (is.list(sieve)){
+    fil <- sieve_default
+    for (si in names(sieve)){
+      # error-check
+      if (si == "aic"){
+        if (length(sieve[[si]]) == 1 && is(sieve[[si]], "logical")){
+          if (sieve[[si]]) stop("sieve['aic'] must be non-negative scalar or FALSE")
+          fil[[si]] <- sieve[[si]]
+          next
+        }
+        if (!is.numeric(sieve[[si]]) || length(sieve[[si]]) != 1 || sieve[[si]] < 0){
+          stop("sieve[['aic']] must be non-negative scalar")
+        } else {
+          fil[[si]] <- sieve[[si]]
+          next
+        }
+      }
+      if (si == "hin"){
+        if(!is(sieve[[si]], "logical") && length(sieve[[si]] == 1)){
+          stop("sieve[['hin']] must be boolean")
+        } else {
+          fil[[si]] <- sieve[[si]]
+          next
+        }
+      }
+      if (si == "rtail"){
+        if(length(sieve[[si]]) == 1 && is(sieve[[si]], "logical")){
+          fil[[si]] <- sieve[[si]]
+          next
+        }
+        if(!is.numeric(sieve$rtail) || length(sieve$rtail) == 4 ||
+            any(sieve$rtail) < 0 || any(sieve$rtail > 1))
+          stop("sieve[['rtail']] must be a numeric vector of length 4 with values in [0, 1]")
+        fil[[si]] <- sieve[[si]]
+        next
+      }
+      if (si == "ltail"){
+        if(length(si) == 1 && is(si, "logical")){
+          fil[[si]] <- sieve[[si]]
+          next
+        }
+        if(!is.numeric(sieve$ltail) || length(sieve$ltail) == 2 ||
+            any(sieve$ltail) < 0 || any(sieve$ltail > 1))
+          stop("sieve[['ltail']] must be a numeric vector of length 4 with values in [0, 1]")
+        fil[[si]] <- sieve[[si]]
+      }
+    }
+  } else {
+    stop("modelFilter: sieve must be 'auto', 'default', NULL, or a custom list")
+  }
+  #extensible models
+  fmod <- dmod[which(sapply(dmod, FUN = function(di) di[["extensible"]]))]
+  critok <- c("aic", "rtail", "ltail", "hin")
+  ptab <- array(1, dim = c(length(fmod), length(critok)),
+                  dimnames = list(names(fmod), critok))
+  if (!identical(fil[["aic"]], FALSE)){
+    ptab[, "aic"] <- sapply(fmod, "[[", "aic") %>% "<="(., min(.) + fil[["aic"]])
+  }
+  if (fil$hin){
+    dnost <- list()
+    for (nm in names(fmod)){
+      dnost[[nm]] <- boot::glm.diag(fmod[[nm]]$glm)
+    }
+    h <- t(sapply(dnost, "[[", "h"))
+    cook <- t(sapply(dnost, "[[", "cook"))
+    n <- sapply(fmod, "[[", "n")
+    p <- sapply(fmod, "[[", "k")
+    ptab[, "hin"] <- apply(!((cook > 8/(n - 2*p)) & (h/(1 - h) > 2*p/(n - 2*p))),
+      FUN = all, MARGIN = 1)
+  }
+  if (!identical(fil$rtail, FALSE)){
+    ptab[, "rtail"] <-
+      sapply(fmod, "pdd", x =  80) > fil[["rtail"]]["p80"] &
+      sapply(fmod, "pdd", x = 120) > fil[["rtail"]]["p120"] &
+      sapply(fmod, "pdd", x = 150) > fil[["rtail"]]["p150"] &
+      sapply(fmod, "pdd", x = 200) > fil[["rtail"]]["p200"]
+  }
+  if (!identical(fil$ltail, FALSE)){
+    ptab[, "ltail"] <-
+      sapply(fmod, "pdd", x = 20) < fil[["ltail"]]["p20"] &
+      sapply(fmod, "pdd", x = 50) < fil[["ltail"]]["p50"]
+  }
+  ptab[is.na(ptab)] <- 0
+  ptab <- ptab[order(
+    ptab[, "rtail"],
+    ptab[, "ltail"],
+    ptab[, "hin"],
+    ptab[, "aic"],
+    -sapply(fmod, "[[", "aic"),
+    decreasing = TRUE
+  ),]
+  tmp <- ptab
+  colnames(tmp)[colnames(tmp) == "aic"]  <- "aic_test"
+  tmp <- cbind(tmp, aic = sapply(fmod[rownames(ptab)], "[[", "aic"))
+  print(tmp); flush.console()
+  cat("\n\n\n")
+  if (!identical(sieve, "auto_select")){
+    if (all(rowSums(ptab) < ncol(ptab))){
+      stop("None of the models meet all the filter criteria in sieve. ",
+           "Select less strict criteria or set sieve = \"auto_select\".")
+    }
+    return(fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]])
+  } else {
+    if (all(rowSums(ptab) < ncol(ptab))){
+      if (sum(ptab[, "aic"]) == 0){ # all aic > max(allowable aic)
+        stop("can't find a good model")
+      }
+      # just consider those models with aic < max(allowable aic) and no high influnence points
+      ptabh <- ptab[ptab[, "aic"] * ptab[, "hin"] == 1, , drop = FALSE]
+      if (length(ptabh) == 0){ # then all the aic-acceptable models have high influence points
+        # so just consider those models with good aic
+        ptabh[, "hin"] <- 1 # takes off the hin filter
+        ptabh <- ptab[ptab[, "aic"] == 1, , drop = FALSE]
+      }
+      if (nrow(ptabh) == 1)
+        return(fmod[rownames(ptabh)])
+      # there is more than one model with the aic <= max(allowable aic)
+      # are there models that pass all the filters?
+      if (any(rowSums(ptabh) == ncol(ptabh))){ # some model(s) passes
+        ptabh <- ptabh[rowSums(ptabh) == ncol(ptabh), , drop = FALSE]
+        return(fmod[rownames(ptabh)[1]]) # ordered by aic; pick the top one
+      }
+      # no models pass, so either ltail or rtail fails (or both?)
+      if (sum(ptabh[, "ltail"]) == 0 & sum(ptabh[, "rtail"]) == 0){
+        warning("model fails both of the tail checks")
+        return(fmod[rownames(ptabh)[1]])
+      }
+      ptabh <- ptabh[!(ptabh[, "ltail"] == 0 & ptabh[, "rtail"] == 0), ]
+      # No model passes both tail tests, but more than one pass one or the other.
+      # Best right tail among models with OK left tails is the one with the
+      #  highest pdd(120, ...)
+      left_good <- rownames(ptabh)[ptabh[, "ltail"] == 1]
+      if (length(left_good) > 0) best_right_among_left <- left_good[1]
+      if (length(left_good) > 1){
+        for (i in left_good[-1]){
+          if (pdd(120, fmod[i]) > pdd(120, fmod[best_right_among_left]))
+            best_right_among_left  <-  i
+        }
+      }
+      # Best left tail among models with OK right tails is the one with the
+      #   lowest pdd(80, ...)
+      right_good<- rownames(ptabh)[ptabh[, "rtail"] == 1]
+      if (length(right_good) > 0) best_left_among_right <- right_good[1]
+      if (length(right_good) > 1){
+        for (i in right_good[-1]){
+          if (pdd(120, fmod[i]) < pdd(50, fmod[best_left_among_right]))
+            best_left_among_right  <-  i
+        }
+      }
+      if (length(best_left_among_right) == 1 & length(best_right_among_left) == 1){
+        blar_aic <- fmod[best_left_among_right]$aic
+        bral_aic <- fmod[best_right_among_left]$aic
+        return(fmod[ifelse(blar_aic < bral_aic,
+          fmod[best_left_among_right], fmod[best_right_among_left])])
+      }
+      if (length(best_left_among_right) == 1)
+        return(fmod[best_left_among_right])
+      if (length(best_right_among_left) == 1)
+        return(fmod[best_right_among_left])
+    } else {
+      return(fmod[rownames(ptab)[1]])
+    }
+    return(fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]])
+  }
 }

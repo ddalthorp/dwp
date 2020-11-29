@@ -2,15 +2,35 @@
 % Please edit documentation in R/fun.R
 \name{readCarcass}
 \alias{readCarcass}
-\title{different types of data but all end up in the same place: list of arrays by
- (by turbine) with r, x, y, scVar}
+\title{Import Carcass Observations Locations from Shape Files}
 \usage{
 readCarcass(file_cod, unitCol = "turbine", quiet = FALSE)
 }
 \arguments{
-\item{rCol}{column for carcass distances from turbine}
+\item{file_cod}{name of the file with carcass observation data. Currently, the
+function requires a shape file, which gives the carcass locations on the same
+coordinate system that is used for the turbines. The geometry is a simple
+features points file, consisting of at least the three mandatory files standard
+components (.shp, .shx, .dbf) stored in the same directory. Only the name of the
+.shp is required (for example, \code{file_cod = "carcasses.shp"}). Other
+components are automatically searched for and processed if available.}
+
+\item{unitCol}{name of column with turbine IDs. Column name and turbine IDs
+must match those of the \code{data_layout} and \code{file_turbine} used in
+the call to \code{\link{initLayout}}.}
+
+\item{quiet}{boolean for directing the function to print calculation progress
+updates and messages to the console. This should be set to \code{FALSE} unless
+you know clearly why you want to turn off the messaging.}
+}
+\value{
+a \code{shapeCarcass} object, which is a list with \code{$carcasses},
+ which is a \code{sf} representation of the shape file \code{file_cod} data;
+ \code{$unitCol}, which is the name of the unit column; and \code{$ncarc}, which
+ is a vector of carcass counts at the turbines listed in \code{unitCol}. The
+ elements of the \code{$ncarc} are named by turbines at which they were found.
 }
 \description{
-different types of data but all end up in the same place: list of arrays by
- (by turbine) with r, x, y, scVar
+Carcass coordiates (x, y) and turbine IDs are read using sf::st_read and
+formatted for adding to \code{rings} data structures for analysis.
 }

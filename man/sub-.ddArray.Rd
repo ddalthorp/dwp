@@ -2,22 +2,21 @@
 % Please edit documentation in R/fun.R
 \name{[.ddArray}
 \alias{[.ddArray}
-\title{Subset set of fitted dispersion models (ddArray)}
+\title{Subset a Set of Fitted Dispersion Models (\code{ddArray})}
 \usage{
 \method{[}{ddArray}(x, distr)
 }
 \arguments{
 \item{x}{object to subset}
 
-\item{distr}{vector of names of distributions to extract from fitted models}
-
-\item{...}{ignored (but required format for CRAN)}
+\item{distr}{vector of names or integer indices of distributions to extract 
+from fitted models}
 }
 \value{
 list of selected models with crucial statistics
 }
 \description{
-Subset set of fitted dispersion models (ddArray)
+Subset a Set of Fitted Dispersion Models (\code{ddArray})
 }
 \details{
 Subset the ddArray object as if it were a simple vector

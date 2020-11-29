@@ -2,9 +2,9 @@
 % Please edit documentation in R/utilities.R
 \name{exclude}
 \alias{exclude}
-\title{remove particular distribution names from a longer list (for subsetting \code{ddArray})}
+\title{Remove Particular Names from a Longer List}
 \usage{
-exclude(what, from = mod_name)
+exclude(what, from)
 }
 \arguments{
 \item{what}{vector of distribution names to exclude}
@@ -12,5 +12,8 @@ exclude(what, from = mod_name)
 \item{from}{vector of distribution names to be excluded from}
 }
 \description{
-remove particular distribution names from a longer list (for subsetting \code{ddArray})
+The intended use is to remove specific distributions from \code{ddArray} for 
+subsequent analyses. For example, 
+\code{dmod2 <- dmod[exclude("lognormal", names(dmod))]} would subset a list
+of models, \code{dmod}, to exclude \code{"lognomal"}.
 }

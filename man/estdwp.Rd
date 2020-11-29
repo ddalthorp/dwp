@@ -2,14 +2,21 @@
 % Please edit documentation in R/fun.R
 \name{estdwp}
 \alias{estdwp}
+\alias{estdwp.psiHat}
+\alias{estdwp.psiHatcc}
 \title{Estimate DWP}
 \usage{
 estdwp(x, ...)
+
+\method{estdwp}{psiHat}(x, ncarc, nboot = NULL, forGenEst = FALSE, silent = TRUE, ...)
+
+\method{estdwp}{psiHatcc}(x, ncarc, nboot = NULL, forGenEst = FALSE, silent = TRUE, ...)
 }
 \arguments{
-\item{x}{\code{psiHat} object, which is a matrix \code{$psi} giving the
-probability of a given carcass landing in the searched area at each turbine.
-Column names = turbine IDs.}
+\item{x}{\code{\link[=estpsi]{psiHat}} object, which is a matrix \code{$psi} 
+giving the probability of a given carcass landing in the searched area at 
+each turbine. Column names = turbine IDs; or a \code{\link[=estpsi]{psiHatcc}} 
+object, which is a list of \code{psiHat} objects, one for each carcass class.}
 
 \item{...}{ignored}
 
@@ -17,7 +24,11 @@ Column names = turbine IDs.}
 
 \item{nboot}{number of parametric bootstrap iterations for estimating CIs}
 
-\item{GenEst}{format the results for importing into GenEst}
+\item{forGenEst}{format the results for importing into GenEst (boolean)}
+
+\item{silent}{suppress messages from the fitting of a beta distribution in
+internal calculations that, if successful, increase the speed of the by
+20-200x. The message would signal that this acceleration cannot be applied.}
 }
 \value{
 list

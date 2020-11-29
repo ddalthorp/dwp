@@ -12,10 +12,10 @@ rmat(r, distr)
 \item{distr}{name of the distribution}
 }
 \value{
-array with length(r) rows and p columns, where p is the number of
- parameters in the glm (including the intercept). The first column is all 1s,
- and the remaining columns are functions of r, specifically, log(r), r, r^2,
- r^3, or 1/r, depending on what the distribution requires.
+array with \code{length(r)} rows and p columns, where p is the number 
+ of parameters in the glm (including the intercept). The first column is all 
+ 1s, and the remaining columns are functions of r, specifically, log(r), r, 
+ r^2, r^3, or 1/r, depending on what the distribution requires.
 }
 \description{
 simple utility function used in optimizing the truncated glm

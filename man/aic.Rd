@@ -3,6 +3,7 @@
 \name{aic}
 \alias{aic}
 \alias{aic.ddArray}
+\alias{aic.ddArraycc}
 \alias{aic.dd}
 \title{Calculate Akaike Information Criterion (AIC) for Distance Distributions}
 \usage{
@@ -10,10 +11,13 @@ aic(x, ...)
 
 \method{aic}{ddArray}(x, extent = "full", ...)
 
+\method{aic}{ddArraycc}(x, extent = "full", ...)
+
 \method{aic}{dd}(x, ...)
 }
 \arguments{
-\item{x}{list of models (\code{ddArray}) or single model (\code{dd}) to calculate AICs for}
+\item{x}{list of models (\code{\link[=ddFit]{ddArray}}) or single model 
+(\code{\link[=ddFit]{dd}}) to calculate AICs for}
 
 \item{...}{ignored}
 

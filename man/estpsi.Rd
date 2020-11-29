@@ -6,41 +6,60 @@
 \alias{estpsi.rpA}
 \alias{estpsi.xyLayout}
 \alias{estpsi.rings}
-\alias{estdwp.psiHat}
+\alias{estpsi.rdat}
+\alias{estpsi.ringscc}
 \title{Estimate Probability Carcass lands in Searched Area}
 \usage{
 estpsi(x, ...)
 
-\method{estpsi}{data.frame}(x, model, extent = "full", nsim = 1000,
-  zrad = 150, ...)
+\method{estpsi}{data.frame}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 
-\method{estpsi}{rpA}(x, model, extent = "full", nsim = 1000,
-  zrad = 150, ...)
+\method{estpsi}{rpA}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 
-\method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000,
-  zrad = 150, ...)
+\method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 
-\method{estpsi}{rings}(x, model, extent = "full", nsim = 1000,
-  zrad = 150, ...)
+\method{estpsi}{rings}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 
-\method{estdwp}{psiHat}(x, ncarc, nboot = NULL, forGenEst = FALSE,
-  silent = TRUE, ...)
+\method{estpsi}{rdat}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
+
+\method{estpsi}{ringscc}(
+  x,
+  model,
+  modnames = NULL,
+  extent = "full",
+  nsim = 1000,
+  zrad = 200,
+  ...
+)
 }
 \arguments{
-\item{x}{data. Either \code{rdat} data frame for a single turbine, site,
-or other entity, or a list of such entities.}
+\item{x}{data.}
 
 \item{...}{ignored}
 
-\item{model}{A fitted \code{dd} model}
+\item{model}{A fitted \code{dd} model or an array of estimated parameters
+(\code{ddSim} object); or, if \code{x} is a \code{ringscc} object, a list
+of \code{dd} models (one for each carcass class), or a \code{ddArraycc}
+accompanied by a vector of model names to use (one for each carcass class).}
 
-\item{extent}{calculate dwp within searched area only (\code{"win"}) or
-for fulss complement of carcasses (\code{"full"}).}
+\item{extent}{calculate dwp within searched radius only (\code{"win"}) or
+for full complement of carcasses (\code{"full"}), including those that fall
+outside the search radius.}
 
-\item{nsim}{number of parametric bootstrap iterations for estimating CIs}
+\item{nsim}{number of parametric bootstrap iterations for accounting for
+uncertainty in the estimator. Default is \code{nsim = 1000}. Use 
+\code{nsim = 0} for the estimate of \code{psi} based on the  MLE of
+the given model without accounting for uncertainty.}
+
+\item{zrad}{radius}
+
+\item{modnames}{if \code{x} is a \code{ringscc} object, a vector of names of 
+model to use for each carcass class; otherwise, \code{modnames} is ignored.}
 }
 \value{
-\code{psiHat} object = list with
+\code{psiHat} object = array with \code{nsim} rows and one column for
+each turbine + one row for the total; or a list of such arrays, one for each
+carcass class if \code{x} is a \code{ringscc} object.
 }
 \description{
 Estimated probability that carcass lands in searched area. This

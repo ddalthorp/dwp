@@ -5,7 +5,7 @@
 \alias{cof2parms.matrix}
 \alias{cof2parms.numeric}
 \alias{cof2parms.dd}
-\title{Convert glm distance parameters into named distribution parameters}
+\title{Convert GLM Coefficients into Named Distribution Parameters}
 \usage{
 cof2parms(x, ...)
 
@@ -27,5 +27,5 @@ with named glm parameters ("r", "I(r^2)", "I(r^3)", "log(r)", or "I(1/r)")}
 matrix of parameters
 }
 \description{
-Convert glm distance parameters into named distribution parameters
+Convert GLM Coefficients into Named Distribution Parameters
 }

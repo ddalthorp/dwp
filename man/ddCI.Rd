@@ -4,11 +4,19 @@
 \alias{ddCI}
 \title{Calculate CI for CDF, PDF, or quantile}
 \usage{
-ddCI(mod, x, type = "CDF", CL = 0.9, nsim = 1000, extent = "full",
-  zrad = 150, na.tol = 0.1)
+ddCI(
+  mod,
+  x,
+  type = "CDF",
+  CL = 0.9,
+  nsim = 1000,
+  extent = "full",
+  zrad = 200,
+  na.tol = 0.1
+)
 }
 \arguments{
-\item{mod}{a \code{dd} object}
+\item{mod}{a \code{\link[=ddFit]{dd}} object}
 
 \item{x}{distance from turbine (scalar or vector) or probability (for quantile)}
 
@@ -17,6 +25,15 @@ ddCI(mod, x, type = "CDF", CL = 0.9, nsim = 1000, extent = "full",
 \item{CL}{confidence level for the confidence interval(s)}
 
 \item{nsim}{number of simulation draws to base the estimate of CI on}
+
+\item{extent}{whether to calculate \code{CI} based on the full range of
+possible data and extrapolating beyond the search radius
+(\code{extent = "full"}) or restricting the distribution to the area within
+the search radius (\code{extent = "win"}).}
+
+\item{zrad}{an ad hoc radius to integrate to when the (uncommon) simulated
+parameter estimates do not result in an extensible distribution. In effect,
+This replaces NAs with 1s in CDFs and with 0s in PDFs.}
 
 \item{na.tol}{maximum fraction of invalid parameter sets to discard when
 constructing CIs; abort if \code{mean(mod[, "extensible"]) > na.tol}}

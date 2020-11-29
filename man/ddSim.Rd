@@ -3,7 +3,7 @@
 \name{ddSim}
 \alias{ddSim}
 \alias{ddSim.dd}
-\title{Simulation of dispersion parameters}
+\title{Simulation of Dispersion Parameters}
 \usage{
 ddSim(x, ...)
 
@@ -15,11 +15,15 @@ ddSim(x, ...)
 \item{...}{ignored (but required format for CRAN)}
 
 \item{nsim}{number of simulation draws}
+
+\item{extent}{simulate according to full distribution, including extrapolation
+beyond the search radius (\code{extent = "full"}); or restrict the
+distribution to the area within the search radius (\code{extent = "win"}).}
 }
 \value{
 array with simulated beta parameters from the glm model, and their
  conversion to distribution parameters
 }
 \description{
-Simulation of dispersion parameters
+Simulation of Dispersion Parameters
 }

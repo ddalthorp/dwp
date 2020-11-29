@@ -2,12 +2,14 @@
 % Please edit documentation in R/fun.R
 \name{[.ddSim}
 \alias{[.ddSim}
-\title{Subset simulated dispersion parameters while preserving attributes}
+\title{Subset Simulated Dispersion Parameters while Preserving Attributes}
 \usage{
 \method{[}{ddSim}(x, i, j, ...)
 }
 \arguments{
 \item{x}{object to subset}
+
+\item{i, j}{row and column indices to subset}
 
 \item{...}{ignored (but required format for CRAN)}
 }
@@ -21,7 +23,7 @@ array with simulated beta parameters from the glm model, their
  and attributes are preserved upon subsetting.
 }
 \description{
-Subset simulated dispersion parameters while preserving attributes
+Subset Simulated Dispersion Parameters while Preserving Attributes
 }
 \details{
 Subset the ddSim object as if it were a simple matrix or array

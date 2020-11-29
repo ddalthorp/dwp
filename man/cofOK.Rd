@@ -4,7 +4,7 @@
 \alias{cofOK}
 \alias{cofOK0}
 \alias{cofOKInf}
-\title{check whether glm coefficients give proper distribution}
+\title{Check Whether GLM Coefficients Give Proper Distribution}
 \usage{
 cofOK(cof, distr)
 
@@ -14,22 +14,20 @@ cofOKInf(cof, distr)
 }
 \arguments{
 \item{cof}{vector or matrix of named glm parameters (with \code{"r"} as the
-distance variable.}
-
-\item{distr}{name of the distribution}
-
-\item{cof}{vector or matrix of named glm parameters (with \code{"r"} as the
-distance variable.}
+distance variable)}
 
 \item{distr}{name of the distribution}
 }
 \value{
 boolean vector (or scalar)
-
-boolean vector (or scalar)
 }
 \description{
-check whether glm coefficients give proper distribution
-
-check whether glm coefficients give proper distribution
+In order for a fitted GLM to convert to a proper distance distribution, its
+integral from 0 to Inf must be finite. As a rule, when the leading coefficient 
+is positive, the integral diverges as the upper bound of integration approaches
+infinity, and \code{cofOK} would return \code{FALSE}. Likewise, in some cases,
+the GLM coefficients yield an integral that diverges as the lower bound 
+approaches 0, in which case \code{cofOK} returns \code{FALSE} as well. 
+\code{cofOK0} and \code{cofOKInf} check the left and right tails of the 
+candidate distribution, repectively, for convergence.
 }

@@ -6,54 +6,121 @@
 \alias{ddFit.rings}
 \alias{ddFit.list}
 \alias{ddFit.xyLayout}
+\alias{ddFit.ringscc}
 \title{Fit Distance Distribution Model(s)}
 \usage{
 ddFit(x, ...)
 
-\method{ddFit}{data.frame}(x, distr = "standard", scVar = NULL,
-  rCol = "r", expoCol = "exposure", ncarcCol = "ncarc",
-  silent = FALSE, ...)
+\method{ddFit}{data.frame}(
+  x,
+  distr = "standard",
+  scVar = NULL,
+  rCol = "r",
+  expoCol = "exposure",
+  ncarcCol = "ncarc",
+  silent = FALSE,
+  ...
+)
 
-\method{ddFit}{rings}(x, distr = "standard", scVar = NULL,
-  rCol = "r", expoCol = "exposure", ncarcCol = "ncarc",
-  silent = FALSE, ...)
+\method{ddFit}{rings}(
+  x,
+  distr = "standard",
+  scVar = NULL,
+  rCol = "r",
+  expoCol = "exposure",
+  ncarcCol = "ncarc",
+  silent = FALSE,
+  ...
+)
 
-\method{ddFit}{list}(x, distr = "standard", scVar = NULL, rCol = "r",
-  expoCol = "exposure", ncarcCol = "ncarc", silent = FALSE, ...)
+\method{ddFit}{list}(
+  x,
+  distr = "standard",
+  scVar = NULL,
+  rCol = "r",
+  expoCol = "exposure",
+  ncarcCol = "ncarc",
+  silent = FALSE,
+  ...
+)
 
-\method{ddFit}{xyLayout}(x, distr = "standard", scVar = NULL,
-  notSearched = NULL, rCol = "r", ncarcCol = "ncarc",
-  unitCol = "turbine", silent = FALSE, ...)
+\method{ddFit}{xyLayout}(
+  x,
+  distr = "standard",
+  scVar = NULL,
+  notSearched = NULL,
+  rCol = "r",
+  ncarcCol = "ncarc",
+  unitCol = "turbine",
+  silent = FALSE,
+  ...
+)
+
+\method{ddFit}{ringscc}(
+  x,
+  distr = "standard",
+  scVar = NULL,
+  rCol = "r",
+  expoCol = "exposure",
+  ncarcCol = "ncarc",
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
+\item{x}{a search plot layout object to fit carcass distribution models to. The
+layout may be a data frame with columns for ring radii, exposure (or searched
+area in each ring), search class variable (optional), and number of carcasses
+in each ring;}
+
 \item{...}{ignored}
 
-\item{scVar}{name of column in \code{rdat} with (optional) subdivisions
-of rings into search classes (character strings)}
+\item{distr}{names (vector of character strings) of glm distribution templates
+to fit. Default is \code{model = "standard"} to fit the standard models listed in the
+description above. Setting \code{model = "all"} will fit both the standard
+models and the supplementary models. Also, any subset of the models may be fit
+by using, for example, \code{model = c("xep01", "lognormal")} to fit only
+the \code{"xep01"} and \code{"lognormal"} models, or
+\code{model = exclude(c("xep123", "constant"))} to fit all models except
+\code{"xep123"} and \code{"constant"}, or \code{model = exclude("lognormal", mod_standard)}
+to fit all standard models except the lognormal.}
 
-\item{rCol}{name of column in \code{rdat} with outer radius for 1m rings}
+\item{scVar}{Search class variable to include in the model (optional). \code{scVar}
+is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.
+If \code{x} is a \code{shapeLayout} object, \code{scVar} may be either \code{NULL}
+or the name of a single column with search class data. If \code{x} is an \code{xyLayout}
+object, \code{scVar} may be either NULL or a vector of names of search class
+variables to include in the models.}
 
-\item{expoCol}{name of "exposure" column of total area in each ring belonging
-to each search class.}
+\item{rCol}{name of the distance column (which gives the outer radii of the rings).
+This will be correct by default for objects coming from \code{\link{prepRing}} 
+unmodified and will rarely need to be explicitly specified.}
 
-\item{rdat}{Data frame with a tally of carcasses within 1 m rings, along
-with outer radii of the rings, (optional) search class column, and the amount
-of area searched in each search class and ring.}
+\item{expoCol}{name of the column with the exposure, which is the area in the ring
+with outer radius \code{rCol}. This will be correct by default for objects
+coming from \code{\link{prepRing}} unmodified and will rarely need to be 
+explicitly specified.}
 
-\item{model}{names (vector of character strings) of glm distribution templates
-to fit. Default is \code{"all"}, which fits \code{xep01}, \code{lognormal},
-\code{xep1}, \code{xep12}, \code{xep123}, \code{xepi0},
-\code{xep0123}, \code{xep012}, \code{xep2}, \code{MaxwellBoltzmann}, \code{constant},
-\code{tnormal}, \code{exponential}, \code{xep0}, \code{chisq}, and
-\code{inverse_gaussian}. Any subset of these may also be fit with a single
-call to \code{ddFit}.}
+\item{ncarcCol}{name of the column with tallies of carcasses by ring. This
+will be correct by default for objects coming from \code{\link{prepRing}} 
+unmodified and will rarely need to be explicitly specified.}
+
+\item{silent}{set \code{silent = TRUE} to suppress information printed to the
+console as the calculations proceed. May be useful when running simulations.}
+
+\item{notSearched}{the name of the level (if any) in \code{scVar} that
+indicates an unsearched area}
+
+\item{unitCol}{name of the column with turbine IDs}
 }
 \value{
-A list of fitted glm models as \code{dd} objects in a \code{ddArray}
- object if a vector of distributions is fit or a single \code{dd} object if a
- single model is fit. The \code{dd} objects are lists with all the standard
- \code{\link[stats]{glm}} components, in addition to the following elements:
+A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a 
+ \code{\link[=ddFit]{ddArray}}
+ object if a vector of distributions is fit or a single \code{\link[=ddFit]{dd}} 
+ object if a single model is fit. The \code{\link[=ddFit]{dd}} objects are 
+ lists that include the following elements:
  \describe{
+   \item{code{\link[stats]{glm}}}{the fitted model}
    \item{\code{$distr}}{name of the distribution ("xep01", etc.)}
    \item{\code{$parms}}{vector of distribution parameter estimates (or \code{NA}
      if the model based on the MLE is not extensible)}
@@ -62,6 +129,7 @@ A list of fitted glm models as \code{dd} objects in a \code{ddArray}
      which can be extracted via \code{summary(x)$cov.unscaled}}
    \item{\code{$scVar}}{name of the (optional) search class variable (or \code{NULL})}
    \item{\code{$ncarc}}{number of carcasses}
+   \item{\code{$aic}}{the AIC value of the fit}
    \item{\code{$n}}{number of rings}
    \item{\code{$k}}{number of parameters}
    \item{\code{$srad}}{search radius}
@@ -71,20 +139,16 @@ A list of fitted glm models as \code{dd} objects in a \code{ddArray}
  can be extracted in the usual R way via \code{$} or \code{[[x]]}.
 }
 \description{
-Fit glm's for distance distribution models corresponding to
- xep01 (gamma), xep012, lognormal, xep1, xep12, xep123, truncated normal,
- exponential, xep2 (Rayleigh), xep0 (Pareto), xepi0 (inverse gamma), xep0123
- (normal gamma with x = tau), Maxwell Boltzmann, chi-squared, and/or inverse
- Gaussian distributions. By default, \code{ddFit} fits all the aforementioned
- models, but any subset of the models may be fit as well by using, for example,
- \code{model = exclude(c("xep123", "constant"))} to fit all except the
- \code{"xep123"} and \code{"constant"} models or \code{model = c("xep01", "lognormal")}
- to fit just the \code{"xep01"} and \code{"lognormal"} models.
+Fit glm's for distance distribution models corresponding to standard
+ forms [xep1, xep01 (gamma), xep2 (Rayleigh), xep02, xep12, xep012, xep123,
+ xep0123 (normal-gamma with x = tau), lognormal,  truncated normal, Maxwell
+ Boltzmann, and constant] and supplentary forms [exponential, chi-squared,
+ inverse gamma, and inverse Gaussian].
 
  The glm is converted to a probability distribution by dividing by a
  normalizing constant, namely the integral of the glm evaluated from 0 to
  infinity. In some cases (most notably when the leading coefficient of the
  glm is positive so the fitted curve does not converge to zero as x increases),
  converted to a probability distribution. In these cases, the distribution
- parameters are given as \code{NA}.
+ parameters are given as \code{NA}, but the fitted model itself is saved.
 }

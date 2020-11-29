@@ -62,7 +62,7 @@
 #' @export
 #'
 postM <- function(x, g, prior='IbinRef', mmax = NA){
- ### repaired version of postM
+ ### repaired version of postM from eoa
  ###  in eoa 2.0.7, the function doesn't work with custom priors
  # choices for prior are:
  # IbinRef = integrated reference prior for binomial
@@ -141,9 +141,10 @@ postM <- function(x, g, prior='IbinRef', mmax = NA){
                                       #(ignoring M < X, which has probability 0)
   c(rep(0,x),pMgX) # full posterior, counting from m = 0 to mmax
 }
+
 #' @rdname postM
 #' @export
-postM.ab<-function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
+postM.ab <- function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
   # error-checking
   suppressWarnings({
     if (length(x) * length(Ba) * length(Bb) != 1){
@@ -240,7 +241,7 @@ calcMstar <- function(pMgX, alpha){
 
 #' @rdname postM
 #' @export
-MCI<-function(pMgX, crlev = 0.95){
+MCI <- function(pMgX, crlev = 0.95){
   cs <- cumsum(pMgX)
   aM <- 1 - crlev
   lwrbnd<-min(which(cs > aM/2)) - 1
@@ -287,7 +288,7 @@ fmmax <- function(x, g){ # find the maximum m to sum over in calculating posteri
 }
 #' @rdname fmmax
 #' @export
-fmmax.ab<-function(x, pBa, pBb){
+fmmax.ab <- function(x, pBa, pBb){
   # find the maximum m to sum over in calculating posterior (for beta-binomial)
   if (VGAM::pbetabinom.ab(x, 1e5, pBa, pBb) > 0.0001) {
     # if too huge of M's are required, return a large one and give warning
@@ -321,7 +322,7 @@ fmmax.ab<-function(x, pBa, pBb){
 #'
 #' @export
 #'
-MpriorOK<-function(prior){
+MpriorOK <- function(prior){
   if (is.numeric(prior)){ # numeric => must be two-dimensional array with probabilities starting at m = 0
     if (length(dim(prior)) != 2){
       warning("error in prior")

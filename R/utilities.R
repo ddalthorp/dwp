@@ -3,74 +3,66 @@
 #' @param a positive numeric vector
 #' @param lower boolean for calculating lower or upper incomplete gamma function
 #' @details The upper incomplete gamma function, following Wolfram Alpha, namely,
-#'  incGam(x, a) = Gamma = integral(exp(-t) * t^(a - 1) dt from x to Inf),
-#'  calculated using pgamma.
+#'  incGamma(a, x) = Gamma = integral(exp(-t) * t^(a - 1) dt from x to Inf),
+#'  calculated using pgamma. NOTE: The function \code{pracma::incgam} also
+#'  calculates incomplete gamma with \code{pracma::incgam(x, a) = incGamma(a, x)},
+#'  but \code{pracma::incgam} is not vectorized and not used here.
 #' @return scalar or vector of length = max(length(x), length(a)), with values
 #'  of the shorter recycled to match the length of the longer a la pnorm etc.
 #' @export
-incGamma <- function(a, x, lower = FALSE) pgamma(x, a, lower = lower) * gamma(a)
+incGamma <- function(a, x, lower = FALSE) pgamma(x, a, lower.tail = lower) * gamma(a)
 
-#' Error function
-#' @description The error function is closely related to the standard normal CDF and arises frequently in probability calculations
-#' @param x numeric scalar or array
-#' @details \eqn{erf(x) = 2/\sqrt\pi * \int_0^x {exp(-x\^2} dx}
-#' @return erf(x) with same dimensions as x
-#' @export
-erf <- function(x) 2 * pnorm(x * sqrt(2)) - 1
-
-#' Calculate Exposure for Corners of Square Plots
-
-#' Probability Distributions for Carcasses vs. Distance
-#' @param x, q vector of quantiles
-#' @param a, b0, b1, b2, b3, shape, scale, s2 parameters used in the respective
-#'  distributions. See Detailin the Maxwell-Boltzmann distribution
-#' @section The distributions:
-#'  Except where otherwise noted, the parameterizations match those given in
-#'  Wikipedia (and the user guide and vignettes)...section under construction.
-#'  \describe{
-#'    \item{Maxwell-Boltzmann}{The pdf of the Maxwell-Boltzmann is defined as
-#'      f(x; a) = sqrt(2/pi)/a^3 * x^2 * exp(-x^2/(2*a^2)), and the offset used in
-#'      the glm for carcass distances is \code{log(exposure) + log(r)}.}
-#'    \item{log-linear}{The pdf of the log-linear is f(x; b1) = b1^2 * x * exp(b1 * x),
-#'      where b1 is the}
-#'  }
-#' @return \code{dmb} gives the density, \code{pmb} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
+#' @name Distributions
+#' @title Probability Distributions for Carcasses Versus Distance from Turbine
+#' 
+#' PDFs and CDFs that are required by \code{ddd}, \code{pdd} and 
+#' \code{qdd} but are not included among the standard R distributions. Relying on
+#' custom code and included here are the Maxwell-Boltzmann (\code{pmb} and 
+#' \code{dmb}), xep0 (Pareto), xep1, xepi0 (inverse gamma), xep2 (Rayleigh), 
+#' xep02, xep12, xep012, xep123, and xep0123. Not included here are the 
+#' distributions that can be calculated using standard probability functions from
+#' base R (exponential, truncated normal, lognormal, gamma (xep01), and 
+#' chisquared) and inverse gaussian, which is calculated using 
+#' \code{statmod::dinvgauss} and \code{statmod::dinvgauss}. The functions are 
+#' designed for vector \code{x} or \code{q} and scalar parameters. 
+#' 
+#' The xep distributions are calculated by dividing its kernel (for the densities)
+#' or the integral of its kernel (for the cumulative distributions) by the 
+#' normalizing constant = integral of the kernel from 0 to Inf. The kernel of an 
+#' xep distribution is defined as \eqn{x * \exp(P(x))}, where \eqn{P(x)} is a 
+#' polynomial with terms defined by the suffix on xep. For example, the kernel 
+#' of xep12 would be x * exp(b_1*x + b_2*x^2). A \code{0} in the suffix
+#' indicates a \code{log(X)} term and an \code{i} indicates a \code{1/x} term.
+#' The parameters of the xep distributions are some combination of 
+#' \eqn{b_0, b_1, b_2, b_3}{bi, b0, b1, b2, and b3}. The parameterizations of the
+#' inverse gamma (xepi0), Rayleigh (xep2), and Pareto (xep0) follow the standard
+#' conventions of \code{shape} and \code{scale} for the inverse gamma, \code{s2} = 
+#' \eqn{s^2}{s^2} for the Rayleigh, and \code{a} = \eqn{a}{a} for the Pareto (with
+#' a scale or location parameter of 1 and PDF = a/x^(x + 1) with support (1, Inf).
+#' 
+#' The Maxwell-Boltzmann is a one-parameter family with parameter \code{a} and PDF 
+#' \eqn{f(a) = \sqrt{2/\pi}\frac{x^2 e^{-x^2/(2a^2)}}{a^3}}{f(a) = sqrt(2/pi)*x^2 * exp(-x^2/a^2)}.
+#' The kernel \eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple 
+#' closed-form integral that involves the error function (\code{pracma::erf}).
+#' 
+#' @param x,q vector of distances
+#' @param a,b0,b1,b2,b3,shape,scale,s2 parameters used in the respective
+#'  distributions.
+#' @param const (scalar, optional) normalizing constant for distributions that are
+#'  numerically integrated using \code{integrate}, namely. Providing a \code{const} is
+#'  not necessary but will improve the speed of calculation under certain
+#'  conditions.
+#' @return vector of probability densities or cumulative probabilities
 #' @export
 #'
 dmb <- function(x, a) sqrt(2/pi) * x^2/as.vector(a)^3 * exp(-x^2/(2 * as.vector(a)^2))
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pmb <- function(q, a)
-  erf(q/(sqrt(2) * as.vector(a))) - sqrt(2/pi) * (q * exp(-q^2/(2 * as.vector(a)^2)))/as.vector(a)
+  pracma::erf(q/(sqrt(2) * as.vector(a))) - sqrt(2/pi) * (q * exp(-q^2/(2 * as.vector(a)^2)))/as.vector(a)
 
-#' Integral in xep12 distribution
-#' @param x non-negative numeric vector
-#' @param a positive numeric vector
-#' @details The upper incomplete gamma function, following Wolfram Alpha, namely,
-#'  incGam(x, a) = Gamma = integral(exp(-t) * t^(a - 1) dt from x to Inf),
-#'  calculated using pgamma.
-#' @return scalar or vector of length = max(length(x), length(a)), with values
-#'  of the shorter recycled to match the length of the longer a la pnorm etc.
-#' @export
-lQint <- function(x, b1, b2){
-  Re(sqrt(pi) * exp(-b1^2/(4*b2)) * b1 *
-   (pracma::erfi(0.5*b1/sqrt(b2 + 0i)) - pracma::erfi((x*b2 + 0.5*b1)/sqrt(b2 + 0i)))/
-   (4 * (b2 + 0i)^1.5) + (exp(x^2 * b2 + x*b1) - 1)/(2*b2))
-}
-
-#' @param x, q vector of quantiles
-#' @param b1 \code{b1} parameter in the log-linear distribution
-#' @details The pdf of the log-linear distribution is defined as
-#'  f(x; b1) = b1^2 * x * exp(b1 * x)
-#' @return \code{dlogL} gives the density, \code{plogL} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep1 <- function(x, b1){
@@ -79,7 +71,7 @@ dxep1 <- function(x, b1){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep1 <- function(q, b1){
   totl <- max(length(q), length(b1))
@@ -88,7 +80,7 @@ pxep1 <- function(q, b1){
   exp(b1 * q) * (b1 * q - 1) + 1
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep02 <- function(q, b0, b2){
   const <- 1/((-b2)^(-b0/2) * (-gamma(b0/2 + 1))/(2 * b2))
@@ -98,7 +90,7 @@ pxep02 <- function(q, b0, b2){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 dxep02 <- function(x, b0, b2){
   const <- 1/((-b2)^(-b0/2) * (-gamma(b0/2 + 1))/(2 * b2))
@@ -108,54 +100,31 @@ dxep02 <- function(x, b0, b2){
 }
 
 
-#' @param x, q vector of quantiles
-#' @param b1, b2 \code{b1, b2} parameters in the log-quadratic distribution
-#' @details The pdf of the log-quadratic distribution is defined as
-#'  f(x; b1, b2) = const * x * exp(b1 * x + b2 * x^2). The normalization constant
-#'  (\code{const}) is a complicated expression but can be expressed using only
-#'  elementary functions and \code{erf}.
-#' @return \code{dlogQ} gives the density, \code{plogQ} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep12 <- function(x, b1, b2){
   const <- 4 * b2^2/(sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
-    (erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
+    (pracma::erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
   ans <- numeric(length(x))
   ans <- const * x * exp(b1*x + b2*x^2)
   ans[x <= 0] <- 0
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep12 <- function(x, b1, b2){
   const <- 1/(sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
-    (erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
+    (pracma::erf(0.5 * b1/sqrt(-b2)) + 1) - 2 * b2)
   ans <- const * (sqrt(-b2 * pi) * exp(-b1^2/(4 * b2)) * b1 *
-    (erf((-b2 * x - 0.5*b1)/sqrt(-b2)) + erf(0.5 * b1/sqrt(-b2))) +
+    (pracma::erf((-b2 * x - 0.5*b1)/sqrt(-b2)) + pracma::erf(0.5 * b1/sqrt(-b2))) +
     2 * b2 * (exp(b1 * x + b2 * x^2) - 1))
   ans[ans <= 0] <- 0
   ans
 }
 
-#' @param x, q vector of quantiles
-#' @param b1, b2 \code{b1, b2} parameters in the log-quadratic distribution
-#' @details The pdf of the log-cubic distribution is defined as
-#'  f(x; b1, b2, b3) = const * x * exp(b1 * x + b2 * x^2 + b3 * x^3). The
-#'  normalization constant (\code{const}) is a complicated expression that
-#'  cannot be expressed using only elementary functions and readily approximated
-#'  functions in R. Calculation of constant is cumbersome, so it may be calculated
-#'  externally and provided. NOTE: The log-cubic distribution is calculated via
-#'  numerical integration. It is vectorized for x but not for b1, b2, b3.
-#' @return \code{dlogC} gives the density, \code{plogC} gives the distribution
-#'  function. The length of the result is the maximum of the lengths of the
-#'  numerical arguments for the other functions. The numerical arguments are
-#'  recycled to the length of the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep123 <- function(x, b1, b2, b3, const = NULL){
@@ -164,9 +133,10 @@ dxep123 <- function(x, b1, b2, b3, const = NULL){
     lower = 0, upper = Inf, rel.tol = .Machine$double.eps^0.5)$val
   ans <- const * x * exp(b1 * x + b2 * x^2 + b3 * x^3)
   ans[x <= 0] <- 0
+  ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep123 <- function(x, b1, b2, b3, const = NULL){
   if (is.null(const)) const <- tryCatch(1/integrate(
@@ -186,18 +156,7 @@ pxep123 <- function(x, b1, b2, b3, const = NULL){
   ans
 }
 
-#' @param x, q vector of quantiles
-#' @param shape, scale \code{a > 0 (shape), b > 0 (scale)} parameters in the
-#'  inverse gamma distribution
-#' @details The pdf of the inverse gamma distribution is defined as
-#'  f(x; a, b) = b^a/gamma(a) * x^(-a - 1) * exp(-b/x). Calculation is via
-#'  \code{invgamma::dinvgamma} and \code{invgamma::pinvgamma} with modification
-#'  to return 0 instead of NaN for x <= 0. NOTE: The parameters
-#' @return \code{digam} gives the density, \code{pigam} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the otherp functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxepi0 <- function(x, shape, scale){
@@ -211,7 +170,7 @@ dxepi0 <- function(x, shape, scale){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxepi0 <- function(x, shape, scale){
   ans <- numeric(length(x))
@@ -224,17 +183,7 @@ pxepi0 <- function(x, shape, scale){
   ans
 }
 
-#' @param x, q vector of quantiles
-#' @param b0, b1, b2, b3, const parameters in the paranormal-gamma distribution
-#' @details The pdf of the paranormal-gamma distribution is defined as
-#'  f(x; b0, b1, b2, b3) = const * x * exp(b0 * log(x) + b1 * x + b2 * x^2 + b3 * x^3).
-#'  Calculation is cumbersome and done via numerical integration and is not
-#'  vectorized yet.
-#' @return \code{dxep0123} gives the density, \code{ppng} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
@@ -246,7 +195,7 @@ dxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
   # works for vector x but not beta parameters
@@ -266,17 +215,7 @@ pxep0123 <- function(x, b0, b1, b2, b3, const = NULL){
   ans
 }
 
-#' @param x, q vector of quantiles
-#' @param b0, b1, b2, const parameters in the xep012 distribution
-#' @details The pdf of the xep012 distribution is defined as
-#'  f(x; b0, b1, b2) = const * x * exp(b0 * log(x) + b1 * x + b2 * x^2).
-#'  Calculation is cumbersome and done via numerical integration and is not
-#'  vectorized (yet).
-#' @return \code{dxep012} gives the density, \code{pxep012} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep012 <- function(x, b0, b1, b2, const = NULL){
@@ -288,7 +227,7 @@ dxep012 <- function(x, b0, b1, b2, const = NULL){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep012 <- function(x, b0, b1, b2, const = NULL){
   # works for vector x but not beta parameters
@@ -308,33 +247,16 @@ pxep012 <- function(x, b0, b1, b2, const = NULL){
   ans
 }
 
-#' @param x, q vector of quantiles
-#' @param s2 \code{s2} parameter in the xep2 distribution
-#' @details The pdf of the xep2 distribution is defined as
-#'  f(x; s2) = x/s2 * exp(-x^2/(2 * s2))
-#' @return \code{dRay} gives the density, \code{pRay} gives the distribution
-#'  function. The length of the result is the maximum of the lengths of the
-#'  numerical arguments for the other functions. The numerical arguments are
-#'  recycled to the length of the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep2 <- function(x, s2) x/as.vector(s2) * exp(-x^2/(2 * as.vector(s2)))
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep2 <- function(x, s2)  1 - exp(-x^2/(2 * as.vector(s2)))
 
-#' @param x, q vector of quantiles
-#' @param a \code{a} parameter in the xep0 distribution with \code{scale = x_m}
-#'  fixed at 1.
-#' @details The pdf of the Pareto distribution with scale = 1 is defined as
-#'  f(x; a) = a/x^(a + 1)
-#' @return \code{dPare1} gives the density, \code{pPare1} gives the distribution function.
-#'  The length of the result is the maximum of the lengths of the numerical arguments
-#'  for the other functions. The numerical arguments are recycled to the length of
-#'  the result.
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 #'
 dxep0 <- function(x, a){
@@ -343,7 +265,7 @@ dxep0 <- function(x, a){
   ans
 }
 
-#' @rdname dmb
+#' @rdname Distributions
 #' @export
 pxep0 <- function(x, a){
   ans <- numeric(length(x))
@@ -354,10 +276,10 @@ pxep0 <- function(x, a){
 #' simple utility function used in optimizing the truncated glm
 #' @param r vector of distances (>=0)
 #' @param distr name of the distribution
-#' @return array with length(r) rows and p columns, where p is the number of
-#'  parameters in the glm (including the intercept). The first column is all 1s,
-#'  and the remaining columns are functions of r, specifically, log(r), r, r^2,
-#'  r^3, or 1/r, depending on what the distribution requires.
+#' @return array with \code{length(r)} rows and p columns, where p is the number 
+#'  of parameters in the glm (including the intercept). The first column is all 
+#'  1s, and the remaining columns are functions of r, specifically, log(r), r, 
+#'  r^2, r^3, or 1/r, depending on what the distribution requires.
 #' @export
 rmat <- function(r, distr){
   switch(distr,
@@ -381,7 +303,7 @@ rmat <- function(r, distr){
   )
 }
 
-#' utility function for calculating offset for integrals for glm to dd
+#' Utility Function for Constructing Offsets for GLMs
 #'
 #' This is a simple utility function for calculating offsets when exposure
 #'  is assumed to be 100% at a given distance \code{r}. This is useful for
@@ -400,13 +322,19 @@ off <- function(r, distr){
   if (distr == "inverse_gaussian") return(-1.5 * log(r))
 }
 
-#' reset par to default as in par_default for the \code{dwp} package
-#' @export
-par_reset <- function() do.call(par, par_default)
-
-#' check whether glm coefficients give proper distribution
+#' Check Whether GLM Coefficients Give Proper Distribution
+#' 
+#' In order for a fitted GLM to convert to a proper distance distribution, its
+#' integral from 0 to Inf must be finite. As a rule, when the leading coefficient 
+#' is positive, the integral diverges as the upper bound of integration approaches
+#' infinity, and \code{cofOK} would return \code{FALSE}. Likewise, in some cases,
+#' the GLM coefficients yield an integral that diverges as the lower bound 
+#' approaches 0, in which case \code{cofOK} returns \code{FALSE} as well. 
+#' \code{cofOK0} and \code{cofOKInf} check the left and right tails of the 
+#' candidate distribution, repectively, for convergence.
+#' 
 #' @param cof vector or matrix of named glm parameters (with \code{"r"} as the
-#'  distance variable.
+#'  distance variable)
 #' @param distr name of the distribution
 #' @return boolean vector (or scalar)
 #' @export
@@ -421,11 +349,6 @@ cofOK <- function(cof, distr){
   output
 }
 
-#' check whether glm coefficients give proper distribution
-#' @param cof vector or matrix of named glm parameters (with \code{"r"} as the
-#'  distance variable.
-#' @param distr name of the distribution
-#' @return boolean vector (or scalar)
 #' @rdname cofOK
 #' @export
 cofOK0 <- function(cof, distr){
@@ -454,8 +377,14 @@ cofOKInf <- function(cof, distr){
   output
 }
 
-#' remove particular distribution names from a longer list (for subsetting \code{ddArray})
+#' Remove Particular Names from a Longer List 
+#' 
+#' The intended use is to remove specific distributions from \code{ddArray} for 
+#' subsequent analyses. For example, 
+#' \code{dmod2 <- dmod[exclude("lognormal", names(dmod))]} would subset a list
+#' of models, \code{dmod}, to exclude \code{"lognomal"}.
+#' 
 #' @param what vector of distribution names to exclude
 #' @param from vector of distribution names to be excluded from
 #' @export
-exclude <- function(what, from = mod_name) setdiff(from, what)
+exclude <- function(what, from) setdiff(from, what)

@@ -8,12 +8,48 @@
 \usage{
 addCarcass(x, ...)
 
-\method{addCarcass}{shapeCarcass}(x, data_ring, plotLayout = NULL,
-  ncarcReset = TRUE, ccCol = NULL, ...)
+\method{addCarcass}{shapeCarcass}(
+  x,
+  data_ring,
+  plotLayout = NULL,
+  ncarcReset = TRUE,
+  ccCol = NULL,
+  ...
+)
 
-\method{addCarcass}{data.frame}(x, data_ring, ccCol = NULL,
-  ncarcReset = TRUE, unitCol = "turbine", rCol = "r", ...)
+\method{addCarcass}{data.frame}(
+  x,
+  data_ring,
+  ccCol = NULL,
+  ncarcReset = TRUE,
+  unitCol = "turbine",
+  rCol = "r",
+  ...
+)
+}
+\arguments{
+\item{x}{carcass data to insert into \code{data_ring}}
+
+\item{...}{ignored}
+
+\item{data_ring}{ring data for receiving carcass data from \code{x}}
+
+\item{plotLayout}{(optional) \code{shapeLayout} object to facilitate proper
+insertion of carcass data into ring structure.}
+
+\item{ncarcReset}{boolean to direct the function to set the carcass counts
+in all the rings to 0 before adding the new carcasses (default) or to add the
+new carcasses to the old totals (\code{ncarcReset = FALSE}).}
+
+\item{ccCol}{name of carcass class column (optional)}
+
+\item{unitCol}{name of unit column}
+
+\item{rCol}{name of column with carcass distances}
 }
 \description{
-Add Carcasses to a Site Layout
+After the site layout is analyzed and structured by rings for analysis,
+ carcass data may still need to be added to the site data. \code{addCarcass}
+ grabs carcass location data from a shape file or data frame and inserts it
+ into ring data.
 }

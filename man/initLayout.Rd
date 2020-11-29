@@ -2,76 +2,173 @@
 % Please edit documentation in R/fun.R
 \name{initLayout}
 \alias{initLayout}
-\title{Create a Data Structure or "Map" for the Site Layout}
+\title{Create a Data Structure or Map for the Site Layout}
 \usage{
-initLayout(data_layout, dataType = "simple", unitCol = "turbine",
-  file_turbine = NULL, radCol = "radius", shapeCol = "shape",
-  padCol = "padrad", roadwidCol = "roadwidth", nRoadCol = "n_road",
-  xCol = "x", yCol = "y", scCol = NULL, notSearched = NULL,
-  quiet = FALSE)
+initLayout(
+  data_layout,
+  dataType = "simple",
+  unitCol = "turbine",
+  file_turbine = NULL,
+  radCol = "radius",
+  shapeCol = "shape",
+  padCol = "padrad",
+  roadwidCol = "roadwidth",
+  nRoadCol = "n_road",
+  xCol = "x",
+  yCol = "y",
+  scCol = NULL,
+  notSearched = NULL,
+  quiet = FALSE
+)
 }
 \arguments{
-\item{data_layout}{name of a shape file (polygons or multipolygons) that
-delineates areas searched at each turbine. Search areas may be defined for
-any number of search classes (associated with different detection
-probabilities) and turbines. Search classes are listed the \code{scVar}
-column and turbine IDs are specified in the (\code{unitCol}) column. If a
-\code{unitCol} is provided (required if the site consists of more than one
-turbine), each turbine should have a syntactically valid name. Search class
-polygons at each turbine should be non-intersecting; otherwise, the function
-exits with an error.}
+\item{data_layout}{Either the name of a shape file (polygons or multipolygons)
+that delineates areas searched at each turbine; a .csv file with R polygons,
+(x, y) coordinates, or simple descriptions of search parameters at each turbine;
+or a data frame with r polygons, (x, y) coordinates, or simple plot layout
+descriptions. See "Details" for details.}
 
-\item{unitCol}{(optional) column name for turbine IDs. If a \code{unitCol} is
-provided, a \code{file_turbine} with the turbine centers must also be
-provided and the \code{unitCol} must be present in \code{file_turbine},
-\code{data_layout}, and \code{file_CO}. Turbine IDs in the \code{unitCol}
-must be syntactically valid R names (see Description above).}
+\item{dataType}{An identifier for the type of data to be imported: \code{"shape"},
+\code{"polygon"}, \code{"xy"}, or \code{"simple"}. If \code{data_layout} is
+the name of a shape file, the \code{dataType = "shape"} identifier is optional.}
 
-\item{file_turbine}{a shape file (points) giving the locations of the turbine
-centers for turbines listed in the \code{unitCol} column in the \code{data_layout}}
+\item{unitCol}{Column name for turbine IDs. If \code{file_turbine} is the name
+of a shape file, then \code{file_turbine} must also be provided, giving
+turbine locations. The \code{unitCol} must be present in \code{data_layout}
+and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
+must be syntactically valid R names (see Details below).}
 
-\item{scCol}{name of column in data_layout with names of search classes. This
-is used for excluding unsearched areas from the grid data (x, y). It is used
-ONLY with \code{dataType = "xy"} and used to remove rows with
-\code{x[, scCol] == notSearched}, where \code{x} is the search grid data frame.}
+\item{file_turbine}{The name of a shape file (points) giving the turbine
+locations  for turbines listed in the \code{unitCol} column in the
+\code{data_layout}. \code{file_turbine} is required for shape files and
+not required (and is ignored) for other data types.}
 
-\item{notSearched}{a companion to \code{scCol} for removing unsearched areas
-from the search grid.}
+\item{radCol}{for \code{dataType = "simple"} layouts: the name of the column in
+\code{data_layout} that gives the search radius for each turbine}
 
-\item{file_CO}{name of a shape file (points) for carcass observations
-containing carcass discovery locations. If a \code{unitCol} name is provided,
-turbine IDs must be provided for  carcass discoveries. Search classes are
-optional.}
+\item{shapeCol}{for \code{dataType = "simple"} layouts: the name of the column in
+\code{data_layout} that gives the plot shape for each turbine.}
 
-\item{dcCol}{a categorical interacting class variable with levels of factors
-that may affect the distribution of carcasses, for example turbine size, wind
-regime, operational constraints (like curtailment).}
+\item{padCol}{for \code{dataType = "simple"} layouts: the name of the column in
+\code{data_layout} that gives the radius of the turbine pad}
+
+\item{roadwidCol}{for \code{dataType = "simple"} layouts: the name of the column in
+\code{data_layout} that gives the width of the turbine access road(s)}
+
+\item{nRoadCol}{for \code{dataType = "simple"} layouts: the name of the column in
+\code{data_layout} that gives the number of turbine access roads at each turbine}
+
+\item{xCol}{for \code{dataType = "xy"} layouts: the name of the column in
+\code{data_layout} that gives \code{x} coordinates on the grid}
+
+\item{yCol}{for \code{dataType = "xy"} layouts: the name of the column in
+\code{data_layout} that gives \code{y} coordinates on the grid}
+
+\item{scCol}{for \code{dataType = "xy"} layouts: the name of column in data_layout
+with names of search classes. This is used for excluding unsearched areas
+from the grid data (x, y). It is used ONLY with \code{dataType = "xy"} and
+used to remove rows with \code{x[, scCol] == notSearched}, where \code{x}
+is the search grid data frame.}
+
+\item{notSearched}{for \code{dataType = "xy"} layouts: the name(s) of search class(es)
+in \code{scCol} that are not searched. Ignored for data types other than
+\code{xy}.}
+
+\item{quiet}{boolean for controlling whether progress of calculations and other
+notes are printed to the console as the function runs}
 }
 \value{
-A \code{shapeLayout} object, which is a list with spatial
- characteristics of the site, including
+A list or data frame with components appropriate to the type of data
+ imported. The data structure is returned as an S3 class object, which other
+ functions in \code{dwp} can recognize and properly process. There is minimal
+ processing on the data after importing, but the structures are lightly error-checked
+ and formatted for more thorough processing, depending on data type and analysis
+ objectives. Typically, the layout data will be later processed by a call to
+ \code{\link{prepRing}} to create a characterization of the searched area at 
+ the site by "rings", with tallies of searched area, search classes, and 
+ fraction of area searched in concentric, 1 meter rings around each turbine. 
+ The format of the output depends on the format of the input. There are 
+ several possibilities, including, each of which is an S3 object with 
+ characteristics specific to the imported data:
  \describe{
-   \item{\code{$layout}}{turbine search area configurations (polygons and multipolygons)
-     from \code{data_layout} shape file as an \code{sf} object.}
-   \item{\code{$layoutAdj}}{polygons from \code{$layout} but all recentered at (0, 0)}
-   \item{\code{$turbines}}{turbine centers (as \code{sf} object)}
-   \item{\code{$carcasses}}{carcass discovery locations along with (optional)
-     incidental information (turbine, visibility class, species,)}
-   \item{\code{$unitCol, $ncarc, $tset, $tcenter}}{name of the column with turbine IDs
-     (\code{$unitCol}, character string), number of carcasses found at each turbine
-     (\code{$ncarc}, vector), turbine names (\code{$tset}, vector of character strings),
-     locations of turbine centers (\code{$tcenter}, nturb by 2 array) UTMs of
-     turbine centers, extracted and simplified from \code{$turbines}}
+   \item{\code{shapeLayout}}{S3 object and list with elements:
+     \itemize{
+       \item \code{$layout} = turbine search area configurations (polygons 
+         and multipolygons) from \code{data_layout} shape file as an 
+         \code{\link[sf]{sf}} object.
+       \item \code{$layoutAdj} = polygons from \code{$layout} but recentered at (0, 0)
+       \item \code{$turbines} = turbine data (as \code{\link[sf]{sf}} object)
+       \item \code{$unitCol} = name of the column with turbine IDs (character string)
+       \item \code{$tset} = turbine names (vector of character strings)
+       \item \code{$tcenter} = locations of turbine centers (nturb by 2 array)
+         with UTMs of turbine locations, extracted and simplified from
+         \code{$turbines}. Column names are \code{X} and \code{Y}, measuring
+         meters from a reference point. Row names are the names of the turbines.
+     }
+   }
+   \item{\code{simpleLayout}}{S3 object and data frame with columns:
+     \itemize{
+       \item \code{turbine} = turbine IDs (syntactically valid R names)
+       \item \code{radius} = search radius. If \code{shape = "square"}, then
+         radius is 1/2 the width of the square, NOT the diagonal.
+       \item \code{shape} = general descriptor of the shape of the search plot
+       \item \code{padrad} = radius of the turbine pad (assumed circular)
+       \item \code{roadwidth} = width of the access road(s)
+       \item \code{n_road} = number of access roads
+     }
+   }
+   \item{\code{polygonLayout}}{
+     S3 object and list of polygons, one for each turbine. The maximum search
+     radius at any turbine is assigned as an attribute (\code{attr(, "rad")}).
+   }
+   \item{\code{xyLayout}}{S3 object and list with elements:
+     \itemize{
+       \item \code{xydat} = data frame with columns for turbine names, x and y
+         coordinates of 1m grid centers spanning the searched area, number of
+         carcasses found in each grid cell, and optional covariates.
+       \item \code{tcenter} = matrix giving turbine locations (\code{x, y}), with
+         row names = turbine names.
+       \item \code{ncarc} = vector giving the number of carcasses found at each
+         turbine.
+       \item \code{unitCol} = name of the column where turbine IDs are stored in
+         \code{xydat}.
+       \item \code{tset} = names of the searched turbines
+     }
+   }
  }
 }
 \description{
-Read shape files for search area polygons, turbine locations,
- and carcass discovery locations. If there is more than 1 turbine, there must
- be a turbine ID column (\code{unitCol}) in each of the files. The individual
+Read and do premliminary error-checking and formatting of search
+ plot layout data. Search plot layout data can come in any of several different
+ formats, including shape files for search area polygons and turbine locations,
+ R polygons, (x, y) coordinates, or simple description of search plot type for
+ each turbine (square, circular, road & pad). A vector of distances along with
+ a search radius is also accommodated by \code{dwp}, but these can be directly
+ processed in \code{\link{prepRing}} without preprocessing in \code{initLayout}.
+}
+\details{
+All the layout types (except for vector, which is addressed elsewhere)
+ can accommodate patterns of seached and not searched areas. If the searched
+ areas are subdivided into different search classes with different detection
+ probabilities, then search plot layout data must be input either from shape files
+ with non-intersecting polgons delineating the search classes or from x-y grid
+ data. If there is more than one search class variable (for example, ground
+ cover and search schedule), then the covariates may be entered in separate
+ columns if the layout files give grid coordinates or may be combined into
+ one column in the shape files. For example, ground visibility may be easy or
+ difficult and search schedule may be 1-day or 14-day. These can be combined
+ into a single column with values of, say, \code{easy1}, \code{easy14},
+ \code{difficult1}, and \code{difficult14}.
+
+ There must be a turbine ID column (\code{unitCol}) in each of the files. The individual
  turbine ID's must be syntactically valid R names, i.e., contain combinations
  of letters, numbers, dot ( . ), and underscores ( _ ) only and not begin with
  a number or a dot followed by a number. Other characters are not allowed: no
- spaces, hyphens, parentheses, etc. All three shape files (search area
- polygons, turbine locations, carcass discovery locations) must have their
- three standard component files (.shp, .shx, .dbf) stored in the same folder.
+ spaces, hyphens, parentheses, etc.
+
+ If shape files are to be imported, both shape files (search area polygons and
+ turbine locations) must have their three standard, mandatory component files
+ (.shp, .shx, .dbf) stored in the same folder. Only the name of the .shp should
+ be entered in the function call. Other components are automatically searched
+ for and processed if available.
 }
