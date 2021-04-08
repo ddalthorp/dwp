@@ -26,6 +26,9 @@
 #'  meters relative to a turbine at (0, 0).
 "layout_polygon"
 
+#' Example Bare Vector Format for Eagle Data
+"layout_eagle"
+
 #' Example Carcass Distances to Accompany the Polygon Layout Data Set
 #'
 #' @format A data frame illustrating an import format for carcass distances.
@@ -34,7 +37,7 @@
 #'  turbine. The data set is used in the "polygon" example in the User Guide.
 "carcass_polygon"
 
-#' Example Simple Data Format for Site Layout
+#' Example Simple Geometry Data Format for Site Layout
 #'
 #' @format A data frame illustrating an import format for a simple description of a
 #'  site layout by turbine. Each turbine (\code{turbine}) is classed according to
@@ -49,11 +52,29 @@
 #'  (\code{n_road}) searched out to \code{radius} meters from the turbine.
 "layout_simple"
 
+#' Example Data for Site Layout on an (x, y) Grid
+#'
+#' @format A data frame illustrating the required raw data format for using
+#'  a grid format to characterize a site layout. There are five
+#'  columns: one giving turbine IDs (\code{turbine}), columns for the \code{x}
+#'  and \code{y} coordinates on 1 m. grids that overlay the search plot, a 
+#'  column giving the carcass count in each grid cell, and a column giving the 
+#'  distance of each cell from the turbine. There is only one turbine, searched
+#'  on road and pad out. Coordinates are in meters relative to the turbine at 
+#'  (0, 0).
+"layout_xy"
+
+#' Carcass Data to Accompany the Simple Geometry Data Format
+"carcass_simple"
+
 #' Names of All the Available Models
 "mod_all"
 
 #' Vector of Colors Used in Graphs of Fitted Models
 "mod_color"
+
+#' Vector of Line Types Used in Graphs of Fitted Models
+"mod_lty"
 
 #' Vector of GLM Offsets for Available Models
 "mod_offset"
@@ -77,3 +98,33 @@
 
 #' Default Graphics Parameters
 "par_default"
+
+#' Test Criteria for Model Selection
+#'
+#' @format A list containing the parameters used for test criteria in model 
+#' selection an \code{ddArray} objects. The \code{sieve_default} values are used as
+#' a default in \code{\link{modelFilter}}. If desired, users may create their 
+#' own tests, using \code{sieve_default} as a template. The same list elements
+#' must all be present and have the same structure as the defaults, namely:
+#' \describe{
+#'  \item{\code{$aic}}{the cutoff for DeltaAIC scores; models with higher scores 
+#'    are removed from further consideration. Default is \code{$aic = 10}}
+#'  \item{\code{$hin}}{a boolean to indicate whether or not to use high leverage 
+#' points as a criterion for model selection. Default is \code{$hin = TRUE}}
+#'  \item{\code{$rtail}}{a vector of probabilities that the fitted model must 
+#'    exceed at 80, 120, 150, and 200 meters. Default is 
+#'    \code{rtail = c(p80 = 0.50, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
+#'    Custom test parameters must be a vector probabilities with "p80", "p120",
+#'    "p150", and "p200" in the names.}
+#'  \item{\code{ltail}}{a vector of probabilities that a fitted model must 
+#'    not exceed at 20 and 50 meters. Default is 
+#'    \code{ltail = c(p20 = 0.50, p50 = 0.90)}. Custom test parameters must be
+#'    a vector of probabilities with "p20" and "p50" in \code{names}.}
+#' }
+#' 
+"sieve_default"
+
+#' Locations of All Carcasses in Grid Data
+#' @format matrix with columns x, y, r for all 100 carcasses in the simulation to
+#'  generate the carcass data for the xy grid that was searched on road and pad.
+"xyr"

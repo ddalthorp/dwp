@@ -32,21 +32,40 @@ layout_simple <- read.csv(textConnection('
 mod_color = c(
   xep1 = colors()[35], #brown3 colors()[585], #darkorchid2 #
   xep01 = 2,
-  xep2 = colors()[50],
+  xep2 = 1,
   xep02 = 1,
   xep12 = colors()[122],
   xep012 = 4,
   xep123 = colors()[148],
   xep0123 = colors()[657], #yellowgreen
   tnormal = 4,
-  MaxwellBoltzmann = colors()[257], #deepskyblue2 [dashed]
+  MaxwellBoltzmann = colors()[257], #deepskyblue2
   lognormal = colors()[96],
   xepi0 = 5,
   xep0 = colors()[369],
-  chisq = 1,
+  chisq = colors()[35],
   exponential = colors()[123], #brown3
-  inverse_gaussian = 2,
+  inverse_gaussian = 4,
   constant = 8
+)
+mod_lty = c(
+  xep1 = 2, 
+  xep01 = 1,
+  xep2 = 2,
+  xep02 = 1,
+  xep12 = 2,
+  xep012 = 1,
+  xep123 = 2,
+  xep0123 = 1,
+  tnormal = 4,
+  MaxwellBoltzmann = 4, 
+  lognormal = 1,
+  xepi0 = 2,
+  xep0 = 2,
+  chisq = 2,
+  exponential = 2, 
+  inverse_gaussian = 2,
+  constant = 2
 )
 degOrder <-c(
   "constant",
@@ -279,6 +298,150 @@ i <- which(tmpind == 1)
 carcass_polygon <- data.frame(turbine = turc[i], r = round(r[i], 1),
   stringsAsFactors = FALSE)
 
+# create carcass data for the simple geometry:
+set.seed(20201112)
+r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2]) # distance
+theta <- runif(ncarc) * 2 * pi # angle
+# create carcass data frame for polygons:
+turc <- sample(unique(layout_simple$turbine), size = ncarc, replace = T)
+carcass_simple <- data.frame(turbine = turc, r = r, theta = theta)
+rownames(layout_simple) <- layout_simple$turbine
+carcass_simple$x <- carcass_simple$r * cos(carcass_simple$theta)
+carcass_simple$y <- carcass_simple$r * sin(carcass_simple$theta)
+t1found <- which(carcass_simple$turbine == "t1" & 
+  carcass_simple$r <= layout_simple$radius[layout_simple$turbine == "t1"])
+t2found <- which(carcass_simple$turbine == "t2" & 
+  abs(carcass_simple$x) <= layout_simple$radius[layout_simple$turbine == "t2"] &
+  abs(carcass_simple$y) <= layout_simple$radius[layout_simple$turbine == "t2"]
+)
+tind <- which(layout_simple$turbine == "t3")
+t3found <- which(carcass_simple$turbine == "t3" & carcass_simple$r <= layout_simple$radius[tind] & 
+  (carcass_simple$r <= layout_simple$padrad[tind] |
+    (carcass_simple$x >= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2) |
+    (carcass_simple$x <= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2)
+  )
+)
+tind <- which(layout_simple$turbine == "t4")
+t4found <- which(matrixStats::rowProds(cbind(
+  carcass_simple$turbine == "t4",
+  carcass_simple$r <= layout_simple$radius[tind],
+  carcass_simple$r <= layout_simple$padrad[tind],
+  carcass_simple$x >= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2
+))==1)
+carcass_simple <- carcass_simple[c(t1found, t2found, t3found, t4found), c("turbine", "r")]
+carcass_simple$r <- round(carcass_simple$r, 2)
+carcass_simple <- carcass_simple[order(as.numeric(rownames(carcass_simple))), ]   
+rownames(carcass_simple) <- 1:nrow(carcass_simple)
+
+### xy data
+# define carcass distribution
+dist_d = "gamma"
+dparm = c(f50 = 0.6, f100 = 0.9)
+dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){
+  max(abs(pgamma(50, shape = x[1], scale=x[2]) - dparm["f50"]),
+      abs(pgamma(100, shape = x[1], scale = x[2]) - dparm["f100"]))
+})$par)
+ncarc = 100
+set.seed(20201111)
+# generate carcasses
+r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2])
+theta <- runif(ncarc) * 2 * pi
+xyr <- r * cbind(cos(theta), sin(theta), 1)
+colnames(xyr) <- c("x", "y", "r")
+# search plot parameters
+radius = 75; padrad = 15; roadwidth = 5
+# carcass searches
+xyri <- xyr
+xyri <- xyri[xyri[, "r"] <= radius + 0.5, ]
+xyri <- xyri[xyri[, "r"] <= padrad | (xyri[, "x"] > 0 & abs(xyri[, "y"]) <= roadwidth/2), ]
+# create layout
+xygrid <- expand.grid(x = -radius:radius, y = -radius:radius)
+xygrid <- xygrid[sqrt(rowSums(xygrid^2)) <= radius, ]
+xygrid <- xygrid[sqrt(rowSums(xygrid^2)) <= padrad |
+  (xygrid[, "x"] > 0 & abs(xygrid[, "y"]) <= roadwidth/2),]
+xygrid <- as.matrix(xygrid)
+xygrid <- cbind(xygrid, ncarc = 0)
+xygrid <- cbind(xygrid, r = sqrt(rowSums(xygrid[, c("x", "y")]^2)))
+xygrid <- xygrid[xygrid[, "r"] > 0.0001, ]
+# assign carcasses to grid points
+xyri[, "x"] <- round(xyri[, "x"])
+xyri[, "y"] <- round(xyri[, "y"])
+require(magrittr)
+for (i in 1:nrow(xyri)){
+  xygrid[which(xygrid[, "x"] == xyri[i, "x"] & xygrid[, "y"] == xyri[i, "y"]), "ncarc"] %<>% `+`(., 1)
+}
+xygrid[xygrid[, "x"] == -9 & xygrid[, "y"] == -12, "ncarc"] <- 1
+xyri <- data.frame(xyri, stringsAsFactors = FALSE)
+xyri$turbine <- "t1"
+layout_xy <- as.data.frame(xygrid, stringsAsFactors = FALSE)
+layout_xy$turbine <- "t1"
+rownames(layout_xy) <- 1:nrow(layout_xy)
+
+# eagle data
+layout_eagle <- read.csv(textConnection('
+"DateFound","turbine","r"
+"03-Aug-05","t21",23
+"10-Oct-05","t43",46
+"31-Oct-05","t14",25
+"09-Apr-06","t25",30
+"28-Apr-06","t16",65
+"03-May-06","t21",42
+"04-May-06","t42",15
+"05-May-06","t15",18
+"01-Sep-06","t38",70
+"02-May-06","t52",17
+"09-May-07","t25",22
+"13-Mar-08","t67",49
+"03-Apr-08","t52",27
+"16-Apr-08","t64",25
+"16-Apr-08","t61",45
+"22-Apr-08","t37",51
+"30-Apr-08","t38",26
+"25-Jun-08","t30",37
+"12-Sep-08","t56",80
+"01-Dec-08","t31",19
+"04-Mar-09","t9",56
+"11-Mar-09","t68",100
+"08-Apr-09","t24",71
+"28-Apr-09","t21",20
+"01-May-09","t20",33
+"07-Oct-09","t6",35
+"26-Oct-09","t47",46
+"29-Aug-12","t48",40
+"28-Feb-14","t21",50
+"25-Mar-14","t57",20
+"09-Apr-14","t64",30
+"28-Mar-15","t52",70
+"06-Jun-15","t66",56
+"24-Aug-15","t49",20
+"08-Mar-16","t50",50
+"22-Mar-16","t13",40
+"05-Apr-16","t11",12
+"19-Apr-16","t67",44
+"23-Apr-16","t47",50
+"01-May-16","t38",49
+"02-May-16","t50",25
+"06-May-16","t59",40
+"21-May-16","t41",81
+"05-Oct-16","t61",77
+"16-Oct-16","t30",18
+"26-Oct-16","t7",36
+"10-Apr-18","t6",50
+"19-Sep-17","t45",75
+"08-Mar-18","t63",70
+"16-Mar-18","t53",20
+"28-Mar-18","t63",50
+"08-Apr-18","t27",20
+"29-Apr-18","t54",35
+"15-Jun-18","t51",29
+"15-Jun-18","t39",46
+"15-Jun-18","t61",58
+"15-Oct-18","t68",63
+"27-Sep-18","t62",30
+"16-Mar-19","t27",50
+"23-Apr-19","t29",45
+'), as.is = T)
+
 sieve_default <- list(
   aic = 10,
   hin = T,
@@ -290,15 +453,21 @@ usethis::use_data(
   cof_name,
   constraints,
   carcass_polygon,
+  carcass_simple,
+  layout_eagle,
   layout_polygon,
   layout_simple,
+  layout_xy,
   mod_all,
   mod_color,
+  mod_lty,
   mod_offset,
   mod_standard,
   mod_xy,
   natural,
   par_default,
   parm_name,
+  sieve_default,
+  xyr, 
   internal = FALSE, overwrite = TRUE)
 

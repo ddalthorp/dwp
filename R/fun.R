@@ -21,9 +21,15 @@
 #'  and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
 #'  must be syntactically valid R names (see Details below).
 #' @param file_turbine The name of a shape file (points) giving the turbine
-#'  locations  for turbines listed in the \code{unitCol} column in the
-#'  \code{data_layout}. \code{file_turbine} is required for shape files and
-#'  not required (and is ignored) for other data types.
+#'  locations for turbines listed in the \code{unitCol} column in the
+#'  \code{data_layout} if \code{data_layout} is a shape file. If 
+#'  \code{dataType = "xy"} and the grids in \code{data_layout} are all centered
+#'  at (0, 0) with their turbines at the center, then \code{file_turbine} is not
+#'  necessary and is ignored. Otherwise, if the grid coordinates are UTMs, 
+#'  \code{file_turbine} is either (1) a data frame with turbine names (in `unitCol`)
+#'  and the location of turbines in `x` and `y`, or (2) the name of a .csv file 
+#'  with turbine locations (`unitCol`, `x`, and `y`). \code{file_turbine} is not 
+#'  required (and is ignored) for other data types.
 #' @param radCol for \code{dataType = "simple"} layouts: the name of the column in
 #'  \code{data_layout} that gives the search radius for each turbine
 #' @param shapeCol for \code{dataType = "simple"} layouts: the name of the column in
@@ -38,14 +44,17 @@
 #'  \code{data_layout} that gives \code{x} coordinates on the grid
 #' @param yCol for \code{dataType = "xy"} layouts: the name of the column in
 #'  \code{data_layout} that gives \code{y} coordinates on the grid
+#' @param ncarcCol for \code{dataType = "xy"} layouts: the name of the column with
+#'  carcass counts in each grid cell. The column is required but may be all zeros
+#'  with carcasses added from a matrix of carcass locations later
 #' @param scCol for \code{dataType = "xy"} layouts: the name of column in data_layout
 #'  with names of search classes. This is used for excluding unsearched areas
 #'  from the grid data (x, y). It is used ONLY with \code{dataType = "xy"} and
 #'  used to remove rows with \code{x[, scCol] == notSearched}, where \code{x}
 #'  is the search grid data frame.
-#' @param notSearched for \code{dataType = "xy"} layouts: the name(s) of search class(es)
-#'  in \code{scCol} that are not searched. Ignored for data types other than
-#'  \code{xy}.
+#' @param notSearched for \code{dataType = "xy"} layouts: the name(s) of search 
+#'  class(es) in \code{scCol} that are not searched (optional). Ignored for data 
+#'  types other than \code{xy}.
 #' @param quiet boolean for controlling whether progress of calculations and other
 #'  notes are printed to the console as the function runs
 #'
@@ -62,11 +71,11 @@
 #'  into a single column with values of, say, \code{easy1}, \code{easy14},
 #'  \code{difficult1}, and \code{difficult14}.
 #'
-#'  There must be a turbine ID column (\code{unitCol}) in each of the files. The individual
-#'  turbine ID's must be syntactically valid R names, i.e., contain combinations
-#'  of letters, numbers, dot ( . ), and underscores ( _ ) only and not begin with
-#'  a number or a dot followed by a number. Other characters are not allowed: no
-#'  spaces, hyphens, parentheses, etc.
+#'  There must be a turbine ID column (\code{unitCol}) in each of the files. The 
+#'  individual turbine ID's must be syntactically valid R names, i.e., contain 
+#'  combinations of letters, numbers, dot ( . ), and underscores ( _ ) only and 
+#'  not begin with a number or a dot followed by a number. Other characters are 
+#'  not allowed: no spaces, hyphens, parentheses, etc.
 #'
 #'  If shape files are to be imported, both shape files (search area polygons and
 #'  turbine locations) must have their three standard, mandatory component files
@@ -132,18 +141,24 @@
 #'      }
 #'    }
 #'  }
+#'
 #' @export
 initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     file_turbine = NULL, radCol = "radius", shapeCol = "shape", padCol = "padrad",
     roadwidCol = "roadwidth", nRoadCol = "n_road", xCol = "x", yCol = "y",
-    scCol = NULL, notSearched = NULL, quiet = FALSE){
+    ncarcCol = "ncarc", scCol = NULL, notSearched = NULL, quiet = FALSE){
   # traffic directing
   dataType <- tolower(dataType)
   if (dataType == "shape" || (length(data_layout) == 1 &&
       is.character(data_layout) && grepl(".shp", data_layout))){
-    plotLayout <- sf::st_read(data_layout, stringsAsFactors = FALSE, quiet = quiet)
+    plotLayout <- sf::st_zm(sf::st_read(
+      data_layout, stringsAsFactors = FALSE, quiet = quiet),
+      drop = T, what = "ZM")
+
     plotLayout0 <- sf::st_drop_geometry(plotLayout) # easier quick subsetting
-    turbines <- sf::st_read(file_turbine, stringsAsFactors = FALSE, quiet = quiet)
+    turbines <- sf::st_zm(sf::st_read(
+      file_turbine, stringsAsFactors = FALSE, quiet = quiet),
+      drop = T, what = "ZM")
     turbines0 <- sf::st_drop_geometry(turbines)
     if (!is.null(unitCol) && !is.na(unitCol)){
       if (is.null(file_turbine))
@@ -164,15 +179,14 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
         badnm <- unique(turbines0[badind, unitCol])
         badnm <- badnm[1:min(length(badnm), 3)]
         goodnm <- gsub("^X", "t", make.names(badnm))
-        message(
-          "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
-          "These (", paste(badnm, collapse = ", "),
-          "...) can be converted to syntactically valid names (",
-          paste(goodnm, collapse = ", "), "...) ",
-          "if desired."
-        )
-        tmp <- readline("convert [y]? or not [n]? ")
-        if (!identical(tolower(tmp), "y") & tmp != "") stop("aborting...")
+        if(!quiet){
+          message(
+            "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
+            "These (", paste(badnm, collapse = ", "),
+            "...) will be converted to syntactically valid names (",
+            paste(goodnm, collapse = ", "), "...). "
+          )
+        }
         mknm <- make.names(turbines0[, unitCol])
         badind <- which(mknm != turbines0[, unitCol])
         badnm <- mknm[badind]
@@ -205,6 +219,8 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       slayout <- read.csv(data_layout, stringsAsFactors = FALSE)
     } else if (is.data.frame(data_layout)){
       slayout <- data_layout
+      slayout[] <- lapply(slayout, 
+        function(x) if(is.factor(x)) as.character(x) else x)
     }
     if ("simpleLayout" %in% class(data_layout)) return(data_layout)
     # rudimentary error-checking:
@@ -240,6 +256,8 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
   } else if (dataType == "polygon"){
     if (is.data.frame(data_layout) || is.matrix(data_layout)){
       playout <- data_layout
+      playout[] <- lapply(playout, 
+        function(x) if(is.factor(x)) as.character(x) else x)
     } else if (length(data_layout) == 1 && is.character(data_layout)){
       playout <- read.csv(data_layout, stringsAsFactors = FALSE)
     } else {
@@ -273,6 +291,8 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       xylayout <- read.csv(data_layout, stringsAsFactors = FALSE)
     } else if (is.data.frame(data_layout)){
       xylayout <- data_layout
+      xylayout[] <- lapply(xylayout, 
+        function(x) if (is.factor(x)) as.character(x) else x)      
     }
     if (!unitCol %in% names(xylayout))
       stop("unitCol must be included in data_layout")
@@ -287,8 +307,23 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       xylayout <- xylayout[!xylayout[, scCol] %in% notSearched, ]
     }
     if (!is.null(file_turbine)){
-      xyturbine <- read.csv(file_turbine, stringsAsFactors = FALSE)
+      if (is.character(file_turbine)){
+        xyturbine <- read.csv(file_turbine, stringsAsFactors = FALSE)
+      } else if (is.data.frame(file_turbine)){
+        xyturbine[] <- lapply(xyturbine, 
+          function(x) if (is.factor(x)) as.character(x) else x)
+      }
     } else {
+      tmp <- sqrt(xylayout$x^2 + xylayout$y^2)
+      if (min(tmp) > 200 | max(tmp) > 2000){ 
+        stop(
+          "initLayout: coordinates in data_layout do not appear to be ",
+          "relative to turbine locations, i.e., with each turbine located at ",
+          "(0, 0) relative to its grid coordinates. Either revise the ",
+          "coordinates or provide a file (or data frame) with the turbine ",
+          "locations in the file_turbine argument."
+        )
+      }
       xyturbine <- data.frame(
         turbine = gtools::mixedsort(unique(xylayout$turbine)),
         x = 0,
@@ -301,7 +336,7 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     if (!all(xylayout[, unitCol] %in% xyturbine[, unitCol]))
       stop("Some units in data_layout are missing their counterparts in ",
            "file_turbine")
-
+    # reset the xy coordinates to be relative to turbine locations
     for (ti in unique(xylayout[, unitCol])){
       lind <- which(xylayout[, unitCol] == ti)
       tind <- which(xyturbine[, unitCol] == ti)
@@ -311,11 +346,10 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     xylayout$r <- sqrt(rowSums(xylayout[, c(xCol, yCol)]^2))
     nms <- xyturbine[, unitCol]
     xyturbine <- as.matrix(xyturbine[, c(xCol, yCol)])
-    tbl <- table(xylayout[ , c("ncarc", "turbine")])
-    zilch <- which(rownames(tbl) == 0)
-    tbl <- tbl[-zilch, ]
-    if (is.vector(tbl)) ncarc <- tbl else ncarc <- colSums(tbl)
-    ncarc <- ncarc[gtools::mixedsort(names(tbl))]
+    tbl <- aggregate(ncarc ~ turbine, xylayout, sum)
+    ncarc <- tbl$ncarc
+    names(ncarc) <- tbl$turbine
+    ncarc <- ncarc[gtools::mixedsort(names(ncarc))]
     ncarc <- c(ncarc, total = sum(ncarc))
     rownames(xyturbine) <- nms
     output <- list(xydat = xylayout, tcenter = xyturbine, ncarc = ncarc,
@@ -362,14 +396,14 @@ readCarcass <- function(file_cod, unitCol = "turbine", quiet = FALSE){
       badnm <- unique(carcasses0[badind, unitCol])
       badnm <- badnm[1:min(length(badnm), 3)]
       goodnm <- gsub("^X", "t", make.names(badnm))
-      message(
-        "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
-        "These (", paste(badnm, collapse = ", "),
-        "...) can be converted to syntactically valid names (", goodnm, "...) ",
-        "if desired."
-      )
-      tmp <- readline("convert [y]? or not [n]? ")
-      if (!identical(tolower(tmp), "y") & tmp != "") stop("aborting...")
+      if(!quiet){
+        message(
+          "\n\nNOTE: Not all the turbine names are syntactically valid.\n",
+          "These (", paste(badnm, collapse = ", "),
+          "...) will be converted to syntactically valid names (", 
+          paste(goodnm, collapse = ", "), "...). "
+        )
+      }
       mknm <- make.names(carcasses0[, unitCol])
       badind <- which(mknm != carcasses0[, unitCol])
       badnm <- mknm[badind]
@@ -883,34 +917,74 @@ ddFit.xyLayout <- function(x, distr = "standard", scVar = NULL, notSearched = NU
     stop(paste0(distr[!distr %in% mod_xy], " not in list of models ",
         "accommodated for xy data."))
   }
+  
+  ################ new-->
   for (di in distr){
+    output[[di]] <- list()
     form <- formula(paste0("ncarc ~ ", paste(cof_name[[di]][-1], collapse = " + "),
       scl))
-    output[[di]] <- suppressWarnings(glm(
-      formula = form, data = dat, family = "poisson"))
+    output[[di]]$glm <- suppressWarnings(glm(
+      formula = form, data = dat, family = "poisson"
+    ))
     output[[di]]$distr <- di
     output[[di]]$form <- form
     output[[di]]$scVar <- scVar
-    output[[di]]$parms <- cof2parms(output[[di]]$coefficients, distr = di)
-    output[[di]]$varbeta <- summary(output[[di]])$cov.unscaled
+    output[[di]]$coefficients <- output[[di]]$glm$coefficients
+    output[[di]]$parms <- cof2parms(output[[di]]$glm$coefficients, distr = di)
+    output[[di]]$varbeta <- summary(output[[di]]$glm)$cov.unscaled
     output[[di]]$ncarc <- sum(dat$ncarc)
+    output[[di]]$aic <- output[[di]]$glm$aic
     output[[di]]$n <- nrow(dat)
-    output[[di]]$k <- output[[di]]$n - output[[di]]$df.residual
-    class(output[[di]]) <- c("dd", class(output[[di]]))
+    output[[di]]$k <- output[[di]]$n - output[[di]]$glm$df.residual
+    output[[di]]$extensible <- cofOK(output[[di]]$coefficients, di)
+    class(output[[di]]) <- "dd"
   }
   if (!silent){
     anybad <- FALSE
+    cat("Extensible models:\n")
     for (di in distr){
-      if (!silent && anyNA(output[[di]]$parms)){
-        if (!anybad){
-          anybad <- TRUE
-          cat("Non-extensible models:\n")
-        }
+      if (!anyNA(output[[di]]$parms)) cat(" ", di, "\n")
+    }
+    cat("\nNon-extensible models:\n")
+    for (di in distr){
+      if (anyNA(output[[di]]$parms)){
+        anybad <- TRUE
         cat(" ", di, "\n")
       }
     }
-    if (anybad) flush.console()
+    if (!anybad) cat(" none\n")
+    flush.console()
   }
+  
+  ################ <-- new
+  # for (di in distr){
+  #   form <- formula(paste0("ncarc ~ ", paste(cof_name[[di]][-1], collapse = " + "),
+  #     scl))
+  #   output[[di]] <- suppressWarnings(glm(
+  #     formula = form, data = dat, family = "poisson"))
+  #   output[[di]]$distr <- di
+  #   output[[di]]$form <- form
+  #   output[[di]]$scVar <- scVar
+  #   output[[di]]$parms <- cof2parms(output[[di]]$coefficients, distr = di)
+  #   output[[di]]$varbeta <- summary(output[[di]])$cov.unscaled
+  #   output[[di]]$ncarc <- sum(dat$ncarc)
+  #   output[[di]]$n <- nrow(dat)
+  #   output[[di]]$k <- output[[di]]$n - output[[di]]$df.residual
+  #   class(output[[di]]) <- c("dd", class(output[[di]]))
+  # }
+  # if (!silent){
+  #   anybad <- FALSE
+  #   for (di in distr){
+  #     if (!silent && anyNA(output[[di]]$parms)){
+  #       if (!anybad){
+  #         anybad <- TRUE
+  #         cat("Non-extensible models:\n")
+  #       }
+  #       cat(" ", di, "\n")
+  #     }
+  #   }
+  #   if (anybad) flush.console()
+  # }
   if(length(output) == 1) return(output[[1]])
   class(output) <- "ddArray"
   return(output)
@@ -981,8 +1055,9 @@ aic.dd <- function(x, ...){
   ))
 }
 
+#'  @name Plot
 #'  Plot dd and ddArray Objects
-#'
+#'  
 #' @description Plot CDF, PDF, or rcd (relative carcass density) for a single
 #'  carcass dispersion glm model (\code{\link[=ddFit]{dd}} object) or a list of 
 #'  models (\code{\link[=ddFit]{ddArray}} object).
@@ -1019,14 +1094,14 @@ aic.dd <- function(x, ...){
 #'  is plotted, along with a 100\code{CL}\% confidence bounds determined for 
 #'  \code{nsim} simulation reps
 #'
-#' @rdname plot
+#' @rdname Plot
 #' @export
 #'
 plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
     xmax = NULL, resolution = 250, mod_highlight = NULL, ...){
   if (identical(distr, "all")) distr <- names(x)
-  if (extent == "full")
-    distr <- distr[sapply(x[distr], function(tmp) !any(is.na(tmp$parm)))]
+  if (extent == "full") 
+    distr <- names(modelFilter(x[distr], sieve = NULL, quiet = TRUE))
   if (type == "rcd")
     distr <- distr[which(!distr %in% c("exponential", "tnormal", "constant"))]
   if (!any(distr %in% mod_all)) stop("plot.ddArray: some model(s) undefined")
@@ -1036,8 +1111,21 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
     stop("type (", deparse(substitute(type)),
           ") must be \"PDF\", \"CDF\", or \"rcd\"")
   distr <- aic_proper$model
-  mod_best <- distr[1]
-  if (is.null(mod_highlight)) mod_highlight <- mod_best
+  if (!is.null(mod_highlight) && !mod_highlight %in% distr){
+    message("'mod_highlight' not among models to be graphed. Using modelFilter ",
+            "to select highlighted model.")
+    mod_highlight <- NULL
+  }
+  if (is.null(mod_highlight)){
+    mod_best <- modelFilter(dd, quiet = TRUE)$filtered$distr
+    if (mod_best %in% mod_all){
+      mod_highlight <- mod_best
+    } else {
+      mod_highlight <- distr[1]
+    }
+  }
+
+    
   ### graph is in two parts, in succession with par(fig...) and par(new = T)
   ###  0) preliminaries
   ###  1) legend [common to all parts]
@@ -1068,7 +1156,7 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
     }
   }
   if (!"lty" %in% names(arglist)){
-    arglist$lty <- 1 + !natural[aic_proper$model]
+    arglist$lty <- mod_lty[aic_proper$model]
     names(arglist$lty) <- aic_proper$model
   } else {
     if (!is.vector(arglist$lty))
@@ -1178,7 +1266,7 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   }
 }
 
-#' @rdname plot
+#' @rdname Plot
 #' @export
 #'
 plot.dd <- function(x, type = "CDF", extent = "full",
@@ -1192,7 +1280,7 @@ plot.dd <- function(x, type = "CDF", extent = "full",
   } else {
     xmin <- 0
   }
-  if (is.null(xmax)) xmax <- max(x$data$r)
+  if (is.null(xmax)) xmax <- max(x$glm$data$r)
   xseq <- seq(xmin, xmax, length.out = resolution)
   if (!type %in% c("CDF", "PDF"))
     stop("type = ", deparse(substitute(type)), " not supported")
@@ -1215,7 +1303,7 @@ plot.dd <- function(x, type = "CDF", extent = "full",
   msg <- switch(extent, win = "limited to carcasses within search radius  ")
   if (type == "PDF"){
     lines(xseq, ddd(xseq, x, extent = extent), col = mod_color[x$distr], lwd = 2)
-    mtext(side = 3, line = -1, adj = 1, msg, family = "serif", lty = 1 + !natural[x$distr])
+    mtext(side = 3, line = -1, adj = 1, msg, family = "serif", lty = mod_lty)
   } else {
     lines(xseq, pdd(xseq, model = x, extent = extent),
       col = mod_color[x$distr], lwd = 2)
@@ -1224,6 +1312,15 @@ plot.dd <- function(x, type = "CDF", extent = "full",
   box()
 }
 
+#' @rdname Plot
+#' @export
+#' 
+plot.fmod <- function(x, ...){
+    plot(x[[1]], ...)
+}
+#' 
+#' 
+#' 
 #' Simulation of Dispersion Parameters
 #'
 #' @param x object to simulate from
@@ -1339,20 +1436,21 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
   return(output)
 }
 
-#' Print \code{dd} and \code{ddArray} Objects
+#' @name ddPrint
+#' @title Print S3 Objects in \code{dwp} Package
 #'
-#' @description \code{\link[=ddFit]{dd}} objects are lists consisting of all the 
-#'  elements of \code{glm} objects and several additional elements related to 
-#'  the distribution and its extensibility. Only a few of the elements are 
-#'  printed automatically. Others elements of object \code{x} can be viewed and 
-#'  extracted as with other lists in R, namely, by using the \code{x$element} or 
-#'  \code{x[[element]]} operator, where \code{element} is the name of one of the 
-#'  elements of \code{x} which can be viewed via \code{names(x)}.
+#' @description \code{\link[=ddFit]{dd}}, \code{\link[=ddFit]{ddArray}}, and 
+#'  \code{\link[=modelFilter]{fmod}} objects are lists consisting of a great
+#'  amount of data. Only a few of the elements are printed automatically. Other 
+#'  elements of object \code{x} can be viewed and extracted as with other lists 
+#'  in R, namely, by using the \code{x$element} or \code{x[[element]]} operator, 
+#'  where \code{element} is the name of one of the elements of \code{x}, all of
+#'  which can be viewed via \code{names(x)}.
 #'
 #' @param x a \code{\link[=ddFit]{ddArray}} or \code{\link[=ddFit]{ddArray}} object
 #' @param ... ignored
 #'
-#' @rdname print
+#' @rdname ddprint
 #' @export
 #'
 print.dd <- function(x, ...){
@@ -1372,7 +1470,7 @@ print.dd <- function(x, ...){
   }
 }
 
-#' @rdname print
+#' @rdname ddprint
 #' @export
 print.ddArray <- function(x, ...){
   for (distr in names(x)) {
@@ -1381,6 +1479,14 @@ print.ddArray <- function(x, ...){
   }
 }
 
+#' @rdname ddprint
+#' @export
+print.fmod <- function(x, ...){
+  print(x$filtered)
+  print(x$scores)
+  if (!identical(x$note, "")) 
+    print(x$note)
+}
 #' Calculate CI for CDF, PDF, or quantile
 #'
 #' @param mod a \code{\link[=ddFit]{dd}} object
@@ -2409,7 +2515,7 @@ estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
     output[simi, tmp[, 1]] <- tmp[, 2]/deno
   }
   output[output > 1] <- 1
-  output[, "total"] <- rowMeans(output[, exclude("total", colnames(output))], na.rm = TRUE)
+  output[, "total"] <- rowMeans(output[, exclude("total", colnames(output)), drop = F], na.rm = TRUE)
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
   class(output) <- c("psiHat", "matrix")
@@ -2570,8 +2676,8 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
           if (any(is.na(pm)) || mean(pm == 0) == 1){
             dotog <- FALSE
           } else {
-            qtls <- seq(0.5/nboot, 1 - 0.5/nboot, length = nboot)
-            output[, ti] <- ncarc[ti]/sample(findInterval(qtls, cumsum(pm)))
+            output[, ti] <- ncarc[ti]/sample(1:length(pm) - 1, prob = pm, 
+							replace = TRUE)
           }
         } else { # betabinom doesn't work, so do each separately
           dotog <- FALSE
@@ -2668,7 +2774,7 @@ formatGenEst <- function(dwphat){
   return(output)
 }
 
-#' @rdname plot
+#' @rdname Plot
 #' @param ... arguments that may be passed to plotting functions
 #' @export
 plot.polygonLayout <- function(x, ...){
@@ -2710,6 +2816,8 @@ plot.polygonLayout <- function(x, ...){
     if (nm %in% names(dotlist)) arg_turb[[nm]] <- dotlist[[nm]]
   arg_turb[["x"]] <- 0
   arg_turb[["y"]] <- 0
+  theta <- seq(0, 2*pi, length = 500)
+  r <- attr(x, "srad")
   for (ti in names(x)){
     do.call(plot, arg_plot)
     arg_polygon[["x"]] <- x[[ti]]
@@ -2717,11 +2825,13 @@ plot.polygonLayout <- function(x, ...){
     axis(1, at = pretty(par("usr")[1:2], n = 8))
     axis(2, at = pretty(par("usr")[3:4], n = 8))
     do.call(points, arg_turb)
+    lines(r * cos(theta), r * sin(theta), lty = 3)
     box()
     mtext(side = 1, line = -1.8, adj = 0.04, text = ti, cex = 1.4)
   }
 }
 
+#' @rdname Plot
 #' @export
 plot.layoutSimple <- function(x, ...){
   par(mfrow = c(ceiling(sqrt(nrow(x))), round(sqrt(nrow(x)))),
@@ -2869,8 +2979,8 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
         stop("carcasses found in area not searched.")
       }
       rdat0 <- data.frame( # data for rdat [not properly tallied or formatted]
-        turbine = x$carcasses[, unitCol, drop = T],
-        scVar = plotLayout$layout[ind, scVar, drop = T],
+        turbine = x$carcasses[, unitCol, drop = TRUE],
+        scVar = plotLayout$layout[ind, scVar, drop = TRUE],
         r = ceiling(unname(sqrt(rowSums(
           (plotLayout$tcenter[turbi, ] - sf::st_coordinates(x$carcasses))^2
         ))))
@@ -2949,22 +3059,26 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
     class(output) <- "ringscc"
     return(output)
   }
-  if (ncarcReset){
-    data_ring$rdat <- lapply(data_ring$rdat, FUN = function(ri){
-      ri$ncarc <- 0
-      ri
-    })
-    data_ring$ncarc %<>% `*` (., 0)
+  if ("rings" %in% class(data_ring)){
+    if (ncarcReset){
+      data_ring$rdat <- lapply(data_ring$rdat, FUN = function(ri){
+        ri$ncarc <- 0
+        ri
+      })
+      data_ring$ncarc %<>% `*` (., 0)
+    }
+    for (ti in unique(x[, unitCol])){
+      tbl <- table(ceiling(x[x[, unitCol] == ti, rCol]))
+      ind <- match(as.numeric(names(tbl)), data_ring$rdat[[ti]][, rCol])
+      data_ring$rdat[[ti]][ind, "ncarc"] %<>% `+`(., unname(tbl))
+      itot <- match(as.numeric(names(tbl)), data_ring$rdat[["total"]][, rCol])
+      data_ring$rdat[["total"]][itot, "ncarc"] %<>% `+`(., unname(tbl))
+    }
+    data_ring$ncarc <- sapply(data_ring$rdat, FUN = function(ti) sum(ti[, "ncarc"]))
+    class(data_ring$rdat) <- "rings"
+  } else {
+      stop("addCarcass: class(data_ring) must be rings")
   }
-  for (ti in unique(x[, unitCol])){
-    tbl <- table(ceiling(x[x[, unitCol] == ti, rCol]))
-    ind <- match(as.numeric(names(tbl)), data_ring$rdat[[ti]][, rCol])
-    data_ring$rdat[[ti]][ind, "ncarc"] %<>% `+`(., unname(tbl))
-    itot <- match(as.numeric(names(tbl)), data_ring$rdat[["total"]][, rCol])
-    data_ring$rdat[["total"]][itot, "ncarc"] %<>% `+`(., unname(tbl))
-  }
-  data_ring$ncarc <- sapply(data_ring$rdat, FUN = function(ti) sum(ti[, "ncarc"]))
-  class(data_ring$rdat) <- "rings"
   return(data_ring)
 }
 
@@ -3108,7 +3222,7 @@ getncarc.dd <- function(x, ...){
   return(x$ncarc)
 }
 
-#' @rdname plot
+#' @rdname Plot
 #' @export
 plot.psiHat <- function(x, ...){
   arglist <- list(...)
@@ -3153,7 +3267,7 @@ plot.psiHat <- function(x, ...){
   }
 }
 
-#' @rdname plot
+#' @rdname Plot
 #' @export
 plot.dwphat <- function(x, ...){
   bxwd <- 0.4
@@ -3192,7 +3306,7 @@ exportGenEst <- function(dwp, file){
 
 #' Run Models through a Sieve to Filter out Dubious Fits
 #'
-#' A set of fitted models (\code{ddArray}) is filtered according to a set of
+#' A set of fitted models (\code{\link[=ddFit]{ddArray}}) is filtered according to a set of
 #'  criteria that test for high AIC, points of high-influence points, and
 #'  plausibility of the tail probabilities of each fitted distribution.
 #'  \code{modelFilter} will either auto-select the best model according to a set
@@ -3202,76 +3316,123 @@ exportGenEst <- function(dwp, file){
 #'
 #' After eliminating non-extensible models, the criteria to test are entered in
 #'  a list (\code{sieve}) with components:
-#'
-#' 1. \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
-#'  Models with AIC scores exceeding the minimum AIC among all the fitted models
-#'  by \code{sieve$aic} or more are rejected. The default value is 10. Users may
-#'  override the default by using, for example, \code{sieve = list(aic = 7)} in
-#'  in the argument list to use an AIC score of 7 as the cutoff or may forego the
-#'  test altogether by setting \code{sieve = list(aic = FALSE)}
-#' 2. \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
-#'  the presence of which cast doubt on the reliability of the model. The function
-#'  defines "high influence" as models with high leverage points (namely, points
-#'  with \code{h/(1 - h) >  2*p/(n - 2*p)}, where \code{h} is leverage, \code{p}
-#'  is the number of parameters in the model, and \code{n} is the search radius)
-#'  with large Cook's distances [namely, Cook's distance \code{> 8/(n - 2*p)}]). The
-#'  criteria for high influence points were adapted from Brian Ripley's GLM
-#'  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is
-#'  perhaps most valuable in identifying distributions with high probability of
-#'  carcasses landing well beyond what could reasonably be expected.
-#' 3. \code{$rtail} = vector of probabilities that define a checkpoints on distributions
-#'  to avoid a situation where a model that may fit well within the range of data
-#'  is implausible because it predicts a significant or substantial probability
-#'  of carcasses falling 200 m or more from the nearest turbine. The default is
-#'  to check whether or not a distribution predicts that less than 50% of carcasses
-#'  fall within 80 meters, 90% within 120 meters, 95% within 150 meters, or 99%
-#'  within 200 meters. Distributions that fall below any of these points (for
-#'  example predicting only 42% within 80 meters or only 74% within 120 meters)
-#'  are eliminated by the default \code{rtail} test. The format of the default for
-#'  the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
-#'  Users may override the default by using, for example,
-#'  \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999)}
-#'  in the argument list for a more stringent test or for a situation where
-#'  turbines are small or winds are light. Alternatively, users may forego the
-#'  test altogether by entering \code{sieve = list(rtail = FALSE)}. If specific
-#'  probabilities are provided, they must be in a vector of length 4 with names
+#' \enumerate{
+#'  \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
+#'   Models with AIC scores exceeding the minimum AIC among all the fitted models
+#'   by \code{sieve$aic} or more are rejected. The default value is 10. Users may
+#'   override the default by using, for example, \code{sieve = list(aic = 7)} in
+#'   in the argument list to use an AIC score of 7 as the cutoff or may forego the
+#'   test altogether by setting \code{sieve = list(aic = FALSE)}
+#'  \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
+#'   the presence of which cast doubt on the reliability of the model. The function
+#'   defines "high influence" as models with high leverage points, namely, points
+#'   with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
+#'   (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
+#'   and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
+#'   The criteria for high influence points were adapted from Brian Ripley's GLM 
+#'   diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
+#'   perhaps most valuable in identifying distributions with high probability of 
+#'   carcasses landing well beyond what could reasonably be expected.
+#'  \item \code{$rtail} = vector of probabilities that define a checkpoints on distributions
+#'   to avoid a situation where a model that may fit well within the range of data
+#'   is implausible because it predicts a significant or substantial probability
+#'   of carcasses falling 200 m or more from the nearest turbine. The default is
+#'   to check whether or not a distribution predicts that less than 50\% of carcasses
+#'   fall within 80 meters, 90\% within 120 meters, 95\% within 150 meters, or 99\%
+#'   within 200 meters. Distributions that fall below any of these points (for
+#'   example predicting only 42\% within 80 meters or only 74\% within 120 meters)
+#'   are eliminated by the default \code{rtail} test. The format of the default for
+#'   the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
+#'   Users may override the default by using, for example, 
+#'   \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999))}
+#'   in the argument list for a more stringent test or for a situation where
+#'   turbines are small or winds are light. Alternatively, users may forego the
+#'   test altogether by entering \code{sieve = list(rtail = FALSE)}. If specific
+#'   probabilities are provided, they must be in a vector of length 4 with names
 #'  "\code{p80}" etc. as in the examples above.
-#' 4. \code{$ltail} = vector of probabilities that define checkpoints on distributions
-#'  to avoid situations where the search radius is short and a distribution that
-#'  fits the limited data set well but crashes to zero just outside the search
-#'  radius. The default is to check whether or not a distribution predicts that
-#'  greater than 50% of carcasses fall with 20 meters or 90% within 50 meters.
-#'  Distributions that pass above either of these checkpoints (for example
-#'  predicting 61% of carcasses within 20 meters or 93% within 50 meters)
-#'  are eliminated by the default \code{ltail} test. The format of the default for
-#'  the test is \code{$ltail = c(p20 = 0.5, p50 = 0.90)}. Users may override the
-#'  default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8)}
-#'  in the argument list for a situation where it is known that carcasses beyond
-#'  50 meters are common.
-#'
-#' Setting \code{sieve = "auto_select"} will result in \code{modelFilter} returning
-#'  the model with the lowest AIC that meets the default criteria. If none of the
-#'  models meet all four tests, the \code{"auto_select"} routine returns the
-#'  the distribution with the lower AIC among 1) the model with the greatest
-#'  \code{Pr(r < 120)} among those models that pass the \code{ltail} test, and 2)
-#'  the model with the least \code{Pr(r < 50)} among those that pass the \code{rtail}
-#'  test. If no models pass either the right tail test or left tail test, the
-#'  the \code{"auto_select"} routine returns an error.
-#'
-#' If \code{sieve = NULL}, \code{modelFilter} filters out the non-extensible
-#'  models only.
-#'
-#' @param dmod a \code{ddArray} object
+#'  \item \code{$ltail} = vector of probabilities that define checkpoints on distributions
+#'   to avoid situations where the search radius is short and a distribution that
+#'   fits the limited data set well but crashes to zero just outside the search
+#'   radius. The default is to check whether or not a distribution predicts that
+#'   greater than 50\% of carcasses fall with 20 meters or 90\% within 50 meters.
+#'   Distributions that pass above either of these checkpoints (for example
+#'   predicting 61\% of carcasses within 20 meters or 93\% within 50 meters)
+#'   are eliminated by the default \code{ltail} test. The format of the default for
+#'   the test is \code{$ltail = c(p20 = 0.5, p50 = 0.90)}. Users may override the
+#'   default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8))}
+#'   in the argument list for a situation where it is known that carcasses beyond
+#'   50 meters are common.
+#' }
+#' 
+#' Several choices of \code{sieve} are available.
+#' \describe{
+#'  \item{\code{sieve = "auto_select"}}{An algorithm progressively applies sieve
+#'   criteria until only one model remains. In the simplest case, the model with
+#'   the lowest AIC score among those that pass all four default tests is 
+#'   selected. If none of the models pass all four tests, the \code{hin} test is
+#'   disabled, that is, models with high influence points are not automatically
+#'   eliminated from consideration. If there are no models that pass the remaining
+#'   three tests, the \code{auto_select} algorithm picks the model with the lower 
+#'   AIC among 1) the model with the greatest \code{Pr(r < 120)} among 
+#'   those models that pass the \code{ltail} test, and 2) the model with the 
+#'   least \code{Pr(r < 50)} among those that pass the \code{rtail} test. If no 
+#'   models pass either the right tail test or left tail test, the 
+#'   \code{auto_select} routine returns NA for the selected model.}
+#'  \item{\code{sieve = "default"}}{The criteria used for selecting models are
+#'   listed in \code{\link{sieve_default}}. With this option, all models that 
+#'   meet all the criteria are returned, which may be one or several models, or
+#'   NA (if no models meet the criteria).}
+#'  \item{\code{sieve = NULL}}{Only the non-extensible models are filtered out.}
+#'  \item{\code{sieve = list(<custom>)}}{User provides a custom sieve, which may
+#'   be a modification of the default sieve or de novo. To modify the default,
+#'   use, for example, \code{sieve = list(hin = FALSE)} to disable the \code{hin}
+#'   test but keep the other default tests, or \code{sieve = list(aic = 7)} to
+#'   use 7 rather than 10 as the AIC cutoff, or 
+#'   \code{sieve = list(ltail = c(p20 = 0.3, p50 = 0.8))} to use a more stringent 
+#'   left tail test that requires CDF graphs to pass below the points (20, 0.3) 
+#'   and (50, 0.8). Custom \code{ltail} and \code{rtail} parameters must match the 
+#'   formats of the default tests, but their probabilities may vary. To turn off
+#'   the \code{aic} filter, use \code{sieve = list(aic = Inf)}. To turn off the
+#'   \code{ltail} filter, use  \code{sieve = list(ltail = c(p20 = 1, p50 = 1))}.
+#'   To turn off the \code{rtail} filter, use 
+#'   \code{sieve = list(rtail = c(p80 = 0, p120 = 0, p150 = 0, p200 = 0))}. These
+#'   custom components may be mixed and matched as desired.}
+#' }
+#' @param dmod a \code{\link[=ddFit]{ddArray}} object
 #' @param sieve a list of criteria for filtering out "bad" models
-#' @return A \code{ddArray} object consisting of all the models that meet the
-#'  criteria defined in the \code{sieve}, a \code{dd} object if
-#'  \code{sieve = "auto_select"} or if there is only one model that meets the
-#'  \code{sieve} criteria, or an error if no models meet the criteria and
-#'  \code{sieve} is not \code{"auto_select"}. An error is also returned if the
-#'  \code{"auto_select"} routine is unable to converge on a model.
-#'
+#' @param quiet boolean to suppress (\code{quiet = TRUE}) or allow 
+#'  (\code{quiet = FALSE}) messages from \code{modelFilter}
+#' @return A list of class \code{fmod} with following components:
+#'  \describe{
+#'    \item{filtered}{the selected \code{dd} object or a \code{ddArray} list of
+#'     models that passed the tests}
+#'    \item{scores}{a matrix with all models tested (rownames = model names) and 
+#'      the results of each test (columns \code{aic_test}, \code{rtail}, 
+#'      \code{ltail}, \code{hin}, \code{aic})}
+#'    \item{sieve}{the test criteria, stored in a list with
+#'      \itemize{ 
+#'        \item \code{aic_test} = cutoff for AIC
+#'        \item \code{hin} = boolean to indicate whether high influence points were
+#'         considered
+#'        \item \code{rtail} = numeric vector giving the probabilities that the
+#'         right tail of the distribution must exceed at distances of 80, 120, 
+#'         150, and 200 meters in order to pass
+#'        \item \code{ltail} = numeric vector giving the probabilities that the 
+#'        left tail of the distribution must NOT exceed at distances of 20 and 
+#'        50 meters in order to pass
+#'      }
+#'    }
+#'    \item{models}{a list (\code{ddArray} object) of all models tested}
+#'    \item{\code{note}}{notes on the tests}
+#'  }
+#'  When a \code{fmod} object is printed, only a small subset of the elements are
+#'  shown. To see a full list of the objects, use \code{names(x)}, where \code{x}
+#'  is the name of the \code{fmod} return value. The elements
+#'  can be extracted in the usual R way via, for example, \code{x$sieve} or 
+#'  \code{x[["sieve"]]}.
+#'  
 #' @export
-modelFilter <- function(dmod, sieve = "auto_select"){
+modelFilter <- function(dmod, sieve = "auto_select", quiet = FALSE){
   if (!"ddArray" %in% class(dmod)) stop("modelFilter: dmod must be a ddArray")
   if (is.null(sieve))
     return(dmod[which(sapply(dmod, function(di) di[["extensible"]] == 1))])
@@ -3330,8 +3491,8 @@ modelFilter <- function(dmod, sieve = "auto_select"){
   #extensible models
   fmod <- dmod[which(sapply(dmod, FUN = function(di) di[["extensible"]]))]
   critok <- c("aic", "rtail", "ltail", "hin")
-  ptab <- array(1, dim = c(length(fmod), length(critok)),
-                  dimnames = list(names(fmod), critok))
+  ptab <- array(1, dim = c(length(fmod), length(critok)), 
+    dimnames = list(names(fmod), critok))
   if (!identical(fil[["aic"]], FALSE)){
     ptab[, "aic"] <- sapply(fmod, "[[", "aic") %>% "<="(., min(.) + fil[["aic"]])
   }
@@ -3347,42 +3508,76 @@ modelFilter <- function(dmod, sieve = "auto_select"){
     ptab[, "hin"] <- apply(!((cook > 8/(n - 2*p)) & (h/(1 - h) > 2*p/(n - 2*p))),
       FUN = all, MARGIN = 1)
   }
-  if (!identical(fil$rtail, FALSE)){
+  if (!identical(fil$rtail, FALSE) && all(!is.na(fil$rtail))){
     ptab[, "rtail"] <-
-      sapply(fmod, "pdd", x =  80) > fil[["rtail"]]["p80"] &
-      sapply(fmod, "pdd", x = 120) > fil[["rtail"]]["p120"] &
-      sapply(fmod, "pdd", x = 150) > fil[["rtail"]]["p150"] &
-      sapply(fmod, "pdd", x = 200) > fil[["rtail"]]["p200"]
+      sapply(fmod, "pdd", q =  80) > fil[["rtail"]]["p80"] &
+      sapply(fmod, "pdd", q = 120) > fil[["rtail"]]["p120"] &
+      sapply(fmod, "pdd", q = 150) > fil[["rtail"]]["p150"] &
+      sapply(fmod, "pdd", q = 200) > fil[["rtail"]]["p200"]
   }
-  if (!identical(fil$ltail, FALSE)){
+  if (!identical(fil$ltail, FALSE) && all(!is.na(fil$rtail))){
     ptab[, "ltail"] <-
-      sapply(fmod, "pdd", x = 20) < fil[["ltail"]]["p20"] &
-      sapply(fmod, "pdd", x = 50) < fil[["ltail"]]["p50"]
+      sapply(fmod, "pdd", q = 20) < fil[["ltail"]]["p20"] &
+      sapply(fmod, "pdd", q = 50) < fil[["ltail"]]["p50"]
   }
   ptab[is.na(ptab)] <- 0
   ptab <- ptab[order(
     ptab[, "rtail"],
     ptab[, "ltail"],
-    ptab[, "hin"],
     ptab[, "aic"],
+    ptab[, "hin"],
     -sapply(fmod, "[[", "aic"),
     decreasing = TRUE
   ),]
-  tmp <- ptab
-  colnames(tmp)[colnames(tmp) == "aic"]  <- "aic_test"
-  tmp <- cbind(tmp, aic = sapply(fmod[rownames(ptab)], "[[", "aic"))
-  print(tmp); flush.console()
-  cat("\n\n\n")
+  output <- list()
+  output[["filtered"]] <- NA
+  output[["scores"]] <- ptab 
+  output[["sieve"]] <- fil
+  output[["models"]] <- dmod
+  output[["note"]] <- ifelse(is.character(sieve), sieve, "")
+  aiccol <- sapply(fmod, "[[", "aic")
+  aiccol <- round(aiccol - min(aiccol), 2)
+  class(output) <- "fmod"
   if (!identical(sieve, "auto_select")){
     if (all(rowSums(ptab) < ncol(ptab))){
-      stop("None of the models meet all the filter criteria in sieve. ",
-           "Select less strict criteria or set sieve = \"auto_select\".")
+      if (!quiet){
+        message("None of the models meet all the filter criteria in sieve. ",
+                "Check data format, select less strict criteria, or set ",
+                "sieve = 'auto_select'.")
+      }
+      output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+      return(output)
     }
-    return(fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]])
+    output[["filtered"]] <- fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]]
+    output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+    return(output)
   } else {
-    if (all(rowSums(ptab) < ncol(ptab))){
-      if (sum(ptab[, "aic"]) == 0){ # all aic > max(allowable aic)
-        stop("can't find a good model")
+    if (all(rowSums(ptab) < ncol(ptab))){ # then every model fails some test
+      # most important criterion is right tail; otherwise, model may have very small dwp 
+      ptabR <- ptab[ptab[, "rtail"] == 1, ]
+      if (sum(ptabR[, "rtail"] == 0)){
+        if (!quiet) message(
+          "All models have suspiciously heavy right tails. Cannot make reliable ", 
+          "model selection. If the data are from a real site (as opposed to ",
+          "data from simulations), the most likely explanation is improper data ",
+          "formatting. Also possible is that the carcasses are dispersed ",
+          "unusually far from the turbines. If the data are from simulations, ",
+          "the simulation parameters may be unrealistic or the criteria for ",
+          "evaluating the right tails are too strict. ?modelFilter")
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        return(output)
+      }
+      if (sum(ptab[, "aic"]) == 0){ # all aic > max(allowable aic) [rare]
+        message("can't find a good model")
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        return(output)
+      }
+      if (all(ptab[, "hin"] == 0)){
+        ptab[, "hin"] <- 1
+        msg <- paste0("All the models have at least one high-influence point. ",
+          "Removing 'hin' as a sieve criterion.")
+        output[["note"]] <- paste0(output[["note"]], msg)
+        if (!quiet) message(msg)
       }
       # just consider those models with aic < max(allowable aic) and no high influnence points
       ptabh <- ptab[ptab[, "aic"] * ptab[, "hin"] == 1, , drop = FALSE]
@@ -3391,18 +3586,27 @@ modelFilter <- function(dmod, sieve = "auto_select"){
         ptabh[, "hin"] <- 1 # takes off the hin filter
         ptabh <- ptab[ptab[, "aic"] == 1, , drop = FALSE]
       }
-      if (nrow(ptabh) == 1)
-        return(fmod[rownames(ptabh)])
+      if (nrow(ptabh) == 1){
+        output[["filtered"]] <- fmod[rownames(ptabh)]
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        return(output)
+      }
       # there is more than one model with the aic <= max(allowable aic)
       # are there models that pass all the filters?
       if (any(rowSums(ptabh) == ncol(ptabh))){ # some model(s) passes
         ptabh <- ptabh[rowSums(ptabh) == ncol(ptabh), , drop = FALSE]
-        return(fmod[rownames(ptabh)[1]]) # ordered by aic; pick the top one
+        output[["filtered"]] <- fmod[rownames(ptabh)[1]]
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        return(output) # ordered by aic; pick the top one
       }
       # no models pass, so either ltail or rtail fails (or both?)
       if (sum(ptabh[, "ltail"]) == 0 & sum(ptabh[, "rtail"]) == 0){
-        warning("model fails both of the tail checks")
-        return(fmod[rownames(ptabh)[1]])
+        msg <- "model fails both of the tail checks"
+        output[["note"]] <- paste0(output[["note"]], msg)
+        output[["filtered"]] <- fmod[rownames(ptabh)[1]]
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        if(!quiet) warning(msg)
+        return(output) # ordered by aic; pick the top one
       }
       ptabh <- ptabh[!(ptabh[, "ltail"] == 0 & ptabh[, "rtail"] == 0), ]
       # No model passes both tail tests, but more than one pass one or the other.
@@ -3429,16 +3633,29 @@ modelFilter <- function(dmod, sieve = "auto_select"){
       if (length(best_left_among_right) == 1 & length(best_right_among_left) == 1){
         blar_aic <- fmod[best_left_among_right]$aic
         bral_aic <- fmod[best_right_among_left]$aic
-        return(fmod[ifelse(blar_aic < bral_aic,
-          fmod[best_left_among_right], fmod[best_right_among_left])])
+        output[["filtered"]] <- fmod[
+          ifelse(blar_aic < bral_aic,
+            fmod[best_left_among_right], fmod[best_right_among_left]
+          )
+        ]
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        return(output)
       }
       if (length(best_left_among_right) == 1)
-        return(fmod[best_left_among_right])
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        output[["filtered"]] <- fmod[best_left_among_right]
+        return(output)
       if (length(best_right_among_left) == 1)
-        return(fmod[best_right_among_left])
+        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+        output[["filtered"]] <- fmod[best_right_among_left]
+        return(output)
     } else {
-      return(fmod[rownames(ptab)[1]])
+      output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+      output[["filtered"]] <- fmod[rownames(ptab)[1]]
+      return(output)
     }
-    return(fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]])
+    output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
+    output[["filtered"]] <- fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]]
+    return(output)
   }
 }

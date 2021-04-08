@@ -1,8 +1,8 @@
 Package: dwp
 Type: Package
 Title: Estimate the Fraction of Wind Turbine-Killed Bird or Bat Carcasses that Fall in the Area Searched
-Version: 0.0.3.0
-Date: 2020-11-27
+Version: 0.0.3.5
+Date: 2020-04-08
 Authors@R: c(
     person("Daniel", "Dalthorp", , "ddalthorp@protonmail.com", c("aut", "cre")),
     person("Manuela", "Huso", , "mhuso@usgs.gov", "aut"))

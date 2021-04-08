@@ -3,7 +3,7 @@
 \docType{data}
 \name{layout_simple}
 \alias{layout_simple}
-\title{Example Simple Data Format for Site Layout}
+\title{Example Simple Geometry Data Format for Site Layout}
 \format{
 A data frame illustrating an import format for a simple description of a
  site layout by turbine. Each turbine (\code{turbine}) is classed according to
@@ -21,6 +21,6 @@ A data frame illustrating an import format for a simple description of a
 layout_simple
 }
 \description{
-Example Simple Data Format for Site Layout
+Example Simple Geometry Data Format for Site Layout
 }
 \keyword{datasets}

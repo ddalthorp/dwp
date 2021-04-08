@@ -22,37 +22,7 @@
 \alias{pxep2}
 \alias{dxep0}
 \alias{pxep0}
-\title{Probability Distributions for Carcasses Versus Distance from Turbine
-
-PDFs and CDFs that are required by \code{ddd}, \code{pdd} and 
-\code{qdd} but are not included among the standard R distributions. Relying on
-custom code and included here are the Maxwell-Boltzmann (\code{pmb} and 
-\code{dmb}), xep0 (Pareto), xep1, xepi0 (inverse gamma), xep2 (Rayleigh), 
-xep02, xep12, xep012, xep123, and xep0123. Not included here are the 
-distributions that can be calculated using standard probability functions from
-base R (exponential, truncated normal, lognormal, gamma (xep01), and 
-chisquared) and inverse gaussian, which is calculated using 
-\code{statmod::dinvgauss} and \code{statmod::dinvgauss}. The functions are 
-designed for vector \code{x} or \code{q} and scalar parameters. 
-
-The xep distributions are calculated by dividing its kernel (for the densities)
-or the integral of its kernel (for the cumulative distributions) by the 
-normalizing constant = integral of the kernel from 0 to Inf. The kernel of an 
-xep distribution is defined as \eqn{x * \exp(P(x))}, where \eqn{P(x)} is a 
-polynomial with terms defined by the suffix on xep. For example, the kernel 
-of xep12 would be x * exp(b_1*x + b_2*x^2). A \code{0} in the suffix
-indicates a \code{log(X)} term and an \code{i} indicates a \code{1/x} term.
-The parameters of the xep distributions are some combination of 
-\eqn{b_0, b_1, b_2, b_3}{bi, b0, b1, b2, and b3}. The parameterizations of the
-inverse gamma (xepi0), Rayleigh (xep2), and Pareto (xep0) follow the standard
-conventions of \code{shape} and \code{scale} for the inverse gamma, \code{s2} = 
-\eqn{s^2}{s^2} for the Rayleigh, and \code{a} = \eqn{a}{a} for the Pareto (with
-a scale or location parameter of 1 and PDF = a/x^(x + 1) with support (1, Inf).
-
-The Maxwell-Boltzmann is a one-parameter family with parameter \code{a} and PDF 
-\eqn{f(a) = \sqrt{2/\pi}\frac{x^2 e^{-x^2/(2a^2)}}{a^3}}{f(a) = sqrt(2/pi)*x^2 * exp(-x^2/a^2)}.
-The kernel \eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple 
-closed-form integral that involves the error function (\code{pracma::erf}).}
+\title{Probability Distributions for Carcasses Versus Distance from Turbine}
 \usage{
 dmb(x, a)
 
@@ -100,7 +70,7 @@ pxep0(x, a)
 \item{a, b0, b1, b2, b3, shape, scale, s2}{parameters used in the respective
 distributions.}
 
-\item{const}{(scalar, optional) normalizing constant for distributions that are
+\item{const}{(optional) scalar normalizing constant for distributions that are
 numerically integrated using \code{integrate}, namely. Providing a \code{const} is
 not necessary but will improve the speed of calculation under certain
 conditions.}
@@ -109,35 +79,38 @@ conditions.}
 vector of probability densities or cumulative probabilities
 }
 \description{
-Probability Distributions for Carcasses Versus Distance from Turbine
-
 PDFs and CDFs that are required by \code{ddd}, \code{pdd} and 
 \code{qdd} but are not included among the standard R distributions. Relying on
 custom code and included here are the Maxwell-Boltzmann (\code{pmb} and 
 \code{dmb}), xep0 (Pareto), xep1, xepi0 (inverse gamma), xep2 (Rayleigh), 
 xep02, xep12, xep012, xep123, and xep0123. Not included here are the 
 distributions that can be calculated using standard probability functions from
-base R (exponential, truncated normal, lognormal, gamma (xep01), and 
-chisquared) and inverse gaussian, which is calculated using 
+base R, namely the exponential, truncated normal, lognormal, gamma (xep01), and 
+chisquared distributions and the inverse gaussian, which is calculated using 
 \code{statmod::dinvgauss} and \code{statmod::dinvgauss}. The functions are 
-designed for vector \code{x} or \code{q} and scalar parameters. 
-
-The xep distributions are calculated by dividing its kernel (for the densities)
-or the integral of its kernel (for the cumulative distributions) by the 
-normalizing constant = integral of the kernel from 0 to Inf. The kernel of an 
-xep distribution is defined as \eqn{x * \exp(P(x))}, where \eqn{P(x)} is a 
-polynomial with terms defined by the suffix on xep. For example, the kernel 
-of xep12 would be x * exp(b_1*x + b_2*x^2). A \code{0} in the suffix
-indicates a \code{log(X)} term and an \code{i} indicates a \code{1/x} term.
-The parameters of the xep distributions are some combination of 
-\eqn{b_0, b_1, b_2, b_3}{bi, b0, b1, b2, and b3}. The parameterizations of the
+designed for vector \code{x} or \code{q} and scalar parameters.
+}
+\details{
+An xep distribution is calculated by dividing its kernel (for the 
+densities) or the integral of its kernel (for the cumulative distributions) 
+by the normalizing constant, which is the integral of the kernel from 0 to Inf. 
+The kernel of an xep distribution is defined as \eqn{x e^{P(x)}}{%
+x * exp(P(x))}, 
+where \eqn{P(x)} is a polynomial with terms defined by the suffix on xep. For 
+example, the kernel of xep12 would be \eqn{x e^{b_1*x + b_2*x^2}}{%
+x * exp(b1*x + b2*x^2)}. A \code{0} in the suffix indicates a \code{log(X)} 
+term and an \code{i} indicates a \code{1/x} term. The parameters of the xep 
+distributions are some combination of \eqn{b_0, b_1, b_2, b_3}{%
+bi, b0, b1, b2, and b3}. The parameterizations of the
 inverse gamma (xepi0), Rayleigh (xep2), and Pareto (xep0) follow the standard
 conventions of \code{shape} and \code{scale} for the inverse gamma, \code{s2} = 
-\eqn{s^2}{s^2} for the Rayleigh, and \code{a} = \eqn{a}{a} for the Pareto (with
-a scale or location parameter of 1 and PDF = a/x^(x + 1) with support (1, Inf).
+\eqn{s^2} for the Rayleigh, and \code{a} = \eqn{a} for the Pareto (with
+a scale or location parameter of 1 and PDF = \eqn{a/x^(x + 1)} 
+with support (1, Inf).
 
 The Maxwell-Boltzmann is a one-parameter family with parameter \code{a} and PDF 
-\eqn{f(a) = \sqrt{2/\pi}\frac{x^2 e^{-x^2/(2a^2)}}{a^3}}{f(a) = sqrt(2/pi)*x^2 * exp(-x^2/a^2)}.
-The kernel \eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple 
-closed-form integral that involves the error function (\code{pracma::erf}).
+\eqn{f(a) = \sqrt{2/\pi}\frac{x^2 e^{-x^2/(2a^2)}}{a^3}}{%
+f(a) = sqrt(2/pi) * x^2 * exp(-x^2/(2a^2))/(a^3)}. The kernel is
+\eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple closed-form 
+integral that involves the error function (\code{pracma::erf}).
 }

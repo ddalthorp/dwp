@@ -3,10 +3,13 @@
 \name{plot.ddArray}
 \alias{plot.ddArray}
 \alias{plot.dd}
+\alias{plot.fmod}
 \alias{plot.polygonLayout}
+\alias{plot.layoutSimple}
 \alias{plot.psiHat}
 \alias{plot.dwphat}
-\title{Plot dd and ddArray Objects}
+\title{@name Plot
+ Plot dd and ddArray Objects}
 \usage{
 \method{plot}{ddArray}(
   x,
@@ -30,7 +33,11 @@
   ...
 )
 
+\method{plot}{fmod}(x, ...)
+
 \method{plot}{polygonLayout}(x, ...)
+
+\method{plot}{layoutSimple}(x, ...)
 
 \method{plot}{psiHat}(x, ...)
 

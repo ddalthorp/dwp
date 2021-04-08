@@ -22,7 +22,8 @@ Incomplete Gamma Function
 }
 \details{
 The upper incomplete gamma function, following Wolfram Alpha, namely,
- incGamma(a, x) = Gamma = integral(exp(-t) * t^(a - 1) dt from x to Inf),
+ incGamma(a, x) = \eqn{\int_x^\infty e^{-t} * t^{a - 1}dt}{%
+ integral(exp(-t) * t^(a - 1) dt from x to Inf)},
  calculated using pgamma. NOTE: The function \code{pracma::incgam} also
  calculates incomplete gamma with \code{pracma::incgam(x, a) = incGamma(a, x)},
  but \code{pracma::incgam} is not vectorized and not used here.

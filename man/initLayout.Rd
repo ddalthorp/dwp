@@ -16,6 +16,7 @@ initLayout(
   nRoadCol = "n_road",
   xCol = "x",
   yCol = "y",
+  ncarcCol = "ncarc",
   scCol = NULL,
   notSearched = NULL,
   quiet = FALSE
@@ -39,9 +40,15 @@ and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
 must be syntactically valid R names (see Details below).}
 
 \item{file_turbine}{The name of a shape file (points) giving the turbine
-locations  for turbines listed in the \code{unitCol} column in the
-\code{data_layout}. \code{file_turbine} is required for shape files and
-not required (and is ignored) for other data types.}
+locations for turbines listed in the \code{unitCol} column in the
+\code{data_layout} if \code{data_layout} is a shape file. If 
+\code{dataType = "xy"} and the grids in \code{data_layout} are all centered
+at (0, 0) with their turbines at the center, then \code{file_turbine} is not
+necessary and is ignored. Otherwise, if the grid coordinates are UTMs, 
+\code{file_turbine} is either (1) a data frame with turbine names (in `unitCol`)
+and the location of turbines in `x` and `y`, or (2) the name of a .csv file 
+with turbine locations (`unitCol`, `x`, and `y`). \code{file_turbine} is not 
+required (and is ignored) for other data types.}
 
 \item{radCol}{for \code{dataType = "simple"} layouts: the name of the column in
 \code{data_layout} that gives the search radius for each turbine}
@@ -64,15 +71,19 @@ not required (and is ignored) for other data types.}
 \item{yCol}{for \code{dataType = "xy"} layouts: the name of the column in
 \code{data_layout} that gives \code{y} coordinates on the grid}
 
+\item{ncarcCol}{for \code{dataType = "xy"} layouts: the name of the column with
+carcass counts in each grid cell. The column is required but may be all zeros
+with carcasses added from a matrix of carcass locations later}
+
 \item{scCol}{for \code{dataType = "xy"} layouts: the name of column in data_layout
 with names of search classes. This is used for excluding unsearched areas
 from the grid data (x, y). It is used ONLY with \code{dataType = "xy"} and
 used to remove rows with \code{x[, scCol] == notSearched}, where \code{x}
 is the search grid data frame.}
 
-\item{notSearched}{for \code{dataType = "xy"} layouts: the name(s) of search class(es)
-in \code{scCol} that are not searched. Ignored for data types other than
-\code{xy}.}
+\item{notSearched}{for \code{dataType = "xy"} layouts: the name(s) of search 
+class(es) in \code{scCol} that are not searched (optional). Ignored for data 
+types other than \code{xy}.}
 
 \item{quiet}{boolean for controlling whether progress of calculations and other
 notes are printed to the console as the function runs}
@@ -160,11 +171,11 @@ All the layout types (except for vector, which is addressed elsewhere)
  into a single column with values of, say, \code{easy1}, \code{easy14},
  \code{difficult1}, and \code{difficult14}.
 
- There must be a turbine ID column (\code{unitCol}) in each of the files. The individual
- turbine ID's must be syntactically valid R names, i.e., contain combinations
- of letters, numbers, dot ( . ), and underscores ( _ ) only and not begin with
- a number or a dot followed by a number. Other characters are not allowed: no
- spaces, hyphens, parentheses, etc.
+ There must be a turbine ID column (\code{unitCol}) in each of the files. The 
+ individual turbine ID's must be syntactically valid R names, i.e., contain 
+ combinations of letters, numbers, dot ( . ), and underscores ( _ ) only and 
+ not begin with a number or a dot followed by a number. Other characters are 
+ not allowed: no spaces, hyphens, parentheses, etc.
 
  If shape files are to be imported, both shape files (search area polygons and
  turbine locations) must have their three standard, mandatory component files

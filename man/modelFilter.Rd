@@ -4,23 +4,48 @@
 \alias{modelFilter}
 \title{Run Models through a Sieve to Filter out Dubious Fits}
 \usage{
-modelFilter(dmod, sieve = "auto_select")
+modelFilter(dmod, sieve = "auto_select", quiet = FALSE)
 }
 \arguments{
-\item{dmod}{a \code{ddArray} object}
+\item{dmod}{a \code{\link[=ddFit]{ddArray}} object}
 
 \item{sieve}{a list of criteria for filtering out "bad" models}
+
+\item{quiet}{boolean to suppress (\code{quiet = TRUE}) or allow 
+(\code{quiet = FALSE}) messages from \code{modelFilter}}
 }
 \value{
-A \code{ddArray} object consisting of all the models that meet the
- criteria defined in the \code{sieve}, a \code{dd} object if
- \code{sieve = "auto_select"} or if there is only one model that meets the
- \code{sieve} criteria, or an error if no models meet the criteria and
- \code{sieve} is not \code{"auto_select"}. An error is also returned if the
- \code{"auto_select"} routine is unable to converge on a model.
+A list of class \code{fmod} with following components:
+ \describe{
+   \item{filtered}{the selected \code{dd} object or a \code{ddArray} list of
+    models that passed the tests}
+   \item{scores}{a matrix with all models tested (rownames = model names) and 
+     the results of each test (columns \code{aic_test}, \code{rtail}, 
+     \code{ltail}, \code{hin}, \code{aic})}
+   \item{sieve}{the test criteria, stored in a list with
+     \itemize{ 
+       \item \code{aic_test} = cutoff for AIC
+       \item \code{hin} = boolean to indicate whether high influence points were
+        considered
+       \item \code{rtail} = numeric vector giving the probabilities that the
+        right tail of the distribution must exceed at distances of 80, 120, 
+        150, and 200 meters in order to pass
+       \item \code{ltail} = numeric vector giving the probabilities that the 
+       left tail of the distribution must NOT exceed at distances of 20 and 
+       50 meters in order to pass
+     }
+   }
+   \item{models}{a list (\code{ddArray} object) of all models tested}
+   \item{\code{note}}{notes on the tests}
+ }
+ When a \code{fmod} object is printed, only a small subset of the elements are
+ shown. To see a full list of the objects, use \code{names(x)}, where \code{x}
+ is the name of the \code{fmod} return value. The elements
+ can be extracted in the usual R way via, for example, \code{x$sieve} or 
+ \code{x[["sieve"]]}.
 }
 \description{
-A set of fitted models (\code{ddArray}) is filtered according to a set of
+A set of fitted models (\code{\link[=ddFit]{ddArray}}) is filtered according to a set of
  criteria that test for high AIC, points of high-influence points, and
  plausibility of the tail probabilities of each fitted distribution.
  \code{modelFilter} will either auto-select the best model according to a set
@@ -31,62 +56,86 @@ A set of fitted models (\code{ddArray}) is filtered according to a set of
 \details{
 After eliminating non-extensible models, the criteria to test are entered in
  a list (\code{sieve}) with components:
-
-1. \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
- Models with AIC scores exceeding the minimum AIC among all the fitted models
- by \code{sieve$aic} or more are rejected. The default value is 10. Users may
- override the default by using, for example, \code{sieve = list(aic = 7)} in
- in the argument list to use an AIC score of 7 as the cutoff or may forego the
- test altogether by setting \code{sieve = list(aic = FALSE)}
-2. \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
- the presence of which cast doubt on the reliability of the model. The function
- defines "high influence" as models with high leverage points (namely, points
- with \code{h/(1 - h) >  2*p/(n - 2*p)}, where \code{h} is leverage, \code{p}
- is the number of parameters in the model, and \code{n} is the search radius)
- with large Cook's distances [namely, Cook's distance \code{> 8/(n - 2*p)}]). The
- criteria for high influence points were adapted from Brian Ripley's GLM
- diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is
- perhaps most valuable in identifying distributions with high probability of
- carcasses landing well beyond what could reasonably be expected.
-3. \code{$rtail} = vector of probabilities that define a checkpoints on distributions
- to avoid a situation where a model that may fit well within the range of data
- is implausible because it predicts a significant or substantial probability
- of carcasses falling 200 m or more from the nearest turbine. The default is
- to check whether or not a distribution predicts that less than 50% of carcasses
- fall within 80 meters, 90% within 120 meters, 95% within 150 meters, or 99%
- within 200 meters. Distributions that fall below any of these points (for
- example predicting only 42% within 80 meters or only 74% within 120 meters)
- are eliminated by the default \code{rtail} test. The format of the default for
- the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
- Users may override the default by using, for example,
- \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999)}
- in the argument list for a more stringent test or for a situation where
- turbines are small or winds are light. Alternatively, users may forego the
- test altogether by entering \code{sieve = list(rtail = FALSE)}. If specific
- probabilities are provided, they must be in a vector of length 4 with names
+\enumerate{
+ \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
+  Models with AIC scores exceeding the minimum AIC among all the fitted models
+  by \code{sieve$aic} or more are rejected. The default value is 10. Users may
+  override the default by using, for example, \code{sieve = list(aic = 7)} in
+  in the argument list to use an AIC score of 7 as the cutoff or may forego the
+  test altogether by setting \code{sieve = list(aic = FALSE)}
+ \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
+  the presence of which cast doubt on the reliability of the model. The function
+  defines "high influence" as models with high leverage points, namely, points
+  with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
+  (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
+  and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
+  The criteria for high influence points were adapted from Brian Ripley's GLM 
+  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
+  perhaps most valuable in identifying distributions with high probability of 
+  carcasses landing well beyond what could reasonably be expected.
+ \item \code{$rtail} = vector of probabilities that define a checkpoints on distributions
+  to avoid a situation where a model that may fit well within the range of data
+  is implausible because it predicts a significant or substantial probability
+  of carcasses falling 200 m or more from the nearest turbine. The default is
+  to check whether or not a distribution predicts that less than 50\% of carcasses
+  fall within 80 meters, 90\% within 120 meters, 95\% within 150 meters, or 99\%
+  within 200 meters. Distributions that fall below any of these points (for
+  example predicting only 42\% within 80 meters or only 74\% within 120 meters)
+  are eliminated by the default \code{rtail} test. The format of the default for
+  the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
+  Users may override the default by using, for example, 
+  \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999))}
+  in the argument list for a more stringent test or for a situation where
+  turbines are small or winds are light. Alternatively, users may forego the
+  test altogether by entering \code{sieve = list(rtail = FALSE)}. If specific
+  probabilities are provided, they must be in a vector of length 4 with names
  "\code{p80}" etc. as in the examples above.
-4. \code{$ltail} = vector of probabilities that define checkpoints on distributions
- to avoid situations where the search radius is short and a distribution that
- fits the limited data set well but crashes to zero just outside the search
- radius. The default is to check whether or not a distribution predicts that
- greater than 50% of carcasses fall with 20 meters or 90% within 50 meters.
- Distributions that pass above either of these checkpoints (for example
- predicting 61% of carcasses within 20 meters or 93% within 50 meters)
- are eliminated by the default \code{ltail} test. The format of the default for
- the test is \code{$ltail = c(p20 = 0.5, p50 = 0.90)}. Users may override the
- default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8)}
- in the argument list for a situation where it is known that carcasses beyond
- 50 meters are common.
+ \item \code{$ltail} = vector of probabilities that define checkpoints on distributions
+  to avoid situations where the search radius is short and a distribution that
+  fits the limited data set well but crashes to zero just outside the search
+  radius. The default is to check whether or not a distribution predicts that
+  greater than 50\% of carcasses fall with 20 meters or 90\% within 50 meters.
+  Distributions that pass above either of these checkpoints (for example
+  predicting 61\% of carcasses within 20 meters or 93\% within 50 meters)
+  are eliminated by the default \code{ltail} test. The format of the default for
+  the test is \code{$ltail = c(p20 = 0.5, p50 = 0.90)}. Users may override the
+  default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8))}
+  in the argument list for a situation where it is known that carcasses beyond
+  50 meters are common.
+}
 
-Setting \code{sieve = "auto_select"} will result in \code{modelFilter} returning
- the model with the lowest AIC that meets the default criteria. If none of the
- models meet all four tests, the \code{"auto_select"} routine returns the
- the distribution with the lower AIC among 1) the model with the greatest
- \code{Pr(r < 120)} among those models that pass the \code{ltail} test, and 2)
- the model with the least \code{Pr(r < 50)} among those that pass the \code{rtail}
- test. If no models pass either the right tail test or left tail test, the
- the \code{"auto_select"} routine returns an error.
-
-If \code{sieve = NULL}, \code{modelFilter} filters out the non-extensible
- models only.
+Several choices of \code{sieve} are available.
+\describe{
+ \item{\code{sieve = "auto_select"}}{An algorithm progressively applies sieve
+  criteria until only one model remains. In the simplest case, the model with
+  the lowest AIC score among those that pass all four default tests is 
+  selected. If none of the models pass all four tests, the \code{hin} test is
+  disabled, that is, models with high influence points are not automatically
+  eliminated from consideration. If there are no models that pass the remaining
+  three tests, the \code{auto_select} algorithm picks the model with the lower 
+  AIC among 1) the model with the greatest \code{Pr(r < 120)} among 
+  those models that pass the \code{ltail} test, and 2) the model with the 
+  least \code{Pr(r < 50)} among those that pass the \code{rtail} test. If no 
+  models pass either the right tail test or left tail test, the 
+  \code{auto_select} routine returns NA for the selected model.}
+ \item{\code{sieve = "default"}}{The criteria used for selecting models are
+  listed in \code{\link{sieve_default}}. With this option, all models that 
+  meet all the criteria are returned, which may be one or several models, or
+  NA (if no models meet the criteria).}
+ \item{\code{sieve = NULL}}{Only the non-extensible models are filtered out.}
+ \item{\code{sieve = list(<custom>)}}{User provides a custom sieve, which may
+  be a modification of the default sieve or de novo. To modify the default,
+  use, for example, \code{sieve = list(hin = FALSE)} to disable the \code{hin}
+  test but keep the other default tests, or \code{sieve = list(aic = 7)} to
+  use 7 rather than 10 as the AIC cutoff, or 
+  \code{sieve = list(ltail = c(p20 = 0.3, p50 = 0.8))} to use a more stringent 
+  left tail test that requires CDF graphs to pass below the points (20, 0.3) 
+  and (50, 0.8). Custom \code{ltail} and \code{rtail} parameters must match the 
+  formats of the default tests, but their probabilities may vary. To turn off
+  the \code{aic} filter, use \code{sieve = list(aic = Inf)}. To turn off the
+  \code{ltail} filter, use  \code{sieve = list(ltail = c(p20 = 1, p50 = 1))}.
+  To turn off the \code{rtail} filter, use 
+  \code{sieve = list(rtail = c(p80 = 0, p120 = 0, p150 = 0, p200 = 0))}. These
+  custom components may be mixed and matched as desired.}
+}
 }
