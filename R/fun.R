@@ -3490,7 +3490,14 @@ modelFilter <- function(dmod, sieve = "auto_select", quiet = FALSE){
   }
   #extensible models
   fmod <- dmod[which(sapply(dmod, FUN = function(di) di[["extensible"]]))]
-  critok <- c("aic", "rtail", "ltail", "hin")
+  critok <- c("rtail", "ltail", "aic", "hin", "deltaAIC")
+  noext <- F #no extensible models
+  if (length(fmod) == 0){
+    if (!quiet) message("None of the models are extensible, so none can be ",
+      "extrapolated beyond the search radius. Returning models listed by AICc.")
+    noext <- T
+    fmod <- dmod
+  }
   ptab <- array(1, dim = c(length(fmod), length(critok)), 
     dimnames = list(names(fmod), critok))
   if (!identical(fil[["aic"]], FALSE)){
@@ -3508,154 +3515,50 @@ modelFilter <- function(dmod, sieve = "auto_select", quiet = FALSE){
     ptab[, "hin"] <- apply(!((cook > 8/(n - 2*p)) & (h/(1 - h) > 2*p/(n - 2*p))),
       FUN = all, MARGIN = 1)
   }
-  if (!identical(fil$rtail, FALSE) && all(!is.na(fil$rtail))){
-    ptab[, "rtail"] <-
-      sapply(fmod, "pdd", q =  80) > fil[["rtail"]]["p80"] &
-      sapply(fmod, "pdd", q = 120) > fil[["rtail"]]["p120"] &
-      sapply(fmod, "pdd", q = 150) > fil[["rtail"]]["p150"] &
-      sapply(fmod, "pdd", q = 200) > fil[["rtail"]]["p200"]
+  if (!noext){
+    if (!identical(fil$rtail, FALSE) && all(!is.na(fil$rtail))){
+      ptab[, "rtail"] <-
+        sapply(fmod, "pdd", q =  80) > fil[["rtail"]]["p80"] &
+        sapply(fmod, "pdd", q = 120) > fil[["rtail"]]["p120"] &
+        sapply(fmod, "pdd", q = 150) > fil[["rtail"]]["p150"] &
+        sapply(fmod, "pdd", q = 200) > fil[["rtail"]]["p200"]
+    }
+    if (!identical(fil$ltail, FALSE) && all(!is.na(fil$rtail))){
+      ptab[, "ltail"] <-
+        sapply(fmod, "pdd", q = 20) < fil[["ltail"]]["p20"] &
+        sapply(fmod, "pdd", q = 50) < fil[["ltail"]]["p50"]
+    }
   }
-  if (!identical(fil$ltail, FALSE) && all(!is.na(fil$rtail))){
-    ptab[, "ltail"] <-
-      sapply(fmod, "pdd", q = 20) < fil[["ltail"]]["p20"] &
-      sapply(fmod, "pdd", q = 50) < fil[["ltail"]]["p50"]
-  }
-  ptab[is.na(ptab)] <- 0
+  ptab[is.na(ptab)] <- 1
+  ptab[names(fmod), "deltaAIC"] <- sapply(fmod, "[[", "aic")
+  ptab[, "deltaAIC"] <- ptab[, "deltaAIC"] - min(ptab[, "deltaAIC"])
   ptab <- ptab[order(
     ptab[, "rtail"],
     ptab[, "ltail"],
     ptab[, "aic"],
     ptab[, "hin"],
-    -sapply(fmod, "[[", "aic"),
+    -ptab[, "deltaAIC"],
     decreasing = TRUE
   ),]
   output <- list()
-  output[["filtered"]] <- NA
-  output[["scores"]] <- ptab 
+  output[["filtered"]] <- fmod[rownames(ptab)[1]]
+  output[["scores"]] <- ptab
   output[["sieve"]] <- fil
   output[["models"]] <- dmod
   output[["note"]] <- ifelse(is.character(sieve), sieve, "")
-  aiccol <- sapply(fmod, "[[", "aic")
-  aiccol <- round(aiccol - min(aiccol), 2)
   class(output) <- "fmod"
+  if (noext){ 
+    output[["note"]] <- c(output[["note"]], "None of the models are extensible")
+    return(output)
+  }
   if (!identical(sieve, "auto_select")){
-    if (all(rowSums(ptab) < ncol(ptab))){
+    if (all(rowSums(ptab[, 1:4]) < ncol(ptab))){
       if (!quiet){
         message("None of the models meet all the filter criteria in sieve. ",
                 "Check data format, select less strict criteria, or set ",
                 "sieve = 'auto_select'.")
       }
-      output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-      return(output)
     }
-    output[["filtered"]] <- fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]]
-    output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-    return(output)
-  } else {
-    if (all(rowSums(ptab) < ncol(ptab))){ # then every model fails some test
-      # most important criterion is right tail; otherwise, model may have very small dwp 
-      ptabR <- ptab[ptab[, "rtail"] == 1, ]
-      if (sum(ptabR[, "rtail"] == 0)){
-        if (!quiet) message(
-          "All models have suspiciously heavy right tails. Cannot make reliable ", 
-          "model selection. If the data are from a real site (as opposed to ",
-          "data from simulations), the most likely explanation is improper data ",
-          "formatting. Also possible is that the carcasses are dispersed ",
-          "unusually far from the turbines. If the data are from simulations, ",
-          "the simulation parameters may be unrealistic or the criteria for ",
-          "evaluating the right tails are too strict. ?modelFilter")
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        return(output)
-      }
-      if (sum(ptab[, "aic"]) == 0){ # all aic > max(allowable aic) [rare]
-        message("can't find a good model")
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        return(output)
-      }
-      if (all(ptab[, "hin"] == 0)){
-        ptab[, "hin"] <- 1
-        msg <- paste0("All the models have at least one high-influence point. ",
-          "Removing 'hin' as a sieve criterion.")
-        output[["note"]] <- paste0(output[["note"]], msg)
-        if (!quiet) message(msg)
-      }
-      # just consider those models with aic < max(allowable aic) and no high influnence points
-      ptabh <- ptab[ptab[, "aic"] * ptab[, "hin"] == 1, , drop = FALSE]
-      if (length(ptabh) == 0){ # then all the aic-acceptable models have high influence points
-        # so just consider those models with good aic
-        ptabh[, "hin"] <- 1 # takes off the hin filter
-        ptabh <- ptab[ptab[, "aic"] == 1, , drop = FALSE]
-      }
-      if (nrow(ptabh) == 1){
-        output[["filtered"]] <- fmod[rownames(ptabh)]
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        return(output)
-      }
-      # there is more than one model with the aic <= max(allowable aic)
-      # are there models that pass all the filters?
-      if (any(rowSums(ptabh) == ncol(ptabh))){ # some model(s) passes
-        ptabh <- ptabh[rowSums(ptabh) == ncol(ptabh), , drop = FALSE]
-        output[["filtered"]] <- fmod[rownames(ptabh)[1]]
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        return(output) # ordered by aic; pick the top one
-      }
-      # no models pass, so either ltail or rtail fails (or both?)
-      if (sum(ptabh[, "ltail"]) == 0 & sum(ptabh[, "rtail"]) == 0){
-        msg <- "model fails both of the tail checks"
-        output[["note"]] <- paste0(output[["note"]], msg)
-        output[["filtered"]] <- fmod[rownames(ptabh)[1]]
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        if(!quiet) warning(msg)
-        return(output) # ordered by aic; pick the top one
-      }
-      ptabh <- ptabh[!(ptabh[, "ltail"] == 0 & ptabh[, "rtail"] == 0), ]
-      # No model passes both tail tests, but more than one pass one or the other.
-      # Best right tail among models with OK left tails is the one with the
-      #  highest pdd(120, ...)
-      left_good <- rownames(ptabh)[ptabh[, "ltail"] == 1]
-      if (length(left_good) > 0) best_right_among_left <- left_good[1]
-      if (length(left_good) > 1){
-        for (i in left_good[-1]){
-          if (pdd(120, fmod[i]) > pdd(120, fmod[best_right_among_left]))
-            best_right_among_left  <-  i
-        }
-      }
-      # Best left tail among models with OK right tails is the one with the
-      #   lowest pdd(80, ...)
-      right_good<- rownames(ptabh)[ptabh[, "rtail"] == 1]
-      if (length(right_good) > 0) best_left_among_right <- right_good[1]
-      if (length(right_good) > 1){
-        for (i in right_good[-1]){
-          if (pdd(120, fmod[i]) < pdd(50, fmod[best_left_among_right]))
-            best_left_among_right  <-  i
-        }
-      }
-      if (length(best_left_among_right) == 1 & length(best_right_among_left) == 1){
-        blar_aic <- fmod[best_left_among_right]$aic
-        bral_aic <- fmod[best_right_among_left]$aic
-        output[["filtered"]] <- fmod[
-          ifelse(blar_aic < bral_aic,
-            fmod[best_left_among_right], fmod[best_right_among_left]
-          )
-        ]
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        return(output)
-      }
-      if (length(best_left_among_right) == 1)
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        output[["filtered"]] <- fmod[best_left_among_right]
-        return(output)
-      if (length(best_right_among_left) == 1)
-        output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-        output[["filtered"]] <- fmod[best_right_among_left]
-        return(output)
-    } else {
-      output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-      output[["filtered"]] <- fmod[rownames(ptab)[1]]
-      return(output)
-    }
-    output[["scores"]] <- cbind(ptab, dAIC = aiccol[rownames(ptab)])
-    output[["filtered"]] <- fmod[rownames(ptab)[which(rowSums(ptab) == ncol(ptab))]]
-    return(output)
   }
+  return(output)
 }
