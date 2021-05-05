@@ -12,7 +12,7 @@ ddSim(x, ...)
 \arguments{
 \item{x}{object to simulate from}
 
-\item{...}{ignored (but required format for CRAN)}
+\item{...}{ignored}
 
 \item{nsim}{number of simulation draws}
 

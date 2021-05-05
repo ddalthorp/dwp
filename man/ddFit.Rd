@@ -76,14 +76,14 @@ in each ring;}
 \item{...}{ignored}
 
 \item{distr}{names (vector of character strings) of glm distribution templates
-to fit. Default is \code{model = "standard"} to fit the standard models listed in the
-description above. Setting \code{model = "all"} will fit both the standard
-models and the supplementary models. Also, any subset of the models may be fit
-by using, for example, \code{model = c("xep01", "lognormal")} to fit only
-the \code{"xep01"} and \code{"lognormal"} models, or
-\code{model = exclude(c("xep123", "constant"))} to fit all models except
-\code{"xep123"} and \code{"constant"}, or \code{model = exclude("lognormal", mod_standard)}
-to fit all standard models except the lognormal.}
+ to fit. Default is \code{distr = "standard"} to fit the standard models listed in the
+ description above. Setting \code{distr = "all"} will fit both the standard
+ models and the supplementary models. Also, any subset of the models may be fit
+ by using, for example, \code{distr = c("xep01", "lognormal")} to fit only
+ the \code{"xep01"} and \code{"lognormal"} models, or
+ \code{distr = exclude(c("xep123", "constant"))} to fit all models except
+ \code{"xep123"} and \code{"constant"}, or \code{distr = exclude("lognormal", 
+mod_standard)} to fit all standard models except the lognormal.}
 
 \item{scVar}{Search class variable to include in the model (optional). \code{scVar}
 is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.
@@ -93,20 +93,21 @@ object, \code{scVar} may be either NULL or a vector of names of search class
 variables to include in the models.}
 
 \item{rCol}{name of the distance column (which gives the outer radii of the rings).
-This will be correct by default for objects coming from \code{\link{prepRing}} 
-unmodified and will rarely need to be explicitly specified.}
+ This will be correct by default for objects coming from \code{\link{prepRing}} 
+and will rarely need to be explicitly specified.}
 
 \item{expoCol}{name of the column with the exposure, which is the area in the ring
 with outer radius \code{rCol}. This will be correct by default for objects
-coming from \code{\link{prepRing}} unmodified and will rarely need to be 
+coming from \code{\link{prepRing}} and will rarely need to be 
 explicitly specified.}
 
 \item{ncarcCol}{name of the column with tallies of carcasses by ring. This
 will be correct by default for objects coming from \code{\link{prepRing}} 
-unmodified and will rarely need to be explicitly specified.}
+and will rarely need to be explicitly specified.}
 
 \item{silent}{set \code{silent = TRUE} to suppress information printed to the
-console as the calculations proceed. May be useful when running simulations.}
+ console as the calculations proceed, which may be useful when running 
+simulations.}
 
 \item{notSearched}{the name of the level (if any) in \code{scVar} that
 indicates an unsearched area}
@@ -120,8 +121,8 @@ A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a
  object if a single model is fit. The \code{\link[=ddFit]{dd}} objects are 
  lists that include the following elements:
  \describe{
-   \item{code{\link[stats]{glm}}}{the fitted model}
-   \item{\code{$distr}}{name of the distribution ("xep01", etc.)}
+   \item{\code{\link[stats]{glm}}}{the fitted model}
+   \item{\code{$distr}}{name of the distribution (\code{"xep01"}, etc.)}
    \item{\code{$parms}}{vector of distribution parameter estimates (or \code{NA}
      if the model based on the MLE is not extensible)}
    \item{\code{$varbeta}}{the variance-covariance matrix of the glm parameter
@@ -129,7 +130,7 @@ A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a
      which can be extracted via \code{summary(x)$cov.unscaled}}
    \item{\code{$scVar}}{name of the (optional) search class variable (or \code{NULL})}
    \item{\code{$ncarc}}{number of carcasses}
-   \item{\code{$aic}}{the AIC value of the fit}
+   \item{\code{$aicc}}{the AICc value of the fit}
    \item{\code{$n}}{number of rings}
    \item{\code{$k}}{number of parameters}
    \item{\code{$srad}}{search radius}
@@ -139,11 +140,11 @@ A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a
  can be extracted in the usual R way via \code{$} or \code{[[x]]}.
 }
 \description{
-Fit glm's for distance distribution models corresponding to standard
- forms [xep1, xep01 (gamma), xep2 (Rayleigh), xep02, xep12, xep012, xep123,
- xep0123 (normal-gamma with x = tau), lognormal,  truncated normal, Maxwell
- Boltzmann, and constant] and supplentary forms [exponential, chi-squared,
- inverse gamma, and inverse Gaussian].
+Fit generalized linear models (glm) for distance distribution 
+models corresponding to standard forms [xep1, xep01 (gamma), xep2 (Rayleigh), 
+xep02, xep12, xep012, xep123, xep0123 (normal-gamma with x = tau), lognormal,  
+truncated normal, Maxwell Boltzmann, and constant] and supplentary forms 
+[exponential, chi-squared, inverse gamma, and inverse Gaussian].
 
  The glm is converted to a probability distribution by dividing by a
  normalizing constant, namely the integral of the glm evaluated from 0 to

@@ -149,6 +149,25 @@ cof_name <- list(
   inverse_gaussian = c("(Intercept)", "I(1/r)", "r"),
   constant = c("(Intercept)")
 )
+distr_names <- c(
+  xep1 = "xep1",
+  xep01 = "gamma (xep01)",
+  xep2 = "Rayleigh (xep2)",
+  xep02 = "xep02",
+  xep12 = "xep12",
+  xep012 = "xep012",
+  xep123 = "xep123",
+  xep0123 = "xep0123",
+  tnormal = "truncated normal",
+  MaxwellBoltzmann = "Maxwell-Boltzmann",
+  lognormal = "lognormal",
+  xep0 = "Pareto (xep0)",
+  xepi0 = "inverse gamma (xepi0)",
+  exponential = "exponential",
+  chisq = "chi-squared",
+  inverse_gaussian = "inverse Gaussian",
+  constant = "constant"
+)
 natural = c( # distributions require offset log(exposure)
   xep1 = TRUE,
   xep01 = TRUE,
@@ -444,9 +463,15 @@ layout_eagle <- read.csv(textConnection('
 
 sieve_default <- list(
   aic = 10,
-  hin = T,
+  hin = TRUE,
   rtail = c(p80 = 0.50, p120 = 0.90, p150 = 0.95, p200 = 0.99),
   ltail = c(p20 = 0.50, p50 = 0.90)
+)
+sieve_win <- list(
+  aic = 10,
+  hin = TRUE,
+  rtail = sieve_default$rtail * 0,
+  ltail = sieve_default$ltail * 0 + 1
 )
 
 usethis::use_data(
@@ -454,6 +479,7 @@ usethis::use_data(
   constraints,
   carcass_polygon,
   carcass_simple,
+  distr_names,
   layout_eagle,
   layout_polygon,
   layout_simple,
@@ -468,6 +494,7 @@ usethis::use_data(
   par_default,
   parm_name,
   sieve_default,
+  sieve_win,
   xyr, 
   internal = FALSE, overwrite = TRUE)
 

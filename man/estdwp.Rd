@@ -13,10 +13,11 @@ estdwp(x, ...)
 \method{estdwp}{psiHatcc}(x, ncarc, nboot = NULL, forGenEst = FALSE, silent = TRUE, ...)
 }
 \arguments{
-\item{x}{\code{\link[=estpsi]{psiHat}} object, which is a matrix \code{$psi} 
-giving the probability of a given carcass landing in the searched area at 
-each turbine. Column names = turbine IDs; or a \code{\link[=estpsi]{psiHatcc}} 
-object, which is a list of \code{psiHat} objects, one for each carcass class.}
+\item{x}{Either (1) \code{\link[=estpsi]{psiHat}} object, which is an 
+\code{nsim} by \code{nturbine} matrix that gives the estimated probability 
+of that a given carcass will land in the searched area at each turbine, with 
+turbine IDs as column names; or (2) a \code{\link[=estpsi]{psiHatcc}} 
+ object, which is a list of \code{psiHat} objects, one for each carcass class.}
 
 \item{...}{ignored}
 
@@ -27,12 +28,19 @@ object, which is a list of \code{psiHat} objects, one for each carcass class.}
 \item{forGenEst}{format the results for importing into GenEst (boolean)}
 
 \item{silent}{suppress messages from the fitting of a beta distribution in
-internal calculations that, if successful, increase the speed of the by
-20-200x. The message would signal that this acceleration cannot be applied.}
+ internal calculations that, if successful, increase the speed of the 
+calculations by 20-200x. The message would signal that this acceleration 
+cannot be applied.}
 }
 \value{
 list
 }
 \description{
-Estimate DWP
+Estimate the density-weighted proportion (DWP) of carcasses lying in the
+ searched area at each turbine at a site. The calculation requires prior
+estimation of the expected proportion (\code{\link[=estpsi]{psi}}) and the
+number of carcasses found (\code{\link[=getncarc]{ncarc}}). NOTE: The 
+ carcass counts affect the uncertainty in the estimate of the fraction
+of carcasses in the searched area (DWP), and \code{ncarc} is required for
+accounting for uncertainty in estimates of DWP.
 }

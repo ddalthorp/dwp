@@ -20,11 +20,11 @@ ddCI(
 
 \item{x}{distance from turbine (scalar or vector) or probability (for quantile)}
 
-\item{type}{"CDF", "PDF", or "quantile"}
+\item{type}{\code{"CDF"}, \code{"PDF"}, or \code{"quantile"}}
 
 \item{CL}{confidence level for the confidence interval(s)}
 
-\item{nsim}{number of simulation draws to base the estimate of CI on}
+\item{nsim}{number of simulation draws to base the estimate of \code{CI} on}
 
 \item{extent}{whether to calculate \code{CI} based on the full range of
 possible data and extrapolating beyond the search radius
@@ -42,5 +42,6 @@ constructing CIs; abort if \code{mean(mod[, "extensible"]) > na.tol}}
 array (\code{ddCI} class) with columns for distance and the CI bounds
 }
 \description{
-Calculate CI for CDF, PDF, or quantile
+Calculate a confidence interval for the CDF, PDF, or quantile of a carcass
+distance distribution.
 }

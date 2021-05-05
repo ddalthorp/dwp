@@ -57,9 +57,9 @@ functions like \code{\link[=stats]{dnorm}}, \code{pnorm}, \code{qnorm}, and
 The probability density function (PDF(\emph{x}) = \emph{f}(\emph{x}) = \code{ddd(x, ...)}) 
 gives the probability that a carcass falls in a 1 meter ring centered at the 
 turbine and with an outer radius of \code{x} meters. The cumulative distribution 
-function [CDF(\emph{x}) = \emph{F}(\emph{x}) = \code{ddd(x, ...)}] gives the 
+function [CDF(\emph{x}) = \emph{F}(\emph{x}) = \code{pdd(x, ...)}] gives the 
 probability that a carcass falls within \code{x} meters from the turbine. For 
-a given probability, \code{p} the inverse CDF [\code{qdd(p,...)}] gives the 
+a given probability, \code{p}, the inverse CDF [\code{qdd(p,...)}] gives the 
 \code{p} quantile of carcass distances. For example, \code{qdd(0.5,...)} 
 gives the median carcass distance, and \code{qdd(0.9, ...)} gives the radius 
 that 90\% of the carcasses are expected to fall in. Random carcass distances 
@@ -68,7 +68,7 @@ can be generated using \code{rdd}.
 The relative carcass density function(\code{rcd}) gives relative carcass 
 densities at a point \code{x} meters from a turbine. In general, rcd is 
 proportional to PDF(x)/x, normalized so that the surface of rotation of rcd(x) 
-has total area of 1. There are more stringent contstraints on the allowable 
+has total volume of 1. There are more stringent contstraints on the allowable 
 parameters in the fitted (or simulated) glm's because the integral of PDF(x)/x 
 must converge.
 

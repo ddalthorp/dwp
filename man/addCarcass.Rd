@@ -50,6 +50,7 @@ new carcasses to the old totals (\code{ncarcReset = FALSE}).}
 \description{
 After the site layout is analyzed and structured by rings for analysis,
  carcass data may still need to be added to the site data. \code{addCarcass}
- grabs carcass location data from a shape file or data frame and inserts it
- into ring data.
+ grabs carcass location data from a shape file or data frame and formats it
+ into ring data, with carcass tallies in every 1m ring from the turbine to
+ the maximum search distance away from any turbine.
 }

@@ -5,7 +5,7 @@
 \alias{aic.ddArray}
 \alias{aic.ddArraycc}
 \alias{aic.dd}
-\title{Calculate Akaike Information Criterion (AIC) for Distance Distributions}
+\title{Calculate Akaike Information Criterion (AICc) for Distance Distributions}
 \usage{
 aic(x, ...)
 
@@ -22,13 +22,13 @@ aic(x, ...)
 \item{...}{ignored}
 
 \item{extent}{Include only the extensible models (\code{extent = "full"}) or
-all models, regardless of whether they can be extended beyond the search
-radius (\code{extent = "win"}).}
+ all models (\code{extent = "win"}), whether or not they can be extended 
+beyond the search radius.}
 }
 \value{
-Data frame with AIC, AICc, deltaAICc for all models in \code{x}
+Data frame with AICc and deltaAICc for all models in \code{x}
 }
 \description{
-functions for calculating AIC and AICc for carcass dispersion
+functions for calculating AICc for carcass dispersion
  models.
 }

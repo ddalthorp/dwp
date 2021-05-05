@@ -93,4 +93,11 @@ Plot CDF, PDF, or rcd (relative carcass density) for a single
  For \code{\link[=ddFit]{dd}} objects, the curve for the MLE of the parameters
  is plotted, along with a 100\code{CL}\% confidence bounds determined for 
  \code{nsim} simulation reps
+
+ The legend follows the ordering given by \code{\link{modelFilter}} with 
+ the default sieve or, if \code{extent = "win"} by (1) delta AICc < 10, 
+(2) the absence of high-influence points, and (2) AICc. The best model 
+according to the filter is listed first, with a heavier line than the others; 
+the remaining distributions are listed in descending order, with the best 
+models in the leftmost column.
 }

@@ -17,9 +17,10 @@ cof2parms(x, ...)
 }
 \arguments{
 \item{x}{object (vector or matrix of parameters, dmod, or glm)
-with named glm parameters ("r", "I(r^2)", "I(r^3)", "log(r)", or "I(1/r)")}
+ with named glm parameters (\code{"r"}, \code{"I(r^2)"}, \code{"I(r^3)"}, 
+\code{"log(r)"}, or \code{"I(1/r)"})}
 
-\item{...}{ignored [but required for CRAN]}
+\item{...}{ignored}
 
 \item{distr}{name of the distribution}
 }

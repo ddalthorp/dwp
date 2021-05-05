@@ -50,8 +50,8 @@ incGamma <- function(a, x, lower = FALSE) pgamma(x, a, lower.tail = lower) * gam
 #' \eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple closed-form 
 #' integral that involves the error function (\code{pracma::erf}).
 #' 
-#' @param x,q vector of distances
-#' @param a,b0,b1,b2,b3,shape,scale,s2 parameters used in the respective
+#' @param x, q vector of distances
+#' @param a, b0, b1, b2, b3, shape, scale, s2 parameters used in the respective
 #'  distributions.
 #' @param const (optional) scalar normalizing constant for distributions that are
 #'  numerically integrated using \code{integrate}, namely. Providing a \code{const} is

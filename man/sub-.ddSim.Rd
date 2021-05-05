@@ -11,7 +11,7 @@
 
 \item{i, j}{row and column indices to subset}
 
-\item{...}{ignored (but required format for CRAN)}
+\item{...}{ignored}
 }
 \value{
 array with simulated beta parameters from the glm model, their

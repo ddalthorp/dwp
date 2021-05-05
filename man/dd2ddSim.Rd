@@ -13,7 +13,7 @@ dd2ddSim(dd)
 \code{ddSim} object with 1 row
 }
 \description{
-This is primarily a utility function called internally by \code{dwp} functions
-to extract parameters from a fitted \code{\link[=ddFit]{dd}} model for analysis and
-calculation.
+This is a utility function called internally by \code{dwp} functions
+to extract parameters from a fitted \code{\link[=ddFit]{dd}} model and 
+formats them for analysis and calculation.
 }

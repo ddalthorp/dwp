@@ -124,6 +124,25 @@
 #' 
 "sieve_default"
 
+#' Test Criteria for Model Selection within Search Area
+#'
+#' @format A list containing the parameters used for test criteria in model 
+#' selection in \code{ddArray} objects. The \code{sieve_win} values are used 
+#' when either \code{sieve = "win"} or \code{extent = "win"} in arg list of
+#' \code{\link{modelFilter}}. The sieve parameters are:
+#' \describe{
+#'  \item{\code{$aic = 10}}{the cutoff for DeltaAIC scores; models with higher 
+#'		scores are removed from further consideration.}
+#'  \item{\code{$hin = T}}{a boolean to indicate whether or not to use high 
+#'		leverage points as a criterion for model selection.}
+#'  \item{\code{$rtail}}{Appropriate only for extrapolating beyond the search
+#'		radius. Automatically disabled via\code{rtail = sieve_default$rtail * 0}.}
+#'  \item{\code{ltail}}{Appropriate only for extrapolating beyond the search
+#'		radius. Automaticall disabled via \code{ltail = sieve_default$ltail * 0 + 1}}
+#' }
+#' 
+"sieve_win"
+
 #' Locations of All Carcasses in Grid Data
 #' @format matrix with columns x, y, r for all 100 carcasses in the simulation to
 #'  generate the carcass data for the xy grid that was searched on road and pad.

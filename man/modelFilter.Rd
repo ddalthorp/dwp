@@ -4,18 +4,19 @@
 \alias{modelFilter}
 \title{Run Models through a Sieve to Filter out Dubious Fits}
 \usage{
-modelFilter(dmod, sieve = "auto_select", quiet = FALSE)
+modelFilter(dmod, sieve = "default", quiet = FALSE)
 }
 \arguments{
 \item{dmod}{a \code{\link[=ddFit]{ddArray}} object}
 
-\item{sieve}{a list of criteria for filtering out "bad" models}
+\item{sieve}{a list of criteria for ordering models}
 
 \item{quiet}{boolean to suppress (\code{quiet = TRUE}) or allow 
 (\code{quiet = FALSE}) messages from \code{modelFilter}}
 }
 \value{
-A list of class \code{fmod} with following components:
+If \code{sieve = NULL}, then an unordered list of extensible models; 
+otherwise, a list of class \code{fmod} with following components:
  \describe{
    \item{filtered}{the selected \code{dd} object or a \code{ddArray} list of
     models that passed the tests}
@@ -45,24 +46,24 @@ A list of class \code{fmod} with following components:
  \code{x[["sieve"]]}.
 }
 \description{
-A set of fitted models (\code{\link[=ddFit]{ddArray}}) is filtered according to a set of
- criteria that test for high AIC, points of high-influence points, and
+A set of fitted models (\code{\link[=ddFit]{ddArray}}) is filtered according 
+ to a set of criteria that test for high AIC, high-influence points, and
  plausibility of the tail probabilities of each fitted distribution.
  \code{modelFilter} will either auto-select the best model according to a set
  of pre-defined, objective criteria or will will return all models that meet
- a set of user-defined or default criteria. A table of how the models
+ a set of user-defined, or default criteria. A table of how the models
  score according to each criterion is printed to the console.
 }
 \details{
-After eliminating non-extensible models, the criteria to test are entered in
- a list (\code{sieve}) with components:
+The criteria to test are entered in a list (\code{sieve}) with components:
 \enumerate{
- \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC scores.
-  Models with AIC scores exceeding the minimum AIC among all the fitted models
-  by \code{sieve$aic} or more are rejected. The default value is 10. Users may
-  override the default by using, for example, \code{sieve = list(aic = 7)} in
-  in the argument list to use an AIC score of 7 as the cutoff or may forego the
-  test altogether by setting \code{sieve = list(aic = FALSE)}
+ \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC 
+ scores. Models with AIC scores exceeding the minimum AIC among all the 
+ fitted models by \code{sieve$aic} or more fail the test. The default value 
+ is 10. Users may override the default by using, for example, 
+ \code{sieve = list(aic = 7)} in the argument list to use an AIC score of 7 
+ as the cutoff or may forego the test altogether by setting 
+ \code{sieve = list(aic = FALSE)}
  \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
   the presence of which cast doubt on the reliability of the model. The function
   defines "high influence" as models with high leverage points, namely, points
@@ -74,16 +75,16 @@ After eliminating non-extensible models, the criteria to test are entered in
   perhaps most valuable in identifying distributions with high probability of 
   carcasses landing well beyond what could reasonably be expected.
  \item \code{$rtail} = vector of probabilities that define a checkpoints on distributions
-  to avoid a situation where a model that may fit well within the range of data
-  is implausible because it predicts a significant or substantial probability
-  of carcasses falling 200 m or more from the nearest turbine. The default is
-  to check whether or not a distribution predicts that less than 50\% of carcasses
-  fall within 80 meters, 90\% within 120 meters, 95\% within 150 meters, or 99\%
-  within 200 meters. Distributions that fall below any of these points (for
-  example predicting only 42\% within 80 meters or only 74\% within 120 meters)
-  are eliminated by the default \code{rtail} test. The format of the default for
-  the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, p150 = 0.95, p200 = 0.99)}.
-  Users may override the default by using, for example, 
+  to avoid situations where a model that may fit well within the range of data
+  is nonetheless implausible because it predicts a significant or substantial 
+  probability of carcasses falling great distances from the nearest turbine. 
+  The default is to check whether or not a distribution predicts that less than 
+  50\% of carcasses fall within 80 meters, 90\% within 120 meters, 95\% within 
+  150 meters, or 99\% within 200 meters. Distributions that fall below any of 
+  these points (for example predicting only 42\% within 80 meters or only 74\% 
+  within 120 meters) fail the default \code{rtail} test. The format of the 
+  default for  the test is \code{$rtail = c(p80 = 0.5, p120 = 0.90, 
+  p150 = 0.95, p200 = 0.99)}. Users may override the default by using, for example, 
   \code{sieve = list(rtail = c(p80 = 0.8, p120 = 0.99, p150 = 0.99, p200 = 0.999))}
   in the argument list for a more stringent test or for a situation where
   turbines are small or winds are light. Alternatively, users may forego the
@@ -104,25 +105,28 @@ After eliminating non-extensible models, the criteria to test are entered in
   50 meters are common.
 }
 
-Several choices of \code{sieve} are available.
+Several choices of pre-defined \code{sieve}s are available (or, as described 
+ above, users may define their own criteria):
 \describe{
- \item{\code{sieve = "auto_select"}}{An algorithm progressively applies sieve
-  criteria until only one model remains. In the simplest case, the model with
-  the lowest AIC score among those that pass all four default tests is 
-  selected. If none of the models pass all four tests, the \code{hin} test is
-  disabled, that is, models with high influence points are not automatically
-  eliminated from consideration. If there are no models that pass the remaining
-  three tests, the \code{auto_select} algorithm picks the model with the lower 
-  AIC among 1) the model with the greatest \code{Pr(r < 120)} among 
-  those models that pass the \code{ltail} test, and 2) the model with the 
-  least \code{Pr(r < 50)} among those that pass the \code{rtail} test. If no 
-  models pass either the right tail test or left tail test, the 
-  \code{auto_select} routine returns NA for the selected model.}
- \item{\code{sieve = "default"}}{The criteria used for selecting models are
-  listed in \code{\link{sieve_default}}. With this option, all models that 
-  meet all the criteria are returned, which may be one or several models, or
-  NA (if no models meet the criteria).}
- \item{\code{sieve = NULL}}{Only the non-extensible models are filtered out.}
+ \item{\code{sieve = "default"}}{The models are ordered by the following
+ criteria: 
+ \enumerate{
+ 	\item extensibility
+  \item weight of right tail (discounting models that predict implausibly 
+	 high proportions of carcasses beyond the search radius)
+  \item weight of the left tail (discounting models that predict implausibly 
+	 high proportions of carcasses near the turbines)
+  \item AICc test (discounting model with delta AICc > 10)
+  \item high influence points (discounting models in which one or more of the
+	 data points exert a high influence on the fitted model, according to 
+	 Ripley's GLM  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}))
+  \item ranking by AICc
+ }
+ Precise definitions of the default sieve parameters are given in 
+ \code{sieve_default}.}
+ \item{\code{sieve = NULL}}{Returns a list of the extensible models without
+ scoring them by other model selection criteria.}
+\item{\code{sieve = "win"}}{Sorts models by high-influence points and AICc}
  \item{\code{sieve = list(<custom>)}}{User provides a custom sieve, which may
   be a modification of the default sieve or de novo. To modify the default,
   use, for example, \code{sieve = list(hin = FALSE)} to disable the \code{hin}
