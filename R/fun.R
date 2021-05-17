@@ -1,7 +1,7 @@
 #' Create a Data Structure or Map for the Site Layout
 #'
-#' @description Read and do premliminary error-checking and formatting of search
-#'  plot layout data. Search plot layout data can come in any of several different
+#' @description Read plot layout data and perform premliminary error-checking 
+#'	and formatting. Search plot layout data can come in any of several different
 #'  formats, including shape files for search area polygons and turbine locations,
 #'  R polygons, (x, y) coordinates, or simple description of search plot type for
 #'  each turbine (square, circular, road & pad). A vector of distances along with
@@ -96,7 +96,7 @@
 #'  several possibilities, including, each of which is an S3 object with 
 #'  characteristics specific to the imported data:
 #'  \describe{
-#'    \item{\code{shapeLayout}}{S3 object and list with elements:
+#'    \item{\code{shapeLayout}}{List with elements:
 #'      \itemize{
 #'        \item \code{$layout} = turbine search area configurations (polygons 
 #'          and multipolygons) from \code{data_layout} shape file as an 
@@ -111,7 +111,7 @@
 #'          meters from a reference point. Row names are the names of the turbines.
 #'      }
 #'    }
-#'    \item{\code{simpleLayout}}{S3 object and data frame with columns:
+#'    \item{\code{simpleLayout}}{Data frame with columns:
 #'      \itemize{
 #'        \item \code{turbine} = turbine IDs (syntactically valid R names)
 #'        \item \code{radius} = search radius. If \code{shape = "square"}, then
@@ -123,10 +123,10 @@
 #'      }
 #'    }
 #'    \item{\code{polygonLayout}}{
-#'      S3 object and list of polygons, one for each turbine. The maximum search
+#'      List of polygons, one for each turbine. The maximum search
 #'      radius at any turbine is assigned as an attribute (\code{attr(, "rad")}).
 #'    }
-#'    \item{\code{xyLayout}}{S3 object and list with elements:
+#'    \item{\code{xyLayout}}{List with elements:
 #'      \itemize{
 #'        \item \code{xydat} = data frame with columns for turbine names, x and y
 #'          coordinates of 1m grid centers spanning the searched area, number of
@@ -143,7 +143,6 @@
 #'  }
 #'
 #' @export
-
 initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     file_turbine = NULL, radCol = "radius", shapeCol = "shape", padCol = "padrad",
     roadwidCol = "roadwidth", nRoadCol = "n_road", xCol = "x", yCol = "y",
@@ -362,8 +361,8 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
 
 #' Import Carcass Observations Locations from Shape Files
 #'
-#' Carcass coordiates (x, y) and turbine IDs are read using sf::st_read and
-#' formatted for adding to \code{rings} data structures for analysis.
+#' Carcass coordiates (x, y) and turbine IDs are read using \code{\link[sf]{st_read}} 
+#' and formatted for adding to \code{rings} data structures for analysis.
 #'
 #' @param file_cod name of the file with carcass observation data. Currently, the
 #'  function requires a shape file, which gives the carcass locations on the same
@@ -769,9 +768,9 @@ prepRing.polygonLayout <- function(x, ...){
 #'  models and the supplementary models. Also, any subset of the models may be fit
 #'  by using, for example, \code{distr = c("xep01", "lognormal")} to fit only
 #'  the \code{"xep01"} and \code{"lognormal"} models, or
-#'  \code{distr = exclude(c("xep123", "constant"))} to fit all models except
+#'  \code{distr = exclude(c("xep123", "constant"))} to fit all standard models except
 #'  \code{"xep123"} and \code{"constant"}, or \code{distr = exclude("lognormal", 
-#'	mod_standard)} to fit all standard models except the lognormal.
+#'	mod_all)} to fit all the models except the lognormal.
 #' @param scVar Search class variable to include in the model (optional). \code{scVar}
 #'  is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.
 #'  If \code{x} is a \code{shapeLayout} object, \code{scVar} may be either \code{NULL}
@@ -994,7 +993,7 @@ aic.ddArray <- function(x, extent = "full", ...){
     nm <- c(nm, "extensible")
   }
   output <- data.frame(array(dim = c(length(incmod), length(nm)),
-    dimnames = list(NULL, nm)), stringsAsFactors = FALSE)
+    dimnames = list(incmod, nm)), stringsAsFactors = FALSE)
   output$model <- incmod
   ci <- c("k", "AICc")
   for (di in incmod){
@@ -1004,6 +1003,7 @@ aic.ddArray <- function(x, extent = "full", ...){
   }
   output$deltaAICc <- output$AICc - min(output$AICc, na.rm = TRUE)
   output <- output[order(output$deltaAICc), ]
+	rownames(output) <- output$model
   attr(output, "extent") <- extent
   attr(output, "n") <- attr(x, "n")
   return(output)
@@ -2434,8 +2434,39 @@ dd2ddSim <- function(dd){
 #'
 #' @description Estimated probability that carcass lands in searched area. This
 #'  is an intermediate step in estimating dwp but is also interesting in its own
-#'  right.
-#' @param x data.
+#'  right. The estimation involves integrating the modeled carcass distribution 
+#'	(\code{model}) over the	search plots at the turbines. Data for the search 
+#'	plots is stored in the generic argument, \code{x}, which can take any of a
+#'	number of different forms, as described in the \code{Arguments} section (below).
+#' @param x data \describe{
+#'	\item{\code{rings}}{a formatted site map created from raw data via function
+#'	  \code{\link{prepRing}} (or as a component of a list returned by 
+#'	  \code{\link{addCarcass}}).}
+#'	\item{\code{ringscc}}{a list of \code{rings} objects, one for each carcass
+#'	  class; created from raw data via function \code{\link{prepRing}} (or as a 
+#'	  component of a list returned by \code{\link{addCarcass}}).}
+#'	\item{\code{xyLayout}}{formatted site map data derived from (x, y) coordinates
+#'	  covering every square meter of searched areas at each turbine; derived from
+#'	  the function \code{\link{initLayout}}, when called with \code{xy} data.}
+#'	\item{\code{rpA}}{(intended as an internal function that would rarely be 
+#'	  called directly by users) a list of data frames (one for each turbine) 
+#'	  giving the fraction of area searched (\code{pinc} at	each distance 
+#'	  (\code{r}). \code{rpA} data are embedded in \code{\link[=prepRing]{rings}} 
+#'	  objects that are created from site "maps" via \code{\link{prepRing}}.}
+#'	\item{\code{rdat}}{(intended as an internal function that would rarely be 
+#'	  called directly by users) list of data frames giving the area searched 
+#'    (\code{"exposure"}), in a 1 meter ring with outer radius \code{"r"} and the 
+#'	  number of carcasses found \code{"ncarc"} in each ring, with search class 
+#'	  \code{scVar} optional. There is also a summary data frame 
+#'	  \code{$rdat[["total"]]} that sums the exposures and carcass counts for all 
+#'	  turbines across the site. The \code{$rdat[["total"]]} is the data frame 
+#'	  used in fitting the GLMs. \code{rdat} objects are components of the return
+#'	  value of \code{\link{prepRing}}}
+#'	\item{\code{data.frame}}{(intended as an internal function that would rarely be 
+#'	  called directly by users) a data frame giving the fraction of area searched 
+#'	  (\code{pinc} at	each distance (\code{r}).}
+#' }
+#' 
 #' @param model A fitted \code{dd} model or an array of estimated parameters
 #'  (\code{ddSim} object); or, if \code{x} is a \code{ringscc} object, a list
 #'  of \code{dd} models (one for each carcass class), or a \code{ddArraycc}
@@ -2451,90 +2482,20 @@ dd2ddSim <- function(dd){
 #'  the given model without accounting for uncertainty. 
 #' @param zrad radius
 #' @param ... ignored
-#' @return \code{psiHat} object = array with \code{nsim} rows and one column for
-#' each turbine + one row for the total; or a list of such arrays, one for each
-#' carcass class if \code{x} is a \code{ringscc} object.
+#' @return A \code{psiHat} object, which is either 1) an array giving the 
+#'	expected fraction	of carcasses lying in the searched area at each turbine 
+#'	with \code{nsim} rows and one column for each turbine + one row for the 
+#'	total; or 2) a list of such arrays, one for each carcass class if \code{x} 
+#'	is a \code{ringscc} object. The uncertainty in the expected fractions is
+#'	characterized by simulation and reflected in the variation in \code{psi}
+#'	values within each column.
 #' @export
 estpsi <- function(x, ...) UseMethod("estpsi", x)
 
 #' @rdname estpsi
 #' @export
-estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
-    ...){
-  parmsim <- prepmod(model, nsim)
-  output <- list(
-    psi = c(t(ddd(x$r - 1/2, parmsim, extent = extent, zrad = zrad)) %*% x$pinc),
-    ncarc = sum(x$ncarc)
-  )
-  output$psi[output$psi > 1] <- 1
-  attr(output, "extent") <- extent
-  attr(output, "zrad") <- zrad
-  class(output) <- c("psiHat", "matrix")
-  output
-}
-
-#' @rdname estpsi
-#' @export
-estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
-  parmsim <- prepmod(model, nsim)
-  tmp <- lapply(x, FUN = estpsi, model = parmsim,
-    extent = extent, nsim = nsim, zrad = zrad)
-  output <- sapply(tmp, "[[", "psi")
-  attr(output, "extent") <- extent
-  attr(output, "zrad") <- zrad
-  class(output) <- c("psiHat", "matrix")
-  output
-}
-
-#' @rdname estpsi
-#' @export
-estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
-    ...){
-  parmsim <- prepmod(model = model, nsim = nsim)
-  di <- attr(parmsim, "distr")
-  ep <- function(r, di, pco) c(exp(rmat(r, di) %*% pco[1, cof_name[[di]]]))
-  tset <- x$tset
-  output <- matrix(NA, nrow = nsim, ncol = length(tset) + 1)
-  colnames(output) <- c(tset, "total")
-  for (simi in 1:nsim){
-    pco <- parmsim[simi, ]
-    if (!cofOK0(pco, di)) next
-    deno <- integrate(f = function(r, di, pco) 2 * pi * r * ep(r, di, pco),
-      lower = 0, upper = ifelse(cofOKInf(pco, di), Inf, zrad), di = di, pco = pco)$val
-    tmp <- aggregate(ep(x$xydat$r, di, pco) ~ x$xydat$turbine, FUN = "sum")
-    output[simi, tmp[, 1]] <- tmp[, 2]/deno
-  }
-  output[output > 1] <- 1
-  output[, "total"] <- rowMeans(output[, exclude("total", colnames(output)), drop = F], na.rm = TRUE)
-  attr(output, "extent") <- extent
-  attr(output, "zrad") <- zrad
-  class(output) <- c("psiHat", "matrix")
-  return(output)
-}
-
-#' @rdname estpsi
-#' @export
 estpsi.rings <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
   estpsi(x$rpA, model = model, extent = extent, nsim = nsim, zrad = zrad)
-}
-
-#' @rdname estpsi
-#' @export
-estpsi.rdat <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
-  rpA <- lapply(x, FUN = function(x){
-    x[, "exposure"] <- x[, "exposure"]/((x[, "r"] - 0.5) * 2 * pi)
-    x
-  })
-  rpA$total$exposure <- rpA$total$exposure/(length(x) - 1)
-  rpA <- lapply(rpA, 
-    FUN = function(x){
-      colnames(x) <- gsub("exposure", "pinc", colnames(x))
-      x[, "pinc"] <- round(pmin(x[, "pinc"], 1), 4)
-      x[, "ncarc"] <- NULL
-    }
-  )
-  class(rpA) <- "rpA"
-  estpsi(rpA, model = model, extent = extent, nsim = nsim, zrad = zrad)
 }
 
 #' @rdname estpsi
@@ -2566,10 +2527,98 @@ estpsi.ringscc <- function(x, model, modnames = NULL, extent = "full",
   output
 }
 
+#' @rdname estpsi
+#' @export
+estpsi.xyLayout <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
+    ...){
+  parmsim <- prepmod(model = model, nsim = nsim)
+  di <- attr(parmsim, "distr")
+  ep <- function(r, di, pco) c(exp(rmat(r, di) %*% pco[1, cof_name[[di]]]))
+  tset <- x$tset
+  output <- matrix(NA, nrow = nsim, ncol = length(tset) + 1)
+  colnames(output) <- c(tset, "total")
+  for (simi in 1:nsim){
+    pco <- parmsim[simi, ]
+    if (!cofOK0(pco, di)) next
+    deno <- try(integrate(f = function(r, di, pco) 2 * pi * r * ep(r, di, pco),
+      lower = 0, upper = ifelse(cofOKInf(pco, di), Inf, zrad),
+			di = di, pco = pco)$val, silent = TRUE)
+		if ("try-error" %in% class(deno)){
+			deno <- try(integrate(f = function(r, di, pco) 2 * pi * r * ep(r, di, pco),
+				lower = 0, upper = zrad, di = di, pco = pco)$val, silent = TRUE)
+			if ("try-error" %in% class(deno)) {
+				warning(
+					"Difficulty integrating with simulated parameter set. ",
+					"Discarding the offending rep."
+				)
+			}
+		}
+		tmp <- aggregate(ep(x$xydat$r, di, pco) ~ x$xydat$turbine, FUN = "sum")
+    output[simi, tmp[, 1]] <- tmp[, 2]/deno
+  }
+  output[output > 1] <- 1
+  output[, "total"] <- rowMeans(output[, exclude("total", colnames(output)), drop = F], na.rm = TRUE)
+  attr(output, "extent") <- extent
+  attr(output, "zrad") <- zrad
+  class(output) <- c("psiHat", "matrix")
+  return(output)
+}
+
+#' @rdname estpsi
+#' @export
+estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
+  parmsim <- prepmod(model, nsim)
+  tmp <- lapply(x, FUN = estpsi, model = parmsim,
+    extent = extent, nsim = nsim, zrad = zrad)
+  output <- sapply(tmp, "[[", "psi")
+  attr(output, "extent") <- extent
+  attr(output, "zrad") <- zrad
+  class(output) <- c("psiHat", "matrix")
+  output
+}
+
+
+#' @rdname estpsi
+#' @export
+estpsi.rdat <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
+  rpA <- lapply(x, FUN = function(x){
+    x[, "exposure"] <- x[, "exposure"]/((x[, "r"] - 0.5) * 2 * pi)
+    x
+  })
+  rpA$total$exposure <- rpA$total$exposure/(length(x) - 1)
+  rpA <- lapply(rpA, 
+    FUN = function(x){
+      colnames(x) <- gsub("exposure", "pinc", colnames(x))
+      x[, "pinc"] <- round(pmin(x[, "pinc"], 1), 4)
+      x[, "ncarc"] <- NULL
+    }
+  )
+  class(rpA) <- "rpA"
+  estpsi(rpA, model = model, extent = extent, nsim = nsim, zrad = zrad)
+}
+
+#' @rdname estpsi
+#' @export
+estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
+    ...){
+  parmsim <- prepmod(model, nsim)
+  output <- list(
+    psi = c(t(ddd(x$r - 1/2, parmsim, extent = extent, zrad = zrad)) %*% x$pinc),
+    ncarc = sum(x$ncarc)
+  )
+  output$psi[output$psi > 1] <- 1
+  attr(output, "extent") <- extent
+  attr(output, "zrad") <- zrad
+  class(output) <- c("psiHat", "matrix")
+  output
+}
+
+
 #'  Internal Utility Function to Parse and Format Model for Calculating Psihat
 #'
 #' @param model \code{dd} or \code{ddSim} object
 #' @param nsim number of simulation reps. If \code{nsim = 0}, return dd2ddSim
+#' @return \code{\link{ddSim}} object of simulated distribution model parameters
 #' @export
 prepmod <- function(model, nsim){
   if ("dd" %in% class(model)){
@@ -3338,8 +3387,25 @@ plot.dwphat <- function(x, ...){
 
 #' Export Estimated Density-Weighted Proportion to File in Proper GenEst Format
 #'
+#' GenEst imports DWP from files with comma-separated values (.csv), with a 
+#'	column giving turbine ID and a column of DWP values for each carcass class.
+#'	Column lengths are equal to the number of turbines times the number of 
+#'	simulation reps (typically, \code{nsim = 1000}), giving \code{nsim} copies of 
+#'	DWP values for each turbine in a single column. 
+#'
+#' NOTE: The \code{.csv} file uses the English convention (used in USA, UK, 
+#'	Mexico, China, India, Australia, Japan, Korea, and others) with the comma ( , ) 
+#'	and not the	semi-colon ( ; ) to separate values among different columns and 
+#'	uses the period ( . ) as the decimal mark. Although GenEst can seamlessly
+#'	accommodate either format, users in countries where the comma or other 
+#'	character is used as a decimal mark may need to adjust their software settings
+#'	or edit the data to be able to view it in a spreadsheet program (such 
+#'	as Excel). 
+#'
 #' @param dwp a \code{dwphat} object
 #' @param file name of file to export the \code{dwp} estimates to
+#' @return The function writes the formatted data to a \code{.csv} file and 
+#'	returns NULL.
 #' @export
 exportGenEst <- function(dwp, file){
   if (!"dwphat" %in% class(dwp)) stop("exportGenEst: 'dwp' must be a dwphat object")
@@ -3359,23 +3425,6 @@ exportGenEst <- function(dwp, file){
 #'
 #' The criteria to test are entered in a list (\code{sieve}) with components:
 #' \enumerate{
-#'  \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC 
-#'	 scores. Models with AIC scores exceeding the minimum AIC among all the 
-#'	 fitted models by \code{sieve$aic} or more fail the test. The default value 
-#'	 is 10. Users may override the default by using, for example, 
-#'	 \code{sieve = list(aic = 7)} in the argument list to use an AIC score of 7 
-#'	 as the cutoff or may forego the test altogether by setting 
-#'	 \code{sieve = list(aic = FALSE)}
-#'  \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
-#'   the presence of which cast doubt on the reliability of the model. The function
-#'   defines "high influence" as models with high leverage points, namely, points
-#'   with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
-#'   (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
-#'   and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
-#'   The criteria for high influence points were adapted from Brian Ripley's GLM 
-#'   diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
-#'   perhaps most valuable in identifying distributions with high probability of 
-#'   carcasses landing well beyond what could reasonably be expected.
 #'  \item \code{$rtail} = vector of probabilities that define a checkpoints on distributions
 #'   to avoid situations where a model that may fit well within the range of data
 #'   is nonetheless implausible because it predicts a significant or substantial 
@@ -3405,6 +3454,23 @@ exportGenEst <- function(dwp, file){
 #'   default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8))}
 #'   in the argument list for a situation where it is known that carcasses beyond
 #'   50 meters are common.
+#'  \item \code{$aic} = a numeric scalar cutoff value for model's delta AICc
+#'	 scores. Models with AICc scores exceeding the minimum AICc among all the 
+#'	 fitted models by \code{sieve$aic} or more fail the test. The default value 
+#'	 is 10. Users may override the default by using, for example, 
+#'	 \code{sieve = list(aic = 7)} in the argument list to use a delta AIC score 
+#'	 of 7 as the cutoff or may forego the test altogether by setting 
+#'	 \code{sieve = list(aic = FALSE)}
+#'  \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
+#'   the presence of which cast doubt on the reliability of the model. The function
+#'   defines "high influence" as models with high leverage points, namely, points
+#'   with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
+#'   (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
+#'   and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
+#'   The criteria for high influence points were adapted from Brian Ripley's GLM 
+#'   diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
+#'   perhaps most valuable in identifying distributions with high probability of 
+#'   carcasses landing well beyond what could reasonably be expected.
 #' }
 #' 
 #' Several choices of pre-defined \code{sieve}s are available (or, as described 
@@ -3418,7 +3484,7 @@ exportGenEst <- function(dwp, file){
 #'		 high proportions of carcasses beyond the search radius)
 #'	  \item weight of the left tail (discounting models that predict implausibly 
 #'		 high proportions of carcasses near the turbines)
-#'	  \item AICc test (discounting model with delta AICc > 10)
+#'	  \item AICc test (discounting models with delta AICc > 10)
 #'	  \item high influence points (discounting models in which one or more of the
 #'		 data points exert a high influence on the fitted model, according to 
 #'		 Ripley's GLM  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}))
@@ -3448,28 +3514,29 @@ exportGenEst <- function(dwp, file){
 #' @param sieve a list of criteria for ordering models
 #' @param quiet boolean to suppress (\code{quiet = TRUE}) or allow 
 #'  (\code{quiet = FALSE}) messages from \code{modelFilter}
-#' @return If \code{sieve = NULL}, then an unordered list of extensible models; 
-#'	otherwise, a list of class \code{fmod} with following components:
+#' @return An \code{fmod} object, which is an unordered list of extensible models
+#'	\code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
+#'	components:
 #'  \describe{
-#'    \item{filtered}{the selected \code{dd} object or a \code{ddArray} list of
+#'    \item{\code{$filtered}}{the selected \code{dd} object or a \code{ddArray} list of
 #'     models that passed the tests}
-#'    \item{scores}{a matrix with all models tested (rownames = model names) and 
+#'    \item{\code{$scores}}{a matrix with all models tested (rownames = model names) and 
 #'      the results of each test (columns \code{aic_test}, \code{rtail}, 
 #'      \code{ltail}, \code{hin}, \code{aic})}
-#'    \item{sieve}{the test criteria, stored in a list with
+#'    \item{\code{$sieve}}{the test criteria, stored in a list with
 #'      \itemize{ 
-#'        \item \code{aic_test} = cutoff for AIC
-#'        \item \code{hin} = boolean to indicate whether high influence points were
+#'        \item \code{$aic_test} = cutoff for AIC
+#'        \item \code{$hin} = boolean to indicate whether high influence points were
 #'         considered
-#'        \item \code{rtail} = numeric vector giving the probabilities that the
+#'        \item \code{$rtail} = numeric vector giving the probabilities that the
 #'         right tail of the distribution must exceed at distances of 80, 120, 
 #'         150, and 200 meters in order to pass
-#'        \item \code{ltail} = numeric vector giving the probabilities that the 
+#'        \item \code{$ltail} = numeric vector giving the probabilities that the 
 #'        left tail of the distribution must NOT exceed at distances of 20 and 
 #'        50 meters in order to pass
 #'      }
 #'    }
-#'    \item{models}{a list (\code{ddArray} object) of all models tested}
+#'    \item{\code{models}}{a list (\code{ddArray} object) of all models tested}
 #'    \item{\code{note}}{notes on the tests}
 #'  }
 #'  When a \code{fmod} object is printed, only a small subset of the elements are

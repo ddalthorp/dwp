@@ -11,6 +11,24 @@ exportGenEst(dwp, file)
 
 \item{file}{name of file to export the \code{dwp} estimates to}
 }
+\value{
+The function writes the formatted data to a \code{.csv} file and 
+returns NULL.
+}
 \description{
-Export Estimated Density-Weighted Proportion to File in Proper GenEst Format
+GenEst imports DWP from files with comma-separated values (.csv), with a 
+column giving turbine ID and a column of DWP values for each carcass class.
+Column lengths are equal to the number of turbines times the number of 
+simulation reps (typically, \code{nsim = 1000}), giving \code{nsim} copies of 
+DWP values for each turbine in a single column.
+}
+\details{
+NOTE: The \code{.csv} file uses the English convention (used in USA, UK, 
+Mexico, China, India, Australia, Japan, Korea, and others) with the comma ( , ) 
+and not the	semi-colon ( ; ) to separate values among different columns and 
+uses the period ( . ) as the decimal mark. Although GenEst can seamlessly
+accommodate either format, users in countries where the comma or other 
+character is used as a decimal mark may need to adjust their software settings
+or edit the data to be able to view it in a spreadsheet program (such 
+as Excel).
 }

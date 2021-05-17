@@ -5,7 +5,9 @@
 #' @details The upper incomplete gamma function, following Wolfram Alpha, namely,
 #'  incGamma(a, x) = \eqn{\int_x^\infty e^{-t} * t^{a - 1}dt}{%
 #'  integral(exp(-t) * t^(a - 1) dt from x to Inf)},
-#'  calculated using pgamma. NOTE: The function \code{pracma::incgam} also
+#'  calculated using pgamma. Within the \code{dwp} package, \code{incGamma} is 
+#'	used in the calculation of the cumulative distribution function (CDF) of the
+#'	xep02 distribution (\code{pxep02}). NOTE: The function \code{pracma::incgam} also
 #'  calculates incomplete gamma with \code{pracma::incgam(x, a) = incGamma(a, x)},
 #'  but \code{pracma::incgam} is not vectorized and not used here.
 #' @return scalar or vector of length = max(length(x), length(a)), with values
@@ -278,7 +280,11 @@ pxep0 <- function(x, a){
   ans
 }
 
-#' simple utility function used in optimizing the truncated glm
+#' Simple Utility Function Used in Optimizing the GLM
+#'
+#' A simple utility function that is used in fitting a GLM, creating a matrix
+#'	of "x" values for use in the polynomial part of a xep-type model.
+#'
 #' @param r vector of distances (>=0)
 #' @param distr name of the distribution
 #' @return array with \code{length(r)} rows and p columns, where p is the number 
@@ -318,6 +324,8 @@ rmat <- function(r, distr){
 #'
 #' @param r vector of distances
 #' @param distr name of the distribution to calculate the offset for
+#' @return A vector of offset values to use with distances \code{r} when fitting
+#'	the \code{distr} model.
 #' @export
 off <- function(r, distr){
   if (natural[distr]) return(log(r))
@@ -384,12 +392,15 @@ cofOKInf <- function(cof, distr){
 
 #' Remove Particular Names from a Longer List 
 #' 
-#' The intended use is to remove specific distributions from \code{ddArray} for 
-#' subsequent analyses. For example, 
-#' \code{dmod2 <- dmod[exclude("lognormal", names(dmod))]} would subset a list
-#' of models, \code{dmod}, to exclude \code{"lognomal"}.
+#' Removes specific values (\code{what}) from a longer vector of values (\code{from}).
+#' By default, \code{from = mod_standard}, and the intent is to simplify the
+#' subsetting of \code{ddArray} objects created with the default standard models.
+#' For example, \code{dmod2 <- dmod[exclude("lognormal")]} would subset the list
+#' of models in \code{mod_standard} to exclude \code{"lognomal"}. The default can
+#' be overridden by providing a specific vector for \code{from} (for example,
+#' \code{dmod[exclude("lognormal", from = names(dmod)])}).
 #' 
 #' @param what vector of distribution names to exclude
 #' @param from vector of distribution names to be excluded from
 #' @export
-exclude <- function(what, from) setdiff(from, what)
+exclude <- function(what, from = mod_standard) setdiff(from, what)

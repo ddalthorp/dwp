@@ -2,7 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{rmat}
 \alias{rmat}
-\title{simple utility function used in optimizing the truncated glm}
+\title{Simple Utility Function Used in Optimizing the GLM}
 \usage{
 rmat(r, distr)
 }
@@ -18,5 +18,6 @@ array with \code{length(r)} rows and p columns, where p is the number
  r^2, r^3, or 1/r, depending on what the distribution requires.
 }
 \description{
-simple utility function used in optimizing the truncated glm
+A simple utility function that is used in fitting a GLM, creating a matrix
+of "x" values for use in the polynomial part of a xep-type model.
 }

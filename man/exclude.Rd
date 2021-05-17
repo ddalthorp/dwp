@@ -4,7 +4,7 @@
 \alias{exclude}
 \title{Remove Particular Names from a Longer List}
 \usage{
-exclude(what, from)
+exclude(what, from = mod_standard)
 }
 \arguments{
 \item{what}{vector of distribution names to exclude}
@@ -12,8 +12,11 @@ exclude(what, from)
 \item{from}{vector of distribution names to be excluded from}
 }
 \description{
-The intended use is to remove specific distributions from \code{ddArray} for 
-subsequent analyses. For example, 
-\code{dmod2 <- dmod[exclude("lognormal", names(dmod))]} would subset a list
-of models, \code{dmod}, to exclude \code{"lognomal"}.
+Removes specific values (\code{what}) from a longer vector of values (\code{from}).
+By default, \code{from = mod_standard}, and the intent is to simplify the
+subsetting of \code{ddArray} objects created with the default standard models.
+For example, \code{dmod2 <- dmod[exclude("lognormal")]} would subset the list
+of models in \code{mod_standard} to exclude \code{"lognomal"}. The default can
+be overridden by providing a specific vector for \code{from} (for example,
+\code{dmod[exclude("lognormal", from = names(dmod)])}).
 }

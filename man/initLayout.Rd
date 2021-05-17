@@ -102,7 +102,7 @@ A list or data frame with components appropriate to the type of data
  several possibilities, including, each of which is an S3 object with 
  characteristics specific to the imported data:
  \describe{
-   \item{\code{shapeLayout}}{S3 object and list with elements:
+   \item{\code{shapeLayout}}{List with elements:
      \itemize{
        \item \code{$layout} = turbine search area configurations (polygons 
          and multipolygons) from \code{data_layout} shape file as an 
@@ -117,7 +117,7 @@ A list or data frame with components appropriate to the type of data
          meters from a reference point. Row names are the names of the turbines.
      }
    }
-   \item{\code{simpleLayout}}{S3 object and data frame with columns:
+   \item{\code{simpleLayout}}{Data frame with columns:
      \itemize{
        \item \code{turbine} = turbine IDs (syntactically valid R names)
        \item \code{radius} = search radius. If \code{shape = "square"}, then
@@ -129,10 +129,10 @@ A list or data frame with components appropriate to the type of data
      }
    }
    \item{\code{polygonLayout}}{
-     S3 object and list of polygons, one for each turbine. The maximum search
+     List of polygons, one for each turbine. The maximum search
      radius at any turbine is assigned as an attribute (\code{attr(, "rad")}).
    }
-   \item{\code{xyLayout}}{S3 object and list with elements:
+   \item{\code{xyLayout}}{List with elements:
      \itemize{
        \item \code{xydat} = data frame with columns for turbine names, x and y
          coordinates of 1m grid centers spanning the searched area, number of
@@ -149,8 +149,8 @@ A list or data frame with components appropriate to the type of data
  }
 }
 \description{
-Read and do premliminary error-checking and formatting of search
- plot layout data. Search plot layout data can come in any of several different
+Read plot layout data and perform premliminary error-checking 
+and formatting. Search plot layout data can come in any of several different
  formats, including shape files for search area polygons and turbine locations,
  R polygons, (x, y) coordinates, or simple description of search plot type for
  each turbine (square, circular, road & pad). A vector of distances along with

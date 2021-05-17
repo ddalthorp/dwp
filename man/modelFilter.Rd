@@ -15,28 +15,29 @@ modelFilter(dmod, sieve = "default", quiet = FALSE)
 (\code{quiet = FALSE}) messages from \code{modelFilter}}
 }
 \value{
-If \code{sieve = NULL}, then an unordered list of extensible models; 
-otherwise, a list of class \code{fmod} with following components:
+An \code{fmod} object, which is an unordered list of extensible models
+\code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
+components:
  \describe{
-   \item{filtered}{the selected \code{dd} object or a \code{ddArray} list of
+   \item{\code{$filtered}}{the selected \code{dd} object or a \code{ddArray} list of
     models that passed the tests}
-   \item{scores}{a matrix with all models tested (rownames = model names) and 
+   \item{\code{$scores}}{a matrix with all models tested (rownames = model names) and 
      the results of each test (columns \code{aic_test}, \code{rtail}, 
      \code{ltail}, \code{hin}, \code{aic})}
-   \item{sieve}{the test criteria, stored in a list with
+   \item{\code{$sieve}}{the test criteria, stored in a list with
      \itemize{ 
-       \item \code{aic_test} = cutoff for AIC
-       \item \code{hin} = boolean to indicate whether high influence points were
+       \item \code{$aic_test} = cutoff for AIC
+       \item \code{$hin} = boolean to indicate whether high influence points were
         considered
-       \item \code{rtail} = numeric vector giving the probabilities that the
+       \item \code{$rtail} = numeric vector giving the probabilities that the
         right tail of the distribution must exceed at distances of 80, 120, 
         150, and 200 meters in order to pass
-       \item \code{ltail} = numeric vector giving the probabilities that the 
+       \item \code{$ltail} = numeric vector giving the probabilities that the 
        left tail of the distribution must NOT exceed at distances of 20 and 
        50 meters in order to pass
      }
    }
-   \item{models}{a list (\code{ddArray} object) of all models tested}
+   \item{\code{models}}{a list (\code{ddArray} object) of all models tested}
    \item{\code{note}}{notes on the tests}
  }
  When a \code{fmod} object is printed, only a small subset of the elements are
@@ -57,23 +58,6 @@ A set of fitted models (\code{\link[=ddFit]{ddArray}}) is filtered according
 \details{
 The criteria to test are entered in a list (\code{sieve}) with components:
 \enumerate{
- \item \code{$aic} = a numeric scalar cutoff value for model's delta AIC 
- scores. Models with AIC scores exceeding the minimum AIC among all the 
- fitted models by \code{sieve$aic} or more fail the test. The default value 
- is 10. Users may override the default by using, for example, 
- \code{sieve = list(aic = 7)} in the argument list to use an AIC score of 7 
- as the cutoff or may forego the test altogether by setting 
- \code{sieve = list(aic = FALSE)}
- \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
-  the presence of which cast doubt on the reliability of the model. The function
-  defines "high influence" as models with high leverage points, namely, points
-  with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
-  (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
-  and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
-  The criteria for high influence points were adapted from Brian Ripley's GLM 
-  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
-  perhaps most valuable in identifying distributions with high probability of 
-  carcasses landing well beyond what could reasonably be expected.
  \item \code{$rtail} = vector of probabilities that define a checkpoints on distributions
   to avoid situations where a model that may fit well within the range of data
   is nonetheless implausible because it predicts a significant or substantial 
@@ -103,6 +87,23 @@ The criteria to test are entered in a list (\code{sieve}) with components:
   default by using, for example, \code{sieve = list(rtail = c(p20 = 0.6, p50 = 0.8))}
   in the argument list for a situation where it is known that carcasses beyond
   50 meters are common.
+ \item \code{$aic} = a numeric scalar cutoff value for model's delta AICc
+ scores. Models with AICc scores exceeding the minimum AICc among all the 
+ fitted models by \code{sieve$aic} or more fail the test. The default value 
+ is 10. Users may override the default by using, for example, 
+ \code{sieve = list(aic = 7)} in the argument list to use a delta AIC score 
+ of 7 as the cutoff or may forego the test altogether by setting 
+ \code{sieve = list(aic = FALSE)}
+ \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
+  the presence of which cast doubt on the reliability of the model. The function
+  defines "high influence" as models with high leverage points, namely, points
+  with \eqn{\frac{h}{1 - h} >  \frac{2p}{n - 2p}}{h/(1 - h) >  2p/(n - 2p)} 
+  (where \eqn{h} is leverage, \eqn{p} is the number of parameters in the model, 
+  and \eqn{n} is the search radius) with Cook's distance \code{> 8/(n - 2*p)}. 
+  The criteria for high influence points were adapted from Brian Ripley's GLM 
+  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}). The test is 
+  perhaps most valuable in identifying distributions with high probability of 
+  carcasses landing well beyond what could reasonably be expected.
 }
 
 Several choices of pre-defined \code{sieve}s are available (or, as described 
@@ -116,7 +117,7 @@ Several choices of pre-defined \code{sieve}s are available (or, as described
 	 high proportions of carcasses beyond the search radius)
   \item weight of the left tail (discounting models that predict implausibly 
 	 high proportions of carcasses near the turbines)
-  \item AICc test (discounting model with delta AICc > 10)
+  \item AICc test (discounting models with delta AICc > 10)
   \item high influence points (discounting models in which one or more of the
 	 data points exert a high influence on the fitted model, according to 
 	 Ripley's GLM  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}))

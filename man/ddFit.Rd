@@ -81,9 +81,9 @@ in each ring;}
  models and the supplementary models. Also, any subset of the models may be fit
  by using, for example, \code{distr = c("xep01", "lognormal")} to fit only
  the \code{"xep01"} and \code{"lognormal"} models, or
- \code{distr = exclude(c("xep123", "constant"))} to fit all models except
+ \code{distr = exclude(c("xep123", "constant"))} to fit all standard models except
  \code{"xep123"} and \code{"constant"}, or \code{distr = exclude("lognormal", 
-mod_standard)} to fit all standard models except the lognormal.}
+mod_all)} to fit all the models except the lognormal.}
 
 \item{scVar}{Search class variable to include in the model (optional). \code{scVar}
 is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.

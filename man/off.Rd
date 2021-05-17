@@ -11,6 +11,10 @@ off(r, distr)
 
 \item{distr}{name of the distribution to calculate the offset for}
 }
+\value{
+A vector of offset values to use with distances \code{r} when fitting
+the \code{distr} model.
+}
 \description{
 This is a simple utility function for calculating offsets when exposure
  is assumed to be 100% at a given distance \code{r}. This is useful for

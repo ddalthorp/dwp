@@ -2,25 +2,17 @@
 % Please edit documentation in R/fun.R
 \name{estpsi}
 \alias{estpsi}
-\alias{estpsi.data.frame}
-\alias{estpsi.rpA}
-\alias{estpsi.xyLayout}
 \alias{estpsi.rings}
-\alias{estpsi.rdat}
 \alias{estpsi.ringscc}
+\alias{estpsi.xyLayout}
+\alias{estpsi.rpA}
+\alias{estpsi.rdat}
+\alias{estpsi.data.frame}
 \title{Estimate Probability Carcass lands in Searched Area}
 \usage{
 estpsi(x, ...)
 
-\method{estpsi}{data.frame}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
-
-\method{estpsi}{rpA}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
-
-\method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
-
 \method{estpsi}{rings}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
-
-\method{estpsi}{rdat}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 
 \method{estpsi}{ringscc}(
   x,
@@ -31,9 +23,44 @@ estpsi(x, ...)
   zrad = 200,
   ...
 )
+
+\method{estpsi}{xyLayout}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
+
+\method{estpsi}{rpA}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
+
+\method{estpsi}{rdat}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
+
+\method{estpsi}{data.frame}(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 }
 \arguments{
-\item{x}{data.}
+\item{x}{data \describe{
+\item{\code{rings}}{a formatted site map created from raw data via function
+  \code{\link{prepRing}} (or as a component of a list returned by 
+  \code{\link{addCarcass}}).}
+\item{\code{ringscc}}{a list of \code{rings} objects, one for each carcass
+  class; created from raw data via function \code{\link{prepRing}} (or as a 
+  component of a list returned by \code{\link{addCarcass}}).}
+\item{\code{xyLayout}}{formatted site map data derived from (x, y) coordinates
+  covering every square meter of searched areas at each turbine; derived from
+  the function \code{\link{initLayout}}, when called with \code{xy} data.}
+\item{\code{rpA}}{(intended as an internal function that would rarely be 
+  called directly by users) a list of data frames (one for each turbine) 
+  giving the fraction of area searched (\code{pinc} at    each distance 
+  (\code{r}). \code{rpA} data are embedded in \code{\link[=prepRing]{rings}} 
+  objects that are created from site "maps" via \code{\link{prepRing}}.}
+\item{\code{rdat}}{(intended as an internal function that would rarely be 
+  called directly by users) list of data frames giving the area searched 
+   (\code{"exposure"}), in a 1 meter ring with outer radius \code{"r"} and the 
+  number of carcasses found \code{"ncarc"} in each ring, with search class 
+  \code{scVar} optional. There is also a summary data frame 
+  \code{$rdat[["total"]]} that sums the exposures and carcass counts for all 
+  turbines across the site. The \code{$rdat[["total"]]} is the data frame 
+  used in fitting the GLMs. \code{rdat} objects are components of the return
+  value of \code{\link{prepRing}}}
+\item{\code{data.frame}}{(intended as an internal function that would rarely be 
+  called directly by users) a data frame giving the fraction of area searched 
+  (\code{pinc} at    each distance (\code{r}).}
+}}
 
 \item{...}{ignored}
 
@@ -57,12 +84,19 @@ the given model without accounting for uncertainty.}
 model to use for each carcass class; otherwise, \code{modnames} is ignored.}
 }
 \value{
-\code{psiHat} object = array with \code{nsim} rows and one column for
-each turbine + one row for the total; or a list of such arrays, one for each
-carcass class if \code{x} is a \code{ringscc} object.
+A \code{psiHat} object, which is either 1) an array giving the 
+expected fraction	of carcasses lying in the searched area at each turbine 
+with \code{nsim} rows and one column for each turbine + one row for the 
+total; or 2) a list of such arrays, one for each carcass class if \code{x} 
+is a \code{ringscc} object. The uncertainty in the expected fractions is
+characterized by simulation and reflected in the variation in \code{psi}
+values within each column.
 }
 \description{
 Estimated probability that carcass lands in searched area. This
  is an intermediate step in estimating dwp but is also interesting in its own
- right.
+ right. The estimation involves integrating the modeled carcass distribution 
+(\code{model}) over the	search plots at the turbines. Data for the search 
+plots is stored in the generic argument, \code{x}, which can take any of a
+number of different forms, as described in the \code{Arguments} section (below).
 }

@@ -31,6 +31,6 @@ a \code{shapeCarcass} object, which is a list with \code{$carcasses},
  elements of the \code{$ncarc} are named by turbines at which they were found.
 }
 \description{
-Carcass coordiates (x, y) and turbine IDs are read using sf::st_read and
-formatted for adding to \code{rings} data structures for analysis.
+Carcass coordiates (x, y) and turbine IDs are read using \code{\link[sf]{st_read}} 
+and formatted for adding to \code{rings} data structures for analysis.
 }

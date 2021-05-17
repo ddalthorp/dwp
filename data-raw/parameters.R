@@ -32,17 +32,17 @@ layout_simple <- read.csv(textConnection('
 mod_color = c(
   xep1 = colors()[35], #brown3 colors()[585], #darkorchid2 #
   xep01 = 2,
-  xep2 = 1,
+  xep2 = colors()[257],
   xep02 = 1,
   xep12 = colors()[122],
   xep012 = 4,
   xep123 = colors()[148],
-  xep0123 = colors()[657], #yellowgreen
-  tnormal = 4,
+  xep0123 = colors()[148], #yellowgreen
+  tnormal = colors()[26],
   MaxwellBoltzmann = colors()[257], #deepskyblue2
   lognormal = colors()[96],
   xepi0 = 5,
-  xep0 = colors()[369],
+  xep0 = colors()[96],
   chisq = colors()[35],
   exponential = colors()[123], #brown3
   inverse_gaussian = 4,
@@ -51,21 +51,21 @@ mod_color = c(
 mod_lty = c(
   xep1 = 2, 
   xep01 = 1,
-  xep2 = 2,
+  xep2 = 1,
   xep02 = 1,
   xep12 = 2,
   xep012 = 1,
-  xep123 = 2,
-  xep0123 = 1,
+  xep123 = 1,
+  xep0123 = 2,
   tnormal = 4,
-  MaxwellBoltzmann = 4, 
+  MaxwellBoltzmann = 2,
   lognormal = 1,
-  xepi0 = 2,
-  xep0 = 2,
-  chisq = 2,
-  exponential = 2, 
-  inverse_gaussian = 2,
-  constant = 2
+  xepi0 = 3,
+  xep0 = 3,
+  chisq = 3,
+  exponential = 3, 
+  inverse_gaussian = 3,
+  constant = 3
 )
 degOrder <-c(
   "constant",
@@ -151,18 +151,18 @@ cof_name <- list(
 )
 distr_names <- c(
   xep1 = "xep1",
-  xep01 = "gamma (xep01)",
-  xep2 = "Rayleigh (xep2)",
+  xep01 = "xep01 (gamma)",
+  xep2 = "xep2 (Rayleigh)",
   xep02 = "xep02",
   xep12 = "xep12",
   xep012 = "xep012",
   xep123 = "xep123",
-  xep0123 = "xep0123",
+  xep0123 = "xep0123 (normal-gamma)",
   tnormal = "truncated normal",
   MaxwellBoltzmann = "Maxwell-Boltzmann",
   lognormal = "lognormal",
-  xep0 = "Pareto (xep0)",
-  xepi0 = "inverse gamma (xepi0)",
+  xep0 = "xep0 (Pareto)",
+  xepi0 = "xepi0 (inverse gamma)",
   exponential = "exponential",
   chisq = "chi-squared",
   inverse_gaussian = "inverse Gaussian",

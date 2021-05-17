@@ -11,6 +11,9 @@ prepmod(model, nsim)
 
 \item{nsim}{number of simulation reps. If \code{nsim = 0}, return dd2ddSim}
 }
+\value{
+\code{\link{ddSim}} object of simulated distribution model parameters
+}
 \description{
 Internal Utility Function to Parse and Format Model for Calculating Psihat
 }
