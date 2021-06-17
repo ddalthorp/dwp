@@ -25,7 +25,7 @@ diff(Acins(r, s)) # intersection of square and annulus
 # figure to illustrate the calculated area:
 theta <- seq(0, 2 * pi, length = 1500)
 plot(0, xlim = max(r) * c(-1, 1), ylim = max(r) * c(-1, 1),
-	xlab = "x", ylab = "y", asp = 1, bty = "n", type = "n")
+  xlab = "x", ylab = "y", asp = 1, bty = "n", type = "n")
 xi <- r[1] * cos(theta)
 yi <- r[1] * sin(theta)
 xo <- r[2] * cos(theta)
@@ -38,17 +38,17 @@ yi <- yi[i1]
 xo <- xo[i2]
 yo <- yo[i2]
 polygon(col = 8, border = NA,
- x = c(xi[xi >= 0 & yi >= 0], xo[xo >= 0 & yo >= 0]), 
- y = c(yi[xi >= 0 & yi >= 0], yo[xo >= 0 & yo >= 0]))
+  x = c(xi[xi >= 0 & yi >= 0], xo[xo >= 0 & yo >= 0]), 
+  y = c(yi[xi >= 0 & yi >= 0], yo[xo >= 0 & yo >= 0]))
 polygon(col = 8, border = NA, 
- x = c(xi[xi <= 0 & yi >= 0], xo[xo <= 0 & yo >= 0]), 
- y = c(yi[xi <= 0 & yi >= 0], yo[xo <= 0 & yo >= 0]))
+  x = c(xi[xi <= 0 & yi >= 0], xo[xo <= 0 & yo >= 0]), 
+  y = c(yi[xi <= 0 & yi >= 0], yo[xo <= 0 & yo >= 0]))
 polygon(col = 8, border = NA,
- x = c(xi[xi <= 0 & yi <= 0], xo[xo <= 0 & yo <= 0]), 
-y = c(yi[xi <= 0 & yi <= 0], yo[xo <= 0 & yo <= 0]))
+  x = c(xi[xi <= 0 & yi <= 0], xo[xo <= 0 & yo <= 0]), 
+ y = c(yi[xi <= 0 & yi <= 0], yo[xo <= 0 & yo <= 0]))
 polygon(col = 8, border = NA,
-x = c(xi[xi >= 0 & yi <= 0], xo[xo >= 0 & yo <= 0]), 
-y = c(yi[xi >= 0 & yi <= 0], yo[xo >= 0 & yo <= 0]))
+ x = c(xi[xi >= 0 & yi <= 0], xo[xo >= 0 & yo <= 0]), 
+ y = c(yi[xi >= 0 & yi <= 0], yo[xo >= 0 & yo <= 0]))
 lines(r[1] * cos(theta), r[1]* sin(theta))
 lines(r[2]* cos(theta), r[2] * sin(theta))
 rect(-s, -s, s, s)

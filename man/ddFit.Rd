@@ -76,13 +76,13 @@ in each ring;}
 \item{...}{ignored}
 
 \item{distr}{names (vector of character strings) of glm distribution templates
- to fit. Default is \code{distr = "standard"} to fit the standard models listed in the
- description above. Setting \code{distr = "all"} will fit both the standard
- models and the supplementary models. Also, any subset of the models may be fit
- by using, for example, \code{distr = c("xep01", "lognormal")} to fit only
- the \code{"xep01"} and \code{"lognormal"} models, or
- \code{distr = exclude(c("xep123", "constant"))} to fit all standard models except
- \code{"xep123"} and \code{"constant"}, or \code{distr = exclude("lognormal", 
+to fit. Default is \code{distr = "standard"} to fit the standard models listed in the
+description above. Setting \code{distr = "all"} will fit both the standard
+models and the supplementary models. Also, any subset of the models may be fit
+by using, for example, \code{distr = c("xep01", "lognormal")} to fit only
+the \code{"xep01"} and \code{"lognormal"} models, or
+\code{distr = exclude(c("xep123", "constant"))} to fit all standard models except
+\code{"xep123"} and \code{"constant"}, or \code{distr = exclude("lognormal", 
 mod_all)} to fit all the models except the lognormal.}
 
 \item{scVar}{Search class variable to include in the model (optional). \code{scVar}
@@ -106,7 +106,7 @@ will be correct by default for objects coming from \code{\link{prepRing}}
 and will rarely need to be explicitly specified.}
 
 \item{silent}{set \code{silent = TRUE} to suppress information printed to the
- console as the calculations proceed, which may be useful when running 
+console as the calculations proceed, which may be useful when running 
 simulations.}
 
 \item{notSearched}{the name of the level (if any) in \code{scVar} that
@@ -117,7 +117,7 @@ indicates an unsearched area}
 \value{
 A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a 
  \code{\link[=ddFit]{ddArray}}
- object if a vector of distributions is fit or a single \code{\link[=ddFit]{dd}} 
+ object if a vector of distributions is fit, or a single \code{\link[=ddFit]{dd}} 
  object if a single model is fit. The \code{\link[=ddFit]{dd}} objects are 
  lists that include the following elements:
  \describe{
@@ -141,10 +141,10 @@ A list of fitted glm models as \code{\link[=ddFit]{dd}} objects in a
 }
 \description{
 Fit generalized linear models (glm) for distance distribution 
-models corresponding to standard forms [xep1, xep01 (gamma), xep2 (Rayleigh), 
-xep02, xep12, xep012, xep123, xep0123 (normal-gamma with x = tau), lognormal,  
-truncated normal, Maxwell Boltzmann, and constant] and supplentary forms 
-[exponential, chi-squared, inverse gamma, and inverse Gaussian].
+ models corresponding to standard forms [xep1, xep01 (gamma), xep2 (Rayleigh), 
+ xep02, xep12, xep012, xep123, xep0123 (normal-gamma with x = tau), lognormal,  
+ truncated normal, Maxwell Boltzmann, and constant] and supplentary forms 
+ [exponential, chi-squared, inverse gamma, and inverse Gaussian].
 
  The glm is converted to a probability distribution by dividing by a
  normalizing constant, namely the integral of the glm evaluated from 0 to

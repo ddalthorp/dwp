@@ -8,15 +8,15 @@
 \alias{rcd}
 \title{Calculate Probability Functions for Distance Distributions}
 \usage{
-ddd(x, model, extent = "full", zrad = 200)
+ddd(x, model, parms = NULL, extent = "full", zrad = 200)
 
-pdd(q, model, extent = "full", zrad = 200)
+pdd(q, model, parms = NULL, extent = "full", zrad = 200, silent = FALSE)
 
-qdd(p, model, extent = "full", zrad = 200, subdiv = 1000)
+qdd(p, model, parms = NULL, extent = "full", zrad = 200, subdiv = 1000)
 
-rdd(n, model, extent = "full", zrad = 200, subdiv = 1000)
+rdd(n, model, parms = NULL, extent = "full", zrad = 200, subdiv = 1000)
 
-rcd(x, model, extent = "full", zrad = 200)
+rcd(x, model, parms = NULL, extent = "full", zrad = 200)
 }
 \arguments{
 \item{x, q, p, n}{numeric, \eqn{x \ge 0}}
@@ -32,6 +32,8 @@ restricted solely to carcasses falling within the search radius, use
 be used only in simulation reps in which simulated parameters do not yield
 extensible distributions, essentially returning 0 rather than NA for those
 pathological cases.}
+
+\item{silent}{If \code{TRUE}, then console messages are suppressed.}
 
 \item{subdiv}{if the number of values to calculate with \code{rdd} or \code{qdd}
 is >1 , the function uses breaks the PDF into \code{subdiv} subdivisions and

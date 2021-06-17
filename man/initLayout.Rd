@@ -150,7 +150,7 @@ A list or data frame with components appropriate to the type of data
 }
 \description{
 Read plot layout data and perform premliminary error-checking 
-and formatting. Search plot layout data can come in any of several different
+ and formatting. Search plot layout data can come in any of several different
  formats, including shape files for search area polygons and turbine locations,
  R polygons, (x, y) coordinates, or simple description of search plot type for
  each turbine (square, circular, road & pad). A vector of distances along with

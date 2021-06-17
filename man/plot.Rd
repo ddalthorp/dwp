@@ -96,8 +96,8 @@ Plot CDF, PDF, or rcd (relative carcass density) for a single
 
  The legend follows the ordering given by \code{\link{modelFilter}} with 
  the default sieve or, if \code{extent = "win"} by (1) delta AICc < 10, 
-(2) the absence of high-influence points, and (2) AICc. The best model 
-according to the filter is listed first, with a heavier line than the others; 
-the remaining distributions are listed in descending order, with the best 
-models in the leftmost column.
+ (2) the absence of high-influence points, and (2) AICc. The best model 
+ according to the filter is listed first, with a heavier line than the others; 
+ the remaining distributions are listed in descending order, with the best 
+ models in the leftmost column.
 }

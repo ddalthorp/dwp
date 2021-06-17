@@ -13,7 +13,7 @@ off(r, distr)
 }
 \value{
 A vector of offset values to use with distances \code{r} when fitting
-the \code{distr} model.
+ the \code{distr} model.
 }
 \description{
 This is a simple utility function for calculating offsets when exposure

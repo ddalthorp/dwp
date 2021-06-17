@@ -168,6 +168,18 @@ distr_names <- c(
   inverse_gaussian = "inverse Gaussian",
   constant = "constant"
 )
+alt_names <- c(
+  "gamma" = "xep01",
+  "Rayleigh" = "xep2",
+  "normal-gamma" = "xep0123",
+  "truncated normal" =  "tnormal",
+  "Maxwell-Boltzmann" = "MaxwellBoltzmann",
+  "Pareto" = "xep0",
+  "inverse gamma" = "xepi0",
+  "exponential" = "exponential",
+  "chi-squared" = "chisq",
+  "inverse Gaussian" = "inverse_gaussian"
+)
 natural = c( # distributions require offset log(exposure)
   xep1 = TRUE,
   xep01 = TRUE,
@@ -272,6 +284,56 @@ constraints <- list(
               "r" = c(lower = -Inf, upper = 0,   parscale = 0.1)),
   constant = rbind(
     "(Intercept)" = c(lower =  Inf, upper = -Inf, parscale = 5))
+)
+
+constraints_par<- list( 
+  xep1 = rbind(
+    b1 = c(lower = -Inf, upper = 0)), 
+  xep01 = rbind(
+    shape = c(lower = 0, upper = Inf), 
+    rate = c(0, Inf)), 
+  xep2 = rbind(s2 = c(lower = 0, upper = Inf)),
+  xep02 = rbind(
+    b0 = c(lower = -2,   upper = Inf), 
+    b2 =c(lower = -Inf, upper = 0)),
+  xep12 = rbind(
+    b1 = c(lower = -Inf, upper = Inf),
+    b2 = c(lower = -Inf, upper = 0)),
+  xep012 = rbind(
+    b0 = c(lower = -2,   upper = Inf),
+    b1 = c(lower = -Inf, upper = Inf),
+    b2 = c(lower = -Inf, upper = 0)),
+  xep123 = rbind(
+    b1 = c(lower = -Inf, upper = Inf),
+    b2 = c(lower = -Inf, upper = Inf),
+    b3 = c(lower = -Inf, upper = 0)),
+  xep0123 = rbind(
+    b0 = c(lower = -2,   upper = Inf),
+    b1 = c(lower = -Inf, upper = Inf),
+    b2 = c(lower = -Inf, upper = Inf),
+    b3 = c(lower = -Inf, upper = 0)),
+  tnormal = rbind(
+    mean = c(lower = -Inf, upper = Inf),
+    sd = c(lower = 0, upper = Inf)),
+  MaxwellBoltzmann = rbind(
+    a = c(lower = 0, upper = Inf)),
+  lognormal = rbind(
+    meanlog = c(lower = -Inf, upper = Inf),
+    sdlog = c(lower = 0, upper = Inf)),
+  xepi0 = rbind(
+    shape = c(lower = 0, upper = Inf),
+    scale = c(lower = 0, upper = Inf)),
+  xep0 = rbind(
+    a = c(lower = 0, upper = Inf)),
+  exponential = rbind(
+    rate = c(lower = 0, upper = Inf)),
+  chisq = rbind(
+    df = c(lower = 0, upper = Inf)),
+  inverse_gaussian =rbind(
+    mean = c(lower = 0, upper = Inf),
+    dispersion = c(lower = 0, upper = Inf)),
+  constant = rbind(
+    b1 = c(lower =  Inf, upper = -Inf))
 )
 
 par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FALSE,
@@ -475,10 +537,12 @@ sieve_win <- list(
 )
 
 usethis::use_data(
-  cof_name,
-  constraints,
+  alt_names,
   carcass_polygon,
   carcass_simple,
+  cof_name,
+  constraints,
+  constraints_par,
   distr_names,
   layout_eagle,
   layout_polygon,

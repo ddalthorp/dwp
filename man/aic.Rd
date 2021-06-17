@@ -22,7 +22,7 @@ aic(x, ...)
 \item{...}{ignored}
 
 \item{extent}{Include only the extensible models (\code{extent = "full"}) or
- all models (\code{extent = "win"}), whether or not they can be extended 
+all models (\code{extent = "win"}), whether or not they can be extended 
 beyond the search radius.}
 }
 \value{

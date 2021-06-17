@@ -16,8 +16,8 @@ modelFilter(dmod, sieve = "default", quiet = FALSE)
 }
 \value{
 An \code{fmod} object, which is an unordered list of extensible models
-\code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
-components:
+ \code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
+ components:
  \describe{
    \item{\code{$filtered}}{the selected \code{dd} object or a \code{ddArray} list of
     models that passed the tests}
@@ -88,12 +88,12 @@ The criteria to test are entered in a list (\code{sieve}) with components:
   in the argument list for a situation where it is known that carcasses beyond
   50 meters are common.
  \item \code{$aic} = a numeric scalar cutoff value for model's delta AICc
- scores. Models with AICc scores exceeding the minimum AICc among all the 
- fitted models by \code{sieve$aic} or more fail the test. The default value 
- is 10. Users may override the default by using, for example, 
- \code{sieve = list(aic = 7)} in the argument list to use a delta AIC score 
- of 7 as the cutoff or may forego the test altogether by setting 
- \code{sieve = list(aic = FALSE)}
+  scores. Models with AICc scores exceeding the minimum AICc among all the 
+  fitted models by \code{sieve$aic} or more fail the test. The default value 
+  is 10. Users may override the default by using, for example, 
+  \code{sieve = list(aic = 7)} in the argument list to use a delta AIC score 
+  of 7 as the cutoff or may forego the test altogether by setting 
+  \code{sieve = list(aic = FALSE)}
  \item \code{$hin} = \code{TRUE} or \code{FALSE} to test for high influence points,
   the presence of which cast doubt on the reliability of the model. The function
   defines "high influence" as models with high leverage points, namely, points
@@ -110,24 +110,24 @@ Several choices of pre-defined \code{sieve}s are available (or, as described
  above, users may define their own criteria):
 \describe{
  \item{\code{sieve = "default"}}{The models are ordered by the following
- criteria: 
- \enumerate{
- 	\item extensibility
-  \item weight of right tail (discounting models that predict implausibly 
-	 high proportions of carcasses beyond the search radius)
-  \item weight of the left tail (discounting models that predict implausibly 
-	 high proportions of carcasses near the turbines)
-  \item AICc test (discounting models with delta AICc > 10)
-  \item high influence points (discounting models in which one or more of the
-	 data points exert a high influence on the fitted model, according to 
-	 Ripley's GLM  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}))
-  \item ranking by AICc
- }
- Precise definitions of the default sieve parameters are given in 
- \code{sieve_default}.}
+  criteria: 
+  \enumerate{
+    \item extensibility
+   \item weight of right tail (discounting models that predict implausibly 
+    high proportions of carcasses beyond the search radius)
+   \item weight of the left tail (discounting models that predict implausibly 
+    high proportions of carcasses near the turbines)
+   \item AICc test (discounting models with delta AICc > 10)
+   \item high influence points (discounting models in which one or more of the
+    data points exert a high influence on the fitted model, according to 
+    Ripley's GLM  diagnostics package \code{boot} (\code{\link[boot]{glm.diag}}))
+   \item ranking by AICc
+  }
+  Precise definitions of the default sieve parameters are given in 
+  \code{sieve_default}.}
  \item{\code{sieve = NULL}}{Returns a list of the extensible models without
- scoring them by other model selection criteria.}
-\item{\code{sieve = "win"}}{Sorts models by high-influence points and AICc}
+  scoring them by other model selection criteria.}
+ \item{\code{sieve = "win"}}{Sorts models by high-influence points and AICc}
  \item{\code{sieve = list(<custom>)}}{User provides a custom sieve, which may
   be a modification of the default sieve or de novo. To modify the default,
   use, for example, \code{sieve = list(hin = FALSE)} to disable the \code{hin}

@@ -31,14 +31,14 @@ getncarc(x, ...)
 }
 \value{
 \itemize{
-	\item{scalar number of carcasses used in the fitted model 
-	 (\code{dd} and \code{ddArray} objects}
-	\item{vector of numbers of carcasses of each size used in the fitted models 
-	 (\code{ddArraycc} objects)}
-	\item{vector of carcass counts at each turbine and total at the site 
-	 (\code{xyLayout} and \code{rings} objects}
-	\item{list of vectors of carcass counts at each turbine for each carcass class}
-}
+   \item{scalar number of carcasses used in the fitted model 
+    (\code{dd} and \code{ddArray} objects}
+   \item{vector of numbers of carcasses of each size used in the fitted models 
+    (\code{ddArraycc} objects)}
+   \item{vector of carcass counts at each turbine and total at the site 
+    (\code{xyLayout} and \code{rings} objects}
+   \item{list of vectors of carcass counts at each turbine for each carcass class}
+ }
 }
 \description{
 Carcass counts are easy to extract from any of the data structures, but it

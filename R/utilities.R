@@ -6,8 +6,8 @@
 #'  incGamma(a, x) = \eqn{\int_x^\infty e^{-t} * t^{a - 1}dt}{%
 #'  integral(exp(-t) * t^(a - 1) dt from x to Inf)},
 #'  calculated using pgamma. Within the \code{dwp} package, \code{incGamma} is 
-#'	used in the calculation of the cumulative distribution function (CDF) of the
-#'	xep02 distribution (\code{pxep02}). NOTE: The function \code{pracma::incgam} also
+#'  used in the calculation of the cumulative distribution function (CDF) of the
+#'  xep02 distribution (\code{pxep02}). NOTE: The function \code{pracma::incgam} also
 #'  calculates incomplete gamma with \code{pracma::incgam(x, a) = incGamma(a, x)},
 #'  but \code{pracma::incgam} is not vectorized and not used here.
 #' @return scalar or vector of length = max(length(x), length(a)), with values
@@ -283,7 +283,7 @@ pxep0 <- function(x, a){
 #' Simple Utility Function Used in Optimizing the GLM
 #'
 #' A simple utility function that is used in fitting a GLM, creating a matrix
-#'	of "x" values for use in the polynomial part of a xep-type model.
+#'  of "x" values for use in the polynomial part of a xep-type model.
 #'
 #' @param r vector of distances (>=0)
 #' @param distr name of the distribution
@@ -325,7 +325,7 @@ rmat <- function(r, distr){
 #' @param r vector of distances
 #' @param distr name of the distribution to calculate the offset for
 #' @return A vector of offset values to use with distances \code{r} when fitting
-#'	the \code{distr} model.
+#'  the \code{distr} model.
 #' @export
 off <- function(r, distr){
   if (natural[distr]) return(log(r))
@@ -352,6 +352,7 @@ off <- function(r, distr){
 #' @return boolean vector (or scalar)
 #' @export
 cofOK <- function(cof, distr){
+  if (missing("distr")) stop("cofOK requires distr")
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
@@ -365,6 +366,7 @@ cofOK <- function(cof, distr){
 #' @rdname cofOK
 #' @export
 cofOK0 <- function(cof, distr){
+  if (missing("distr")) stop("cofOK0 requires distr")
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
@@ -379,6 +381,7 @@ cofOK0 <- function(cof, distr){
 #' @rdname cofOK
 #' @export
 cofOKInf <- function(cof, distr){
+  if (missing("distr")) stop("cofOKInf requires distr")
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
@@ -387,6 +390,30 @@ cofOKInf <- function(cof, distr){
   for (ci in rownames(lim)){
     output[cof[, ci] >= lim[ci, "upper"]] <- FALSE
   }
+  output
+}
+
+#' Check Parameter Value Validity the Distribution
+#' 
+#' Performs a ouick check on whether the parameters given in \code{parms} are
+#'  valid for the \code{distr}. 
+#' 
+#' @param cof vector or matrix of named glm parameters (with \code{"r"} as the
+#'  distance variable)
+#' @param distr name of the distribution
+#' @return vector (or scalar) of 0s, 1s, and 2s to indicate whether the parameters
+#'  are non-extensible (i.e., flat-out bogus), valid for the distribution, or
+#'  valid for the distribution and give finite point densities.
+#' @export
+parOK <- function(parms, distr){
+  if (is.vector(parms))
+    parms <- matrix(parms, nrow = 1, dimnames = list(NULL, names(parms)))
+  output <- rep(TRUE, nrow(parms))
+  lim <- constraints_par[[distr]]
+  for (ci in rownames(lim)){
+    output[parms[, ci] <= lim[ci, "lower"] | parms[, ci] >= lim[ci, "upper"]] <- FALSE
+  }
+  
   output
 }
 
@@ -404,3 +431,173 @@ cofOKInf <- function(cof, distr){
 #' @param from vector of distribution names to be excluded from
 #' @export
 exclude <- function(what, from = mod_standard) setdiff(from, what)
+ 
+
+#' Convert Distribution Name + Parameters to \code{ddSim} Object
+#'
+#' Utility function to format a distribution name and a vector of its parameter values
+#'  to a \code{\link{ddSim}} object for use in the p/d/r/q family of functions
+#' 
+#' @param distr character string giving the name of one of the models fit by
+#'  \code{\link{ddFit}}
+#' @param vector of parameters for the \code{distr}, or, alternatively, an array
+#'  of parameter sets. Parameterization may follow  either the GLM format or the 
+#'  distribution format. For example, the xep01  model (gamma distribution) has
+#'  GLM parameters for \code{log(r)} and \code{r}, which are the coefficients of 
+#'  the polynomial in the xep01 format (namely, x * exp(b0*log(r) + b1*r)), or 
+#'  the gamma distribution parameters, \code{shape} and \code{rate}. The 
+#'  elements of parameter vector must be named. For example, 
+#'  \code{parms = c(log(r) = -0.373, r = -0.0147)} for the GLM format for an 
+#'  xep01 model or, equivalently, \code{parms = c(shape = 1.63, rate = 0.0147)} 
+#'  for the distribution format. If  both formats are given, the GLM parameters are used and the distribution
+#'  parameters ignored.
+#' @return a ddSim object with \code{srad = NA}
+#' @export
+mpp2ddSim <- function(distr, parms){
+  # error-checking:
+  if (!is.character(distr) || !length(distr) == 1)
+    stop("pdd: distr must be a single name of a distribution included in mod_all")
+  if (!distr %in% mod_all){
+    if (distr %in% names(alt_names)){
+      distr <- alt_names[distr]
+    } else {
+      stop("distr must be name of a distribution in mod_all")
+    }
+  }
+  if (is.null(parms)) stop("pdd: parameters must be provided as 'parms'",
+      "when 'distr' is a character string giving the name of the distribution")
+  if (!is.numeric(parms) || (!is.vector(parms) & !is.matrix(parms))) 
+    stop("'parms' must be a numeric vector or matrix of parameters")
+  if (is.null(names(parms))) 
+    stop("parms must be a vector of named parameters for distr")
+  if (is.vector(parms)){
+   parms <- matrix(parms, nrow = 1, dimnames = list(NULL, names(parms)))
+  }
+  cnm <- cof_name[[distr]]
+  pnm <- parm_name[[distr]]
+  out <- matrix(ncol = length(cnm) + length(pnm) + 1, nrow = nrow(parms),
+    dimnames = list(NULL, c(cnm, pnm, "extensible")))
+  if (all(cnm[-1] %in% colnames(parms))){ # "(Intercept)" not necessary
+    out[, cnm[-1]] <- parms[, cnm[-1]]
+    if (cnm[1] %in% colnames(parms)) out[, 1] <- parms[, cnm[1]]
+    out[, pnm] <- cof2parms(out[ , cnm], distr)
+    out[, "extensible"] <- cofOK(out[, pnm], distr)
+  } else if (all(pnm %in% colnames(parms))){
+    out[, pnm] <- parms[, pnm]
+    out[, cnm] <- parms2cof(parms, distr)
+    out[, "extensible"] <- parOK(out[ , pnm], distr)
+  } else {
+    stop("incomplete parameter set in 'parms'")
+  }
+
+  attr(out, "distr") <- distr
+  attr(out, "srad") <- NA
+  class(out) <- "ddSim"
+  out
+}
+
+parms2cof <- function(x, ...) UseMethod("parms2cof", x)
+#' @rdname cof2parms
+#' @export
+parms2cof.matrix <- function(x, distr, ...){
+  ans <- suppressWarnings(switch(distr,
+    xep01 = {
+      cof <- cbind(x[, "shape"] - 2, -x[, "rate"])
+      colnames(cof) <- c("log(r)", "r")
+      cof
+    },
+    lognormal = {
+      log2r <- unname(-0.5/(x[, "sdlog"])^2)
+      cof <- cbind(unname(-2 * (log2r*x[, "meanlog"] + 1)), log2r)
+      colnames(cof) <- c("log(r)", "I(log(r)^2)")
+      cof
+    },
+    xep1 = {
+      cof <- unname(x[, "b1", drop = FALSE])
+      colnames(cof) <- "r"
+      cof
+    },
+    xep12 = {
+      cof <- x[, c("b1", "b2"), drop = FALSE]
+      colnames(cof) <- c("r", "I(r^2)")
+      cof
+    },
+    xep02 = {
+      cof <- x[, c("b0", "b2"), drop = FALSE]
+      colnames(cof) <- c("log(r)", "I(r^2)")
+      cof
+    },
+    xep123 ={
+      cof <- x[, c("b1", "b2", "b3"), drop = FALSE]
+      colnames(cof) <- c("r", "I(r^2)", "I(r^3)")
+      cof
+    },
+    xepi0 = {
+      cof <- -x[, c("shape", "scale")]
+      colnames(cof) <- c("log(r)", "I(1/r)")
+      cof[, "log(r)"] <- cof[, "log(r)"] - 2
+      cof
+    },
+    xep0123 = {
+      cof <- x[, c("b0", "b1", "b2", "b3"), drop = FALSE]
+      colnames(cof) <- c("log(r)", "r", "I(r^2)", "I(r^3)")
+      cof
+    },
+    xep012 = {
+      cof <- x[, c("b0", "b1", "b2"), drop = FALSE]
+      colnames(cof) <- c("log(r)", "r", "I(r^2)")
+      cof
+    },
+    xep2 = {
+      cof <- -0.5/x[, "s2", drop = FALSE]
+      colnames(cof) <- "I(r^2)"
+      cof
+    },
+    MaxwellBoltzmann = {
+      cof <- -0.5 /x[, "a", drop = FALSE]^2
+      colnames(cof) <- "I(r^2)"
+      cof
+    },
+    xep0 = {
+      cof <- -x[, "a", drop = FALSE] - 2
+      colnames(cof) <- "log(r)"
+      cof
+    },
+    chisq = {
+      cof <- (x[, "df", drop = FALSE] - 4)/2
+      colnames(cof) <- "log(r)"
+      cof
+    },
+    inverse_gaussian = {
+      cof <- cbind(-0.5/x[, "dispersion"], -0.5/(x[, "dispersion"] * x[, "mean"]))
+      colnames(cof) <- c("I(1/r)", "r")
+      cof
+    },
+    exponential = {
+      cof <- -x[, "rate", drop = FALSE]
+      colnames(cof) <- "r"
+      cof
+    },
+    tnormal = {
+      r2 <- -0.5/x[, "sd"]^2
+      cof <- cbind(-2 * x[, "mean"] * r2, r2)
+      colnames(cof) <- c("r", "I(r^2)")
+      cof
+    },
+    constant = c(b1 = NA)
+  ))
+  if (is.null(ans)) stop("distr must be a distribution name")
+  ans <- cbind(0, ans)
+  colnames(ans)[1] <- "(Intercept)"
+  if (is.matrix(ans) && nrow(ans) == 1) {
+    nm <- colnames(ans)
+    ans <- as.vector(ans)
+    names(ans) <- nm
+  }
+  return(ans)
+}
+
+parms2cof.numeric <- function(x, distr, ...){
+  output <- parms2cof(matrix(x, nrow = 1, dimnames = list(NULL, names(x))), distr)
+  return(output)
+}

@@ -19,5 +19,5 @@ array with \code{length(r)} rows and p columns, where p is the number
 }
 \description{
 A simple utility function that is used in fitting a GLM, creating a matrix
-of "x" values for use in the polynomial part of a xep-type model.
+ of "x" values for use in the polynomial part of a xep-type model.
 }
