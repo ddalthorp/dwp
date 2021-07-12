@@ -362,7 +362,7 @@ dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){
        abs(pgamma(100, shape = x[1], scale = x[2]) - dparm["f100"]))
 })$par)
 ncarc = 200
-set.seed(20201112)   # 20201111 leads to awful data set
+set.seed(20201111)   # 20201111 leads to awful data set
 r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2]) # distance
 theta <- runif(ncarc) * 2 * pi # angle
 # create carcass data frame for polygons:
@@ -380,36 +380,46 @@ carcass_polygon <- data.frame(turbine = turc[i], r = round(r[i], 1),
   stringsAsFactors = FALSE)
 
 # create carcass data for the simple geometry:
-set.seed(20201112)
+dist_d = "gamma"
+dparm = c(f50 = 0.6, f100 = 0.9)
+dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){
+   max(abs(pgamma(50, shape = x[1], scale=x[2]) - dparm["f50"]),
+       abs(pgamma(100, shape = x[1], scale = x[2]) - dparm["f100"]))
+})$par)
+ncarc = 100
+set.seed(20200919)
 r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2]) # distance
 theta <- runif(ncarc) * 2 * pi # angle
 # create carcass data frame for polygons:
 turc <- sample(unique(layout_simple$turbine), size = ncarc, replace = T)
-carcass_simple <- data.frame(turbine = turc, r = r, theta = theta)
+carcass_simple0 <- data.frame(turbine = turc, r = r, theta = theta, found = 0)
 rownames(layout_simple) <- layout_simple$turbine
-carcass_simple$x <- carcass_simple$r * cos(carcass_simple$theta)
-carcass_simple$y <- carcass_simple$r * sin(carcass_simple$theta)
-t1found <- which(carcass_simple$turbine == "t1" & 
-  carcass_simple$r <= layout_simple$radius[layout_simple$turbine == "t1"])
-t2found <- which(carcass_simple$turbine == "t2" & 
-  abs(carcass_simple$x) <= layout_simple$radius[layout_simple$turbine == "t2"] &
-  abs(carcass_simple$y) <= layout_simple$radius[layout_simple$turbine == "t2"]
+carcass_simple0$x <- carcass_simple0$r * cos(carcass_simple0$theta)
+carcass_simple0$y <- carcass_simple0$r * sin(carcass_simple0$theta)
+t1found <- which(carcass_simple0$turbine == "t1" & 
+  carcass_simple0$r <= layout_simple$radius[layout_simple$turbine == "t1"])
+t2found <- which(carcass_simple0$turbine == "t2" & 
+  abs(carcass_simple0$x) <= layout_simple$radius[layout_simple$turbine == "t2"] &
+  abs(carcass_simple0$y) <= layout_simple$radius[layout_simple$turbine == "t2"]
 )
 tind <- which(layout_simple$turbine == "t3")
-t3found <- which(carcass_simple$turbine == "t3" & carcass_simple$r <= layout_simple$radius[tind] & 
-  (carcass_simple$r <= layout_simple$padrad[tind] |
-    (carcass_simple$x >= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2) |
-    (carcass_simple$x <= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2)
+t3found <- which(carcass_simple0$turbine == "t3" & carcass_simple0$r <= layout_simple$radius[tind] & 
+  (carcass_simple0$r <= layout_simple$padrad[tind] |
+    (carcass_simple0$x >= 0 & abs(carcass_simple0$y) <= layout_simple$roadwidth[tind]/2) |
+    (carcass_simple0$x <= 0 & abs(carcass_simple0$y) <= layout_simple$roadwidth[tind]/2)
   )
 )
-tind <- which(layout_simple$turbine == "t4")
-t4found <- which(matrixStats::rowProds(cbind(
-  carcass_simple$turbine == "t4",
-  carcass_simple$r <= layout_simple$radius[tind],
-  carcass_simple$r <= layout_simple$padrad[tind],
-  carcass_simple$x >= 0 & abs(carcass_simple$y) <= layout_simple$roadwidth[tind]/2
-))==1)
-carcass_simple <- carcass_simple[c(t1found, t2found, t3found, t4found), c("turbine", "r")]
+
+t4found <- which(carcass_simple0$turbine == "t4" &
+  (carcass_simple0$r <= layout_simple$padrad[4] |
+    (carcass_simple0$r <= layout_simple$radius[4] &
+     carcass_simple0$x < 0 & abs(carcass_simple0$y) <= layout_simple$roadwidth[4]/2
+    )
+  )
+)
+
+carcass_simple0[c(t1found, t2found, t3found, t4found), "found"] <- 1
+carcass_simple <- carcass_simple0[carcass_simple0$found == 1, c("turbine", "r")]
 carcass_simple$r <- round(carcass_simple$r, 2)
 carcass_simple <- carcass_simple[order(as.numeric(rownames(carcass_simple))), ]   
 rownames(carcass_simple) <- 1:nrow(carcass_simple)
@@ -540,9 +550,11 @@ usethis::use_data(
   alt_names,
   carcass_polygon,
   carcass_simple,
+  carcass_simple0,
   cof_name,
   constraints,
   constraints_par,
+  degOrder,
   distr_names,
   layout_eagle,
   layout_polygon,

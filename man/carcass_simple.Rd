@@ -5,7 +5,7 @@
 \alias{carcass_simple}
 \title{Carcass Data to Accompany the Simple Geometry Data Format}
 \format{
-An object of class \code{data.frame} with 88 rows and 2 columns.
+An object of class \code{data.frame} with 55 rows and 2 columns.
 }
 \usage{
 carcass_simple

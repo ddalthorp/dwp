@@ -115,8 +115,9 @@
 #'      \itemize{
 #'        \item \code{turbine} = turbine IDs (syntactically valid R names)
 #'        \item \code{radius} = search radius. If \code{shape = "square"}, then
-#'          radius is 1/2 the width of the square, NOT the diagonal.
-#'        \item \code{shape} = general descriptor of the shape of the search plot
+#'          radius is 1/2 the width of the square.
+#'        \item \code{shape} = general descriptor of the shape of the search plot as
+#'          \code{"square"}, \code{"circular"}, or \code{"RP"} (for roads and pads search).
 #'        \item \code{padrad} = radius of the turbine pad (assumed circular)
 #'        \item \code{roadwidth} = width of the access road(s)
 #'        \item \code{n_road} = number of access roads
@@ -496,11 +497,16 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
     if (!is.null(notSearched)){ # remove unsearched areas from data
       if (!is.character(notSearched))
         stop("notSearched must be a vector of names of scVar levels (or NULL)")
-      x$layout <-  x$layout[!x$layout[, scVar, drop = TRUE] %in% notSearched, ]
-      x$layoutAdj <- x$layoutAdj[!x$layoutAdj[, scVar, drop = TRUE] %in% notSearched, ]
-      x$tset <- unique(x$layout[, x$unitCol, drop = TRUE])
-      x$turbines <- x$turbines[x$turbines[, unitCol, drop = TRUE] %in% x$tset, ]
-      x$tcenter <- x$tcenter[x$tset, ]
+      cls <- unique(x$layout[, "Class", drop = TRUE])
+      x <- subset(x, subset = exclude(notSearched, cls), select = scVar)
+      # x$layout <-  x$layout[!x$layout[, scVar, drop = TRUE] %in% notSearched, ]
+      # x$layoutAdj <- x$layoutAdj[!x$layoutAdj[, scVar, drop = TRUE] %in% notSearched, ]
+      # x$tset <- unique(x$layout[, x$unitCol, drop = TRUE])
+      # x$turbines <- x$turbines[x$turbines[, unitCol, drop = TRUE] %in% x$tset, ]
+      # if (is.vector(x$tset)){
+      
+      # }
+      # x$tcenter <- x$tcenter[x$tset, , drop = FALSE]
     }
   }
   shapeLayout <- x
@@ -528,11 +534,17 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
       print(paste0(substitute(scVar), ' = ', sci), quote = FALSE)
       flush.console()
     }
+    ctr <- NULL
     trsca[[sci]] <- matrix(0, #trcsa: turbne, r, search class, area
       nrow = length(shapeLayout$tset), ncol = dim(rings)[1])
     rownames(trsca[[sci]]) <- shapeLayout$tset
     for (ti in shapeLayout$tset){
+      ctr <- paste0(ctr, "  ", ti)
       if (!silent){
+        if(nchar(ctr) > options()$width){
+          cat("\n", ti)
+          ctr <- NULL
+        }
         cat(" ", ti)
         flush.console()
       }
@@ -553,9 +565,11 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   }
   #Q: was turbine searched? include only those that were searched
   trsca <- lapply(trsca, FUN = function(x){
-    x[rowSums(sapply(trsca, rowSums)) > 0, ]
+    tmp <- sapply(trsca, rowSums)
+    if (is.vector(tmp)) tmp <- matrix(tmp, nrow = 1)
+    x[rowSums(tmp) > 0, , drop = FALSE]
   })
-  tset <- rownames(trsca[[1]])
+ tset <- rownames(trsca[[1]])
 
   ## format the results:
   rdat <- list()
@@ -613,7 +627,6 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   class(output) <- "rings"
   return(output)
 } # prepRing.shapeLayout
-
 
 #' @rdname prepRing
 #' @export
@@ -1171,12 +1184,8 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   do.call(par, par_default) 
   ncol <- 1 + floor((ndistr - 1)/5)
   sz <- 0.17
-#  sz <- ifelse(round(ndistr/ncol) <= 3, 0.13,
-#          ifelse(round(ndistr/ncol) <= 5, 0.17,
-#            ifelse(round(ndistr/ncol) <= 7, 0.22, 0.26)))
   par(fig = c(0, 1, 0, sz), mar = c(0, 1, 1.2, 0), family = "sans")
   plot(0, type = "n", axes = F, xlab = "", ylab = "")
-#  leglab <- character(ndistr)
   lwd <- numeric(ndistr) + 1
   names(lwd) <- distr
   if(mod_highlight %in% distr) lwd[mod_highlight] <- 2
@@ -2820,11 +2829,10 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
   output[output > 1] <- 1
   output[is.na(output)] <- psi[is.na(output)] # return psi when ncarc = 0 for a turbine
   if (ncol(output) == 1){ # single turbine, nsim reps
-    if (!forGenEst){
-      output <- c(output)
-      names(output) <- names(ncarc)
-    } else {
-      output <- cbind(turbine = "t1", dwp = c(output))
+    if (forGenEst){
+      output <- data.frame(turbine = "all", dwp = as.vector(output))
+      class(output) <- c("dwphat", "GenEst", "data.frame")
+      return(output)
     }
   }
   if (forGenEst){
@@ -2832,6 +2840,38 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
    output <- formatGenEst(output)
   } else {
    class(output) <- c("dwphat", "notGenEst", "matrix")
+  }
+  return(output)
+}
+
+#' @rdname estdwp
+#' @export
+#x = psi_size; ncarc = getncarc(cod_free_size); forGenEst = T; nboot = NULL; silent = TRUE
+estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
+    forGenEst = FALSE, silent = TRUE, ...){
+  if (!is.list(ncarc))
+    stop("estdwp: ncarc must be list with element names matching those of x")
+  if (!all(names(x) %in% names(ncarc)))
+    stop("estdwp: not all x names found in ncarc")
+  output <- list()
+  arglist <- as.list(match.call())
+  arglist[[1]] <- NULL
+  for (sz in names(x)){
+    arglist[["x"]] <- x[[sz]]
+    arglist[["ncarc"]] <- ncarc[[sz]]
+    output[[sz]] <- do.call(estdwp, arglist)
+  }
+  if (forGenEst){
+    tmp <- data.frame(array(
+      dim = c(nrow(output[[1]]), length(output) + 1),
+      dimnames = list(NULL, c("turbine", names(output)))
+     ))
+    tmp$turbine <- output[[1]]$turbine
+    for (sz in names(output)) tmp[, sz] <- output[[sz]][, "dwp"]
+    output <- tmp
+    class(output) <- c(class(output), "dwphat", "GenEst")
+  } else {
+    class(output) <- c(class(output), "dwphat", "notGenEst")
   }
   return(output)
 }
@@ -2853,6 +2893,11 @@ formatGenEst <- function(dwphat){
     stop("formatGenEst: dwphat must be a dwphat object")
   if ("GenEst" %in% class(dwphat)) return(dwphat)
   if (is.matrix(dwphat)){
+    if (ncol(dwphat) == 1){
+      output <- data.frame(turbine = "all", dwp = as.vector(dwphat))
+      class(output) <- c("dwphat", "GenEst", "data.frame")
+      return(output)
+    }
     nboot <- nrow(dwphat)
     nms <- exclude("total", colnames(dwphat))
     output <- data.frame(
@@ -2863,20 +2908,16 @@ formatGenEst <- function(dwphat){
     )
   } else if (is.list(dwphat)){
     ccnm <- names(dwphat) # carcass classes
-    tnm <- dwphat[[1]][, 1]
     nsim <- nrow(dwphat[[1]])
     nms <- c("turbine", ccnm)
-    tmp <- data.frame(
-      array(dim = c(length(tnm), length(nms)), dimnames = list(NULL, nms)),
-      stringsAsFactors = FALSE
-    )
-    tmp[, "turbine"] <- unique(tnm)
-    tmp[, -1] <- sapply(dwphat,
-      FUN = function(sz){
-        c(matrix(sz$dwp, nrow = length(unique(tnm)), byrow = T))
-      }
-    )
-    output <- tmp
+    tnm <- colnames(dwphat[[1]])[-ncol(dwphat[[1]])]
+    turbs <- rep(tnm, nsim)
+    output <- data.frame(array(dim = c(length(turbs), length(nms)), 
+      dimnames = list(NULL, nms)), stringsAsFactors = FALSE)
+    output$turbine <- turbs
+    for (sz in ccnm){
+      output[, sz] <- c(t(dwphat[[sz]][, -ncol(dwphat[[sz]])]))
+    }
   }
   class(output) <- c("dwphat", "GenEst", "data.frame")
   return(output)
@@ -2931,7 +2972,7 @@ plot.polygonLayout <- function(x, ...){
     arg_polygon[["x"]] <- x[[ti]]
     do.call(polygon, arg_polygon)
     axis(1, at = pretty(par("usr")[1:2], n = 8))
-    axis(2, at = pretty(par("usr")[3:4], n = 8))
+    axis(2, at = pretty(par("usr")[3:4], n = 8), las = 2)
     do.call(points, arg_turb)
     lines(r * cos(theta), r * sin(theta), lty = 3)
     box()
@@ -3263,7 +3304,13 @@ subset.shapeLayout <- function(x, subset, select, ...){
   if (select %in% names(x$turbines)){
     x$turbines <- x$turbines[x$turbines[, select, drop = TRUE] %in% subset,]
     x$tset <- x$turbines[, x$unitCol, drop = TRUE]
-    x$tcenter <- x$tcenter[x$tset, ]
+    # if (length(x$tset) == 1) {
+      # x$tcenter = matrix(x$tcenter[x$tset, ], nrow = 1)
+      # rownames(x$tcenter) <- x$tset
+      # colnames(x$tcenter) <- c("X", "Y")
+    # } else {
+       x$tcenter <- x$tcenter[x$tset, , drop = FALSE]
+    #}
   }
   class(x) <- "shapeLayout"
   return(x)
@@ -3281,34 +3328,6 @@ ddFit.ringscc <- function(x, distr = "standard", scVar = NULL, rCol = "r",
     output[[sz]] <- do.call(ddFit, arglist)
   }
   class(output) <- "ddArraycc"
-  return(output)
-}
-
-#' @rdname estdwp
-#' @export
-estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
-    forGenEst = FALSE, silent = TRUE, ...){
-  if (!is.list(ncarc))
-    stop("estdwp: ncarc must be list with element names matching those of x")
-  if (!all(names(x) %in% names(ncarc)))
-    stop("estdwp: not all x names found in ncarc")
-  output <- list()
-  arglist <- as.list(match.call())
-  arglist[[1]] <- NULL
-  for (sz in names(x)){
-    arglist[["x"]] <- x[[sz]]
-    arglist[["ncarc"]] <- ncarc[[sz]]
-    output[[sz]] <- do.call(estdwp, arglist)
-  }
-  if (forGenEst){
-    class(output) <- "dwphat"
-    output <- formatGenEst(output)
-  }
-  class(output) <- c(
-    "dwphat",
-    ifelse(forGenEst, "GenEst", "notGenEst"),
-    ifelse(forGenEst, "data.frame", "list")
-  )
   return(output)
 }
 
@@ -3423,7 +3442,7 @@ plot.psiHat <- function(x, ...){
 plot.dwphat <- function(x, ...){
   bxwd <- 0.4
   par(mar = c(5.4, 5, 2, 1))
-  plot(0, type = "n", xlim = c(1, ncol(x)), ylim = range(x, na.rm = TRUE),
+  plot(0, type = "n", xlim = c(1, ncol(x)) + bxwd*c(-1, 1), ylim = range(x, na.rm = TRUE),
     axes = FALSE, xlab = "", ylab = expression(widehat(dwp)), cex.lab = 1.2)
   box()
   mtext(side = 1, line = 4, "turbine", cex = 1.3)

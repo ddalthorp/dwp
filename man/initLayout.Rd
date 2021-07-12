@@ -121,8 +121,9 @@ A list or data frame with components appropriate to the type of data
      \itemize{
        \item \code{turbine} = turbine IDs (syntactically valid R names)
        \item \code{radius} = search radius. If \code{shape = "square"}, then
-         radius is 1/2 the width of the square, NOT the diagonal.
-       \item \code{shape} = general descriptor of the shape of the search plot
+         radius is 1/2 the width of the square.
+       \item \code{shape} = general descriptor of the shape of the search plot as
+         \code{"square"}, \code{"circular"}, or \code{"RP"} (for roads and pads search).
        \item \code{padrad} = radius of the turbine pad (assumed circular)
        \item \code{roadwidth} = width of the access road(s)
        \item \code{n_road} = number of access roads
