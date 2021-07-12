@@ -1,0 +1,11 @@
+language: r
+cache: packages
+sudo: false
+warnings_are_errors: false
+
+addons:
+  apt:
+    update: true
+    packages:
+      - libgsl-dbg
+      - libgsl-dev
