@@ -61,7 +61,7 @@
 #'
 #' @export
 #'
-postM <- function(x, g, prior='IbinRef', mmax = NA){
+postM <- function(x, g, prior = "IbinRef", mmax = NA){
  ### repaired version of postM from eoa
  ###  in eoa 2.0.7, the function doesn't work with custom priors
  # choices for prior are:
@@ -96,7 +96,7 @@ postM <- function(x, g, prior='IbinRef', mmax = NA){
     warning("error in mmax")
     return(NA)
   }
-  x<-round(x)
+  x <- round(x)
   if (!is.numeric(prior) && !is.character(prior)){ # custom prior
     warning("error in prior")
     return(NA)
@@ -105,25 +105,25 @@ postM <- function(x, g, prior='IbinRef', mmax = NA){
     # numeric => must be two-dimensional array
       if (MpriorOK(prior)){
         if (is.na(mmax)){
-          mmax<-max(prior[,1])
+          mmax <- max(prior[, 1])
         } else {
-          if (round(mmax) != round(max(prior[,1]))) {
+          if (round(mmax) != round(max(prior[, 1]))) {
             warning("mmax != max of custom prior. Aborting calculation.")
             return(NA)
           } else {
-            mmax<-round(max(prior[,1]))
+            mmax <- round(max(prior[, 1]))
           }
         }
-        M<-x:mmax
-        prior_M<-prior[,2]/sum(prior[,2])
+        M <- x:mmax
+        prior_M <- prior[,2]/sum(prior[,2])
       } else { # custom prior is not correctly formatted
         return(NA)
       }
     } else { # named priors (following different philosophies of uninformed)
-      if (prior %in% c('IbinRef','binRef', 'uniform')) {
-        mmax<-round(ifelse(is.na(mmax), fmmax(x,g), mmax))
-        M<-x:mmax
-        prior_M<-switch(prior,
+      if (prior %in% c("IbinRef","binRef", "uniform")) {
+        mmax <- round(ifelse(is.na(mmax), fmmax(x,g), mmax))
+        M <- x:mmax
+        prior_M <- switch(prior,
           IbinRef = diff(sqrt(0:(mmax+1)))/sum(diff(sqrt(0:(1+mmax)))),
           binRef = 1/sqrt(0:mmax),
           uniform = rep(1, mmax + 1)
@@ -135,16 +135,16 @@ postM <- function(x, g, prior='IbinRef', mmax = NA){
     }
   }
   if (prior_M[1] == Inf & x == 0) return (1)
-  pXgM<-dbinom(x, M, g)
-  pM<-prior_M[x:mmax+1]
-  pMgX<-pXgM*pM; pMgX<-pMgX/sum(pMgX) # posterior distribution for M
+  pXgM <- dbinom(x, M, g)
+  pM <- prior_M[x:mmax+1]
+  pMgX <- pXgM*pM; pMgX <- pMgX/sum(pMgX) # posterior distribution for M
                                       #(ignoring M < X, which has probability 0)
-  c(rep(0,x),pMgX) # full posterior, counting from m = 0 to mmax
+  c(rep(0, x), pMgX) # full posterior, counting from m = 0 to mmax
 }
 
 #' @rdname postM
 #' @export
-postM.ab <- function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
+postM.ab <- function(x, Ba, Bb, prior = "IbinRef", mmax = NULL){
   # error-checking
   suppressWarnings({
     if (length(x) * length(Ba) * length(Bb) != 1){
@@ -168,19 +168,19 @@ postM.ab <- function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
       return(NA)
     }
   })
-  x<-round(x)
+  x <- round(x)
   # check whether the mmax provided is valid
   if (!missing(mmax)){ # then mmax must be a non-negative integer
     if (!is.numeric(mmax)){
-      warning('mmax must be a non-negative integer')
+      warning("mmax must be a non-negative integer")
       return(NA)
     }
-    if (abs(round(mmax)-mmax)>0.000001){
-      warning('mmax must be an integer')
+    if (abs(round(mmax) - mmax) > 0.000001){
+      warning("mmax must be an integer")
       return(NA)
     }
-    if (mmax< -0.000001){
-      warning('mmax must be non-negative')
+    if (mmax < -0.000001){
+      warning("mmax must be non-negative")
       return(NA)
     }
   }
@@ -190,32 +190,33 @@ postM.ab <- function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
     warning("error in prior")
     return(NA)
   } else {
-    if (is.numeric(prior)){ # numeric => custom prior; must be two-dimensional array with probabilities starting at m = 0
+    if (is.numeric(prior)){ 
+    # numeric => custom prior; must be two-dimensional array with probabilities starting at m = 0
       if (MpriorOK(prior)){
         if (missing(mmax)){
-          mmax<-max(prior[,1])
+          mmax <- max(prior[, 1])
         } else {
-          if (round(mmax) != round(max(prior[,1]))) {
+          if (round(mmax) != round(max(prior[, 1]))) {
             warning("mmax != max of custom prior. Aborting calculation.")
             return(NA)
           } else {
-            mmax<-round(max(prior[,1]))
+            mmax <- round(max(prior[, 1]))
           }
         }
-        M<-x:mmax
-        prior_M<-prior[, 2]
+        M <- x:mmax
+        prior_M <- prior[, 2]
       } else { # custom prior is not correctly formatted (numeric but not two columns etc.)
         return(NA)
       }
     } else { # named priors (following different philosophies of uninformed)
-      if (prior %in% c('IbinRef','binRef', 'IbetabinRef', 'betabinRef', 'uniform')) {
-        mmax<-round(ifelse(missing(mmax), fmmax.ab(x, Ba, Bb), mmax))
-        M<-x:mmax
-        prior_M<-switch(prior,
-          IbinRef = diff(sqrt(0:(mmax+1)))/sum(diff(sqrt(0:(1+mmax)))),
+      if (prior %in% c("IbinRef", "binRef", "IbetabinRef", "betabinRef", "uniform")) {
+        mmax <- round(ifelse(missing(mmax), fmmax.ab(x, Ba, Bb), mmax))
+        M <- x:mmax
+        prior_M <- switch(prior,
+          IbinRef = diff(sqrt(0:(mmax + 1)))/sum(diff(sqrt(0:(1 + mmax)))),
           binRef = 1/sqrt(0:mmax),
-          IbetabinRef = diff(log(sqrt(0:(mmax+1)+Ba+Bb)+sqrt(0:(mmax+1)))),
-          betabinRef = 1/sqrt(0:mmax*(0:mmax+Ba+Bb)),
+          IbetabinRef = diff(log(sqrt(0:(mmax + 1)+ Ba+ Bb)+sqrt(0:(mmax + 1)))),
+          betabinRef = 1/sqrt(0:mmax*(0:mmax + Ba + Bb)),
           uniform = rep(1, mmax + 1)
         )
       } else {
@@ -224,19 +225,19 @@ postM.ab <- function(x, Ba, Bb, prior="IbinRef", mmax=NULL){
       }
     }
   }
-#  prior_M <- prior_M/sum(prior_M)
+
   if (prior_M[1] == Inf & x == 0) return (1)
-  pXgM<-VGAM::dbetabinom.ab(x, M, Ba, Bb)
-  pM<-prior_M[x:mmax+1]
-  pMgX<-pXgM*pM; pMgX<-pMgX/sum(pMgX) # posterior distribution for M (ignoring M < X, which has probability = zero)
-  pMgX<-c(rep(0,x),pMgX)
+  pXgM <- VGAM::dbetabinom.ab(x, M, Ba, Bb)
+  pM <- prior_M[x:mmax + 1]
+  pMgX <- pXgM*pM; pMgX <- pMgX/sum(pMgX) # posterior distribution for M (ignoring M < X, which has probability = zero)
+  pMgX <- c(rep(0, x), pMgX)
   pMgX
 }
 
 #' @rdname postM
 #' @export
 calcMstar <- function(pMgX, alpha){
-  min(which(cumsum(pMgX) >= 1  -alpha)) - 1
+  min(which(cumsum(pMgX) >= 1 - alpha)) - 1
 }
 
 #' @rdname postM
@@ -244,9 +245,9 @@ calcMstar <- function(pMgX, alpha){
 MCI <- function(pMgX, crlev = 0.95){
   cs <- cumsum(pMgX)
   aM <- 1 - crlev
-  lwrbnd<-min(which(cs > aM/2)) - 1
-  lwrArea<-ifelse(lwrbnd == 0, 0, cs[lwrbnd])
-  uprbnd<-min(which(cs > 1 - aM + lwrArea)) - 1
+  lwrbnd <- min(which(cs > aM/2)) - 1
+  lwrArea <- ifelse(lwrbnd == 0, 0, cs[lwrbnd])
+  uprbnd <- min(which(cs > 1 - aM + lwrArea)) - 1
   c(lwrbnd, uprbnd)
 }
 
@@ -280,7 +281,7 @@ fmmax <- function(x, g){ # find the maximum m to sum over in calculating posteri
     mmax <- mmax + 100
     if (pbinom(x, size = mmax, prob = g) < 0.0001){
       # pick mmax large enough so that greater m's are very unlikely
-      mmax<-m[min(which(pbinom(x, m, g) < 0.0001))]
+      mmax <- m[min(which(pbinom(x, m, g) < 0.0001))]
       break
     }
   }

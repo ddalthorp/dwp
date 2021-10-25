@@ -152,6 +152,23 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
   dataType <- tolower(dataType)
   if (dataType == "shape" || (length(data_layout) == 1 &&
       is.character(data_layout) && grepl(".shp", data_layout))){
+    suparg <- NULL
+    if (!identical(radCol, "radius") && !is.null(radCol) && !is.na(radCol)) 
+      suparg <- c(suparg, "radCol")
+    if (!identical(shapeCol, "shape") && !is.null(shapeCol) && !is.na(shapeCol)) 
+      suparg <- c(suparg, "shapeCol")
+    if (!identical(padCol, "padrad") && !is.null(padCol) && !is.na(padCol)) 
+      suparg <- c(suparg, "padCol")
+    if (!identical(roadwidCol, "roadwidth") && !is.null(roadwidCol) && !is.na(roadwidCol)) 
+      suparg <- c(suparg, "roadwidCol")
+    if (!identical(nRoadCol, "n_road") && !is.null(nRoadCol) && !is.na(nRoadCol)) 
+      suparg <- c(suparg, "nRoadCol")
+    if (length(suparg) > 0){ 
+      isare <- ifelse(length(suparg == 1), "is", "are")
+      message(c(paste0(suparg, collapse = ", "), " ", isare, 
+        " superfluous for dataType = 'shape' and ", isare, " ignored.\n\n"))
+    }
+
     plotLayout <- sf::st_zm(sf::st_read(
       data_layout, stringsAsFactors = FALSE, quiet = quiet),
       drop = T, what = "ZM")
@@ -240,7 +257,7 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       stop("All search radii in simple layout must be positive numbers.")
     if (!all(slayout[, shapeCol] %in% c("circular", "square", "RP")))
       stop("Simple \"shape\" must be circular, square, or RP")
-    srad <- slayout[ , radCol]
+    srad <- slayout[, radCol]
     ind <- which(slayout[, shapeCol] == "square")
     srad[ind] <- sqrt(2) * srad[ind]
     # sterotype the names:
@@ -497,16 +514,8 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
     if (!is.null(notSearched)){ # remove unsearched areas from data
       if (!is.character(notSearched))
         stop("notSearched must be a vector of names of scVar levels (or NULL)")
-      cls <- unique(x$layout[, "Class", drop = TRUE])
+      cls <- unique(x$layout[, scVar, drop = TRUE])
       x <- subset(x, subset = exclude(notSearched, cls), select = scVar)
-      # x$layout <-  x$layout[!x$layout[, scVar, drop = TRUE] %in% notSearched, ]
-      # x$layoutAdj <- x$layoutAdj[!x$layoutAdj[, scVar, drop = TRUE] %in% notSearched, ]
-      # x$tset <- unique(x$layout[, x$unitCol, drop = TRUE])
-      # x$turbines <- x$turbines[x$turbines[, unitCol, drop = TRUE] %in% x$tset, ]
-      # if (is.vector(x$tset)){
-      
-      # }
-      # x$tcenter <- x$tcenter[x$tset, , drop = FALSE]
     }
   }
   shapeLayout <- x
@@ -520,7 +529,7 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   for (i in 2:length(radi))
     rings <- c(rings, sf::st_sfc(sf::st_polygon(list(radi[i] * trig))))
   rings <- sf::st_sf(rings)
-  for (i in length(radi):2) rings[i, ] <- sf::st_difference(rings[i, ], rings[i-1, ])
+  for (i in length(radi):2) rings[i, ] <- sf::st_difference(rings[i, ], rings[i - 1, ])
   rings$r <- radi
   sf::st_crs(rings) <- sf::st_crs(shapeLayout$layoutAdj)
 
@@ -528,10 +537,13 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   trsca <- list() # nturbines x nrings arrays of areas in each search class
   scset <- gtools::mixedsort(unique(as.data.frame(shapeLayout$layoutAdj)[, scVar]))
   if (length(scset) == 0) scset <- "all"
-  if (!silent) {cat("calculating ring areas...\n"); flush.console()}
+  if (!silent) {
+    cat("calculating ring areas...\n")
+    flush.console()
+  }
   for (sci in scset){
     if (!silent & sci != "all"){
-      print(paste0(substitute(scVar), ' = ', sci), quote = FALSE)
+      print(paste0(substitute(scVar), " = ", sci), quote = FALSE)
       flush.console()
     }
     ctr <- NULL
@@ -555,7 +567,7 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
       ind <- which(ind)
       # polygons for ind
       for (ii in ind){
-        tring <- sf::st_geometry(shapeLayout$layoutAdj[ii,])
+        tring <- sf::st_geometry(shapeLayout$layoutAdj[ii, ])
         jj <- unlist(sf::st_intersects(shapeLayout$layoutAdj[ii, ], rings))
         trsca[[sci]][ti, jj] <- trsca[[sci]][ti, jj] +
           as.vector(sf::st_area(sf::st_intersection(tring, rings)))
@@ -567,7 +579,7 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
   trsca <- lapply(trsca, FUN = function(x){
     tmp <- sapply(trsca, rowSums)
     if (is.vector(tmp)) tmp <- matrix(tmp, nrow = 1)
-    x[rowSums(tmp) > 0, , drop = FALSE]
+    x[rowSums(tmp) > 0,, drop = FALSE]
   })
  tset <- rownames(trsca[[1]])
 
@@ -692,7 +704,7 @@ prepRing.numeric <- function(x, srad, ...){
   srad <- ceiling(srad)
   rpA <- list()
   rdat <- list()
-  rvec <- x[x<=srad]
+  rvec <- x[x <= srad]
   tbl <- table(ceiling(rvec))
   r <- 1:srad
   rdat[["total"]] <- data.frame(r = r, exposure = 2*pi*(r - 1/2), ncarc = 0)
@@ -1032,7 +1044,6 @@ aic.ddArraycc <- function(x, extent = "full", ...){
 #' @export
 #'
 aic.dd <- function(x, ...){
-  aic0 <- x$aicc
   return(data.frame(
     k = x$k, 
     AICc = round(x$aicc, 2), 
@@ -1294,7 +1305,7 @@ plot.dd <- function(x, type = "CDF", extent = "full",
     xlab = "x = Distance from Turbine (meters)",
     ylab = ylab,
     main = paste0("Distribution of Carcasses\n[", x$distr, " ", type, "]"))
-  polygon(CI[c(1:nrow(CI), nrow(CI):1) , "x"] , c(CI[, 2], CI[nrow(CI):1, 3]),
+  polygon(CI[c(1:nrow(CI), nrow(CI):1), "x"], c(CI[, 2], CI[nrow(CI):1, 3]),
     col = colors()[350], border = NA)
   msg <- switch(extent, win = "limited to carcasses within search radius  ")
   if (type == "PDF"){
@@ -1377,7 +1388,6 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
     if (is.numeric(j)) j <- colnames(x)[j]
     if (!all(j %in% colnames(x))) stop("cannot subset ddSim object on given column")
     if (length(j) == 1) y <- matrix(y, ncol = 1, dimnames = list(NULL, j))
-#    if (is.vector(y)) y <- matrix(y, nrow = 1, dimnames = list(NULL, names(y)))
     attr(y, "distr") <- attr(x, "distr")
     attr(y, "srad") <- attr(x, "srad")
     class(y) <- "ddSim"
@@ -1776,7 +1786,7 @@ cof2parms.dd <- function(x, ...){
 #'  extensible distributions, essentially returning 0 rather than NA for those
 #'  pathological cases.
 #' @param subdiv if the number of values to calculate with \code{rdd} or \code{qdd}
-#'  is >1 , the function uses breaks the PDF into \code{subdiv} subdivisions and
+#'  is >1, the function uses breaks the PDF into \code{subdiv} subdivisions and
 #'  interpolates to solve the inverse. More subdivisions gives greater accuracy
 #'  but is slower.
 #' @param silent If \code{TRUE}, then console messages are suppressed.
@@ -2066,7 +2076,7 @@ pdd <- function(q, model,  parms = NULL, extent = "full", zrad = 200, silent = F
             )
             tmp[, which(i1 == i)] <- pxep012(q,
               b0 = b0,
-              b1 = b1 ,
+              b1 = b1,
               b2 = b2,
               const = const
             )
@@ -2088,7 +2098,7 @@ pdd <- function(q, model,  parms = NULL, extent = "full", zrad = 200, silent = F
             )
             tmp[, which(i1 == i)] <- pxep0123(q,
               b0 = b0,
-              b1 = b1 ,
+              b1 = b1,
               b2 = b2,
               b3 = b3,
               const = const
@@ -2351,12 +2361,7 @@ rdd <- function(n, model, parms = NULL, extent = "full", zrad = 200, subdiv = 10
     stop ("class(model) in rdd must be dd or ddSim")
   }
 
-  if ("ddSim" %in% class(model)) {
-    distr <- attr(model, which = "distr")
-    srad <- attr(model, which = "srad")
-  } else {
-    stop("pdd: model must be dd or ddSim object")
-  }
+  if (! "ddSim" %in% class(model)) stop("pdd: model must be dd or ddSim object")
   qdd(runif(n), model = model, extent = extent, zrad = zrad, subdiv = subdiv)
 }
 
@@ -2419,7 +2424,6 @@ stats <- function(x, ...) UseMethod("stats", x)
 #' @export
 stats.dd <- function(x, extent = "full", zrad = 200, ...){
   distr <- x$distr
-#  if (distr == "constant" & extent == "full") return(list(model = NA, stats = NA))
   cof <- numeric(length(cof_name[[distr]])) + NA
   names(cof) <- cof_name[[distr]]
   qtls <- c(0.5, 0.75, 0.9, 0.95)
@@ -3130,7 +3134,6 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
   turbi <- x$carcasses[, unitCol, drop = TRUE]
   if (any(!x$carcasses[, unitCol, drop = TRUE] %in% names(data_ring$ncarc))){
     catturb <- x$carcasses[, unitCol, drop = TRUE]
-    turbnot <- catturb[!catturb %in% names(data_ring$ncarc)]
     warning("Carcasses found at unsearched turbines.")
     if (all(!x$carcasses[, unitCol, drop = TRUE] %in% names(data_ring$ncarc)))
       stop("All carcasses were found at unsearched turbines. Mismatched ",
@@ -3190,7 +3193,7 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
     rdat0 <- data.frame(
       turbine = x$carcasses[, unitCol, drop = T],
       r = ceiling(unname(sqrt(rowSums(
-        (data_ring$tcenter[turbi,] - sf::st_coordinates(x$carcasses))^2
+        (data_ring$tcenter[turbi, ] - sf::st_coordinates(x$carcasses))^2
       ))))
     )
   }
@@ -3285,7 +3288,7 @@ subset.shapeCarcass <- function(x, subset, select, ...){
   # and "select" for "ccCol"
   if (!select %in% names(x$carcasses)) stop("'select' not in carcass data")
   output <- list()
-  output$carcasses <- x$carcasses[x$carcasses[, select, drop = TRUE] %in% subset,]
+  output$carcasses <- x$carcasses[x$carcasses[, select, drop = TRUE] %in% subset, ]
   output$unitCol  <- x$unitCol
   output$ncarc <- table(output$carcasses[, x$unitCol, drop = TRUE])
   class(output) <- "shapeCarcass"
@@ -3299,18 +3302,12 @@ subset.shapeLayout <- function(x, subset, select, ...){
     stop("subset: 'select' must be the name of a single column in x")
   if (!select %in% names(x$layout))
     stop("subset: 'select' not in layout data")
-  x$layout <- x$layout[x$layout[, select, drop = TRUE] %in% subset,]
-  x$layoutAdj <- x$layoutAdj[x$layoutAdj[, select, drop = TRUE] %in% subset,]
+  x$layout <- x$layout[x$layout[, select, drop = TRUE] %in% subset, ]
+  x$layoutAdj <- x$layoutAdj[x$layoutAdj[, select, drop = TRUE] %in% subset, ]
   if (select %in% names(x$turbines)){
-    x$turbines <- x$turbines[x$turbines[, select, drop = TRUE] %in% subset,]
+    x$turbines <- x$turbines[x$turbines[, select, drop = TRUE] %in% subset, ]
     x$tset <- x$turbines[, x$unitCol, drop = TRUE]
-    # if (length(x$tset) == 1) {
-      # x$tcenter = matrix(x$tcenter[x$tset, ], nrow = 1)
-      # rownames(x$tcenter) <- x$tset
-      # colnames(x$tcenter) <- c("X", "Y")
-    # } else {
-       x$tcenter <- x$tcenter[x$tset, , drop = FALSE]
-    #}
+    x$tcenter <- x$tcenter[x$tset,, drop = FALSE]
   }
   class(x) <- "shapeLayout"
   return(x)
@@ -3765,7 +3762,7 @@ modelFilter <- function(dmod, sieve = "default", quiet = FALSE){
     ptab[, "hin"],
     -ptab[, "deltaAICc"],
     decreasing = TRUE
-  ),]
+  ), ]
   if (identical(sieve, "win")) ptab[, c("extensible", "rtail", "ltail")] <- NA
   output <- list()
   output[["filtered"]] <- dmod[rownames(ptab)[1]]
