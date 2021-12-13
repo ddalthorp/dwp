@@ -57,8 +57,8 @@
 #' @format A data frame illustrating the required raw data format for using
 #'  a grid format to characterize a site layout. There are five
 #'  columns: one giving turbine IDs (\code{turbine}), columns for the \code{x}
-#'  and \code{y} coordinates on 1 m. grids that overlay the search plot, a 
-#'  column giving the carcass count in each grid cell, and a column giving the 
+#'  and \code{y} coordinates on 1 m. grids that overlay the search plot, a
+#'  column giving the carcass count in each grid cell, and a column giving the
 #'  distance of each cell from the turbine. There is only one turbine, searched
 #'  on road and pad out. Coordinates are in meters relative to the turbine at 
 #'  (0, 0).

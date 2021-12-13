@@ -354,7 +354,7 @@ par_default <- list(xlog = FALSE, ylog = FALSE, adj = 0.5, ann = TRUE, ask = FAL
 
 # parameters for generating example carcass data sets
 # these are not stored in the package database but are used to create data sets
-# that are
+# that are used in the examples
 dist_d = "gamma"
 dparm = c(f50 = 0.6, f100 = 0.9)
 dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){

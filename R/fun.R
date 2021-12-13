@@ -15,7 +15,7 @@
 #' @param dataType An identifier for the type of data to be imported: \code{"shape"},
 #'  \code{"polygon"}, \code{"xy"}, or \code{"simple"}. If \code{data_layout} is
 #'  the name of a shape file, the \code{dataType = "shape"} identifier is optional.
-#' @param unitCol Column name for turbine IDs. If \code{file_turbine} is the name
+#' @param unitCol Column name for turbine IDs. If \code{data_layout} is the name
 #'  of a shape file, then \code{file_turbine} must also be provided, giving
 #'  turbine locations. The \code{unitCol} must be present in \code{data_layout}
 #'  and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
@@ -40,10 +40,14 @@
 #'  \code{data_layout} that gives the width of the turbine access road(s)
 #' @param nRoadCol for \code{dataType = "simple"} layouts: the name of the column in
 #'  \code{data_layout} that gives the number of turbine access roads at each turbine
-#' @param xCol for \code{dataType = "xy"} layouts: the name of the column in
-#'  \code{data_layout} that gives \code{x} coordinates on the grid
-#' @param yCol for \code{dataType = "xy"} layouts: the name of the column in
-#'  \code{data_layout} that gives \code{y} coordinates on the grid
+#' @param xCol for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
+#'  the name of the column in \code{data_layout} that gives \code{x} coordinates 
+#'  on the grid (for \code{dataType = "xy"}) or \code{x} coordinates of search area
+#'  polygon (for \code{dataType = "polygon"})
+#' @param xCol for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
+#'  the name of the column in \code{data_layout} that gives \code{y} coordinates 
+#'  on the grid (for \code{dataType = "yy"}) or \code{y} coordinates of search area
+#'  polygon (for \code{dataType = "polygon"})
 #' @param ncarcCol for \code{dataType = "xy"} layouts: the name of the column with
 #'  carcass counts in each grid cell. The column is required but may be all zeros
 #'  with carcasses added from a matrix of carcass locations later
@@ -163,10 +167,21 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       suparg <- c(suparg, "roadwidCol")
     if (!identical(nRoadCol, "n_road") && !is.null(nRoadCol) && !is.na(nRoadCol)) 
       suparg <- c(suparg, "nRoadCol")
+    if (!identical(xCol, "x") && !is.null(xCol) && !is.na(xCol)) 
+      suparg <- c(suparg, "xCol")
+    if (!identical(yCol, "y") && !is.null(yCol) && !is.na(yCol)) 
+      suparg <- c(suparg, "yCol")
+    if (!identical(ncarcCol, "ncarc") && !is.null(ncarcCol) && !is.na(ncarcCol)) 
+      suparg <- c(suparg, "ncarcCol")
+    if (!identical(notSearched, "y") && !is.null(notSearched) && !is.na(notSearched)) 
+      suparg <- c(suparg, "notSearched")
+    if (!identical(scCol, "y") && !is.null(scCol) && !is.na(scCol)) 
+      suparg <- c(suparg, "scCol")
+ 
     if (length(suparg) > 0){ 
-      isare <- ifelse(length(suparg == 1), "is", "are")
+      isare <- ifelse(length(suparg) == 1, "is", "are")
       message(c(paste0(suparg, collapse = ", "), " ", isare, 
-        " superfluous for dataType = 'shape' and ", isare, " ignored.\n\n"))
+        " superfluous for dataType = \"", dataType, "\" and ", isare, " ignored.\n\n"))
     }
 
     plotLayout <- sf::st_zm(sf::st_read(
@@ -242,6 +257,27 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     }
     if ("simpleLayout" %in% class(data_layout)) return(data_layout)
     # rudimentary error-checking:
+    suparg <- NULL
+
+    if (!is.null(file_turbine) && !is.na(file_turbine)) 
+      suparg <- c(suparg, "file_turbine")
+    if (!identical(xCol, "x") && !is.null(xCol) && !is.na(xCol)) 
+      suparg <- c(suparg, "xCol")
+    if (!identical(yCol, "y") && !is.null(yCol) && !is.na(yCol)) 
+      suparg <- c(suparg, "yCol")
+    if (!identical(ncarcCol, "ncarc") && !is.null(ncarcCol) && !is.na(ncarcCol)) 
+      suparg <- c(suparg, "ncarcCol")
+    if (!is.null(scCol) && !is.na(scCol)) 
+      suparg <- c(suparg, "scCol")
+    if (!is.null(notSearched) && !is.na(notSearched)) 
+      suparg <- c(suparg, "notSearched")
+    
+    if (length(suparg) > 0){ 
+      isare <- ifelse(length(suparg) == 1, "is", "are")
+      message(c(paste0(suparg, collapse = ", "), " ", isare, 
+        " superfluous for dataType = \"", dataType, "\" and ", isare, " ignored.\n\n"))
+    }
+
     if (!all(c(unitCol, radCol, shapeCol) %in% names(slayout))){
       stop("Simple layout must include columns for unit, radius, and shape ",
            "with column names specified in arg list for initLayout.")
@@ -283,6 +319,30 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
            "data_layout may be a properly formatted data frame or matrix"
       )
     }
+    suparg <- NULL
+    if (!is.null(file_turbine) && !is.na(file_turbine)) 
+      suparg <- c(suparg, "file_turbine")
+    if (!identical(radCol, "radius") && !is.null(radCol) && !is.na(radCol)) 
+      suparg <- c(suparg, "radCol")
+    if (!identical(shapeCol, "shape") && !is.null(shapeCol) && !is.na(shapeCol)) 
+      suparg <- c(suparg, "shapeCol")
+    if (!identical(padCol, "padrad") && !is.null(padCol) && !is.na(padCol)) 
+      suparg <- c(suparg, "padCol")
+    if (!identical(roadwidCol, "roadwidth") && !is.null(roadwidCol) && !is.na(roadwidCol)) 
+      suparg <- c(suparg, "roadwidCol")
+    if (!identical(nRoadCol, "n_road") && !is.null(nRoadCol) && !is.na(nRoadCol)) 
+      suparg <- c(suparg, "nRoadCol")
+    if (!identical(ncarcCol, "ncarc") && !is.null(ncarcCol) && !is.na(ncarcCol)) 
+      suparg <- c(suparg, "ncarcCol")
+    if (!identical(scCol, "sc") && !is.null(scCol) && !is.na(scCol)) 
+      suparg <- c(suparg, "scCol")
+    if (!identical(notSearched, "sc") && !is.null(notSearched) && !is.na(notSearched)) 
+      suparg <- c(suparg, "notSearched")
+    if (length(suparg) > 0){ 
+      isare <- ifelse(length(suparg) == 1, "is", "are")
+      message(c(paste0(suparg, collapse = ", "), " ", isare, 
+        " superfluous for dataType = \"", dataType, "\" and ", isare, " ignored.\n\n"))
+    }
     if (!is.matrix(playout) && !is.data.frame(playout))
       stop("Data in data_layout must be a properly formatted matrix or data frame")
     if (!xCol %in% colnames(playout) || !yCol %in% colnames(playout))
@@ -311,6 +371,22 @@ initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
       xylayout <- data_layout
       xylayout[] <- lapply(xylayout, 
         function(x) if (is.factor(x)) as.character(x) else x)      
+    }
+    suparg <- NULL
+    if (!identical(radCol, "radius") && !is.null(radCol) && !is.na(radCol)) 
+      suparg <- c(suparg, "radCol")
+    if (!identical(shapeCol, "shape") && !is.null(shapeCol) && !is.na(shapeCol)) 
+      suparg <- c(suparg, "shapeCol")
+    if (!identical(padCol, "padrad") && !is.null(padCol) && !is.na(padCol)) 
+      suparg <- c(suparg, "padCol")
+    if (!identical(roadwidCol, "roadwidth") && !is.null(roadwidCol) && !is.na(roadwidCol)) 
+      suparg <- c(suparg, "roadwidCol")
+    if (!identical(nRoadCol, "n_road") && !is.null(nRoadCol) && !is.na(nRoadCol)) 
+      suparg <- c(suparg, "nRoadCol")
+    if (length(suparg) > 0){ 
+      isare <- ifelse(length(suparg) == 1, "is", "are")
+      message(c(paste0(suparg, collapse = ", "), " ", isare, 
+        " superfluous for dataType = \"", dataType, "\" and ", isare, " ignored.\n\n"))
     }
     if (!unitCol %in% names(xylayout))
       stop("unitCol must be included in data_layout")
@@ -3118,7 +3194,17 @@ Acins <- function(r, s){
 #' @param ncarcReset boolean to direct the function to set the carcass counts
 #'  in all the rings to 0 before adding the new carcasses (default) or to add the
 #'  new carcasses to the old totals (\code{ncarcReset = FALSE}).
-#' @param ccCol name of carcass class column (optional)
+#' @param ccCol name of carcass class column (optional). Typically, the "carcass 
+#'  class" would be for carcass characteristics that would be expected to affect
+#'  distances that carcasses would fall from the turbine. For example, distances 
+#'  would not be expected to be the same for large and small carcasses, and bats
+#'  may have significantly different distance distributions than small birds. The ccCol
+#'  could also be used for subsetting by any covariate that would be expected 
+#'  to interact with carcass distance distributions, like season (if winds vary 
+#'  by season) or turbine type (if the site has a diverse mix of turbines of 
+#'  different sizes or types). Additionally, ccCol can be used to subset the data by area 
+#'  (for example, NW, NE, SW, SE; or hilltop, river bank) or any other discrete 
+#'  covariate that the user may be interested in.
 #' @param unitCol name of unit column
 #' @param rCol name of column with carcass distances
 #' @param ... ignored
@@ -3589,7 +3675,7 @@ exportGenEst <- function(dwp, file){
 #' @param sieve a list of criteria for ordering models
 #' @param quiet boolean to suppress (\code{quiet = TRUE}) or allow 
 #'  (\code{quiet = FALSE}) messages from \code{modelFilter}
-#' @return An \code{fmod} object, which is an unordered list of extensible models
+#' @return An \code{fmod} object, which is an unordered list of extensible models if
 #'  \code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
 #'  components:
 #'  \describe{
