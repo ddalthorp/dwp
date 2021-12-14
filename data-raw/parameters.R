@@ -362,7 +362,7 @@ dfbat <- suppressWarnings(optim(par = c(2, 50), fn = function(x){
        abs(pgamma(100, shape = x[1], scale = x[2]) - dparm["f100"]))
 })$par)
 ncarc = 200
-set.seed(20201111)   # 20201111 leads to awful data set
+set.seed(20201111)
 r <- rgamma(ncarc, shape = dfbat[1], scale = dfbat[2]) # distance
 theta <- runif(ncarc) * 2 * pi # angle
 # create carcass data frame for polygons:
