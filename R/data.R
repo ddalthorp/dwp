@@ -67,8 +67,23 @@
 #' Carcass Data to Accompany the Simple Geometry Data Format
 "carcass_simple"
 
+#' Full, Simulated carcass_simple Data Set (Including Locations and Missed Carcasses)
+"carcass_simple0"
+
+#' Constraints on Parameters to Assure Extensibility
+"constraints_par"
+
+#' An Ordering of the Models by Degree of the Polynomial
+"degOrder"
+
 #' Names of All the Available Models
 "mod_all"
+
+#' Names of the Named Distributions
+"alt_names"
+
+#' Full List of Names of Distributions
+"distr_names"
 
 #' Vector of Colors Used in Graphs of Fitted Models
 "mod_color"
@@ -147,3 +162,6 @@
 #' @format matrix with columns x, y, r for all 100 carcasses in the simulation to
 #'  generate the carcass data for the xy grid that was searched on road and pad.
 "xyr"
+
+#' Section of Code that Serves No Purpose but for Package to Pass CRAN Check
+utils::globalVariables(c("sieve_win", "alt_names", "constraints_par", "distr_names"))

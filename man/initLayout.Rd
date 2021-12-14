@@ -33,7 +33,7 @@ descriptions. See "Details" for details.}
 \code{"polygon"}, \code{"xy"}, or \code{"simple"}. If \code{data_layout} is
 the name of a shape file, the \code{dataType = "shape"} identifier is optional.}
 
-\item{unitCol}{Column name for turbine IDs. If \code{file_turbine} is the name
+\item{unitCol}{Column name for turbine IDs. If \code{data_layout} is the name
 of a shape file, then \code{file_turbine} must also be provided, giving
 turbine locations. The \code{unitCol} must be present in \code{data_layout}
 and in \code{file_turbine} (if provided). Turbine IDs in the \code{unitCol}
@@ -65,11 +65,15 @@ required (and is ignored) for other data types.}
 \item{nRoadCol}{for \code{dataType = "simple"} layouts: the name of the column in
 \code{data_layout} that gives the number of turbine access roads at each turbine}
 
-\item{xCol}{for \code{dataType = "xy"} layouts: the name of the column in
-\code{data_layout} that gives \code{x} coordinates on the grid}
+\item{xCol}{for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
+the name of the column in \code{data_layout} that gives \code{x} coordinates 
+on the grid (for \code{dataType = "xy"}) or \code{x} coordinates of search area
+polygon (for \code{dataType = "polygon"})}
 
-\item{yCol}{for \code{dataType = "xy"} layouts: the name of the column in
-\code{data_layout} that gives \code{y} coordinates on the grid}
+\item{yCol}{for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
+the name of the column in \code{data_layout} that gives \code{y} coordinates 
+on the grid (for \code{dataType = "yy"}) or \code{y} coordinates of search area
+polygon (for \code{dataType = "polygon"})}
 
 \item{ncarcCol}{for \code{dataType = "xy"} layouts: the name of the column with
 carcass counts in each grid cell. The column is required but may be all zeros

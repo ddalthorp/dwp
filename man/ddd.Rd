@@ -23,6 +23,9 @@ rcd(x, model, parms = NULL, extent = "full", zrad = 200)
 
 \item{model}{either a \code{dd} object or a \code{ddSim} object}
 
+\item{parms}{model parameters; required if model is specified as a character 
+string rather than a \code{dd} or \code{ddSim} object (otherwise optional and ignored)}
+
 \item{extent}{for a full distribution extrapolated beyond the search radius
 to account for all carcasses, use \code{extent = "full"}; for a distribution
 restricted solely to carcasses falling within the search radius, use
@@ -36,7 +39,7 @@ pathological cases.}
 \item{silent}{If \code{TRUE}, then console messages are suppressed.}
 
 \item{subdiv}{if the number of values to calculate with \code{rdd} or \code{qdd}
-is >1 , the function uses breaks the PDF into \code{subdiv} subdivisions and
+is >1, the function uses breaks the PDF into \code{subdiv} subdivisions and
 interpolates to solve the inverse. More subdivisions gives greater accuracy
 but is slower.}
 }

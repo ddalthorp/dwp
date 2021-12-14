@@ -15,7 +15,7 @@ modelFilter(dmod, sieve = "default", quiet = FALSE)
 (\code{quiet = FALSE}) messages from \code{modelFilter}}
 }
 \value{
-An \code{fmod} object, which is an unordered list of extensible models
+An \code{fmod} object, which is an unordered list of extensible models if
  \code{sieve = NULL}; otherwise, a list of class \code{fmod} with following 
  components:
  \describe{

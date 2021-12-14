@@ -65,9 +65,9 @@ dxep0(x, a)
 pxep0(x, a)
 }
 \arguments{
-\item{x, }{q vector of distances}
+\item{x, q}{vector of distances}
 
-\item{a, }{b0, b1, b2, b3, shape, scale, s2 parameters used in the respective
+\item{a, b0, b1, b2, b3, shape, scale, s2}{parameters used in the respective
 distributions.}
 
 \item{const}{(optional) scalar normalizing constant for distributions that are

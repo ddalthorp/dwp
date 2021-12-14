@@ -44,7 +44,7 @@
 #'  the name of the column in \code{data_layout} that gives \code{x} coordinates 
 #'  on the grid (for \code{dataType = "xy"}) or \code{x} coordinates of search area
 #'  polygon (for \code{dataType = "polygon"})
-#' @param xCol for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
+#' @param yCol for \code{dataType = "xy"} or \code{dataType = "polygon"} layouts: 
 #'  the name of the column in \code{data_layout} that gives \code{y} coordinates 
 #'  on the grid (for \code{dataType = "yy"}) or \code{y} coordinates of search area
 #'  polygon (for \code{dataType = "polygon"})
@@ -1853,6 +1853,8 @@ cof2parms.dd <- function(x, ...){
 #' }
 #' @param x,q,p,n numeric, \eqn{x \ge 0}
 #' @param model either a \code{dd} object or a \code{ddSim} object
+#' @param parms model parameters; required if model is specified as a character 
+#'  string rather than a \code{dd} or \code{ddSim} object (otherwise optional and ignored)
 #' @param extent for a full distribution extrapolated beyond the search radius
 #'  to account for all carcasses, use \code{extent = "full"}; for a distribution
 #'  restricted solely to carcasses falling within the search radius, use

@@ -41,7 +41,17 @@ insertion of carcass data into ring structure.}
 in all the rings to 0 before adding the new carcasses (default) or to add the
 new carcasses to the old totals (\code{ncarcReset = FALSE}).}
 
-\item{ccCol}{name of carcass class column (optional)}
+\item{ccCol}{name of carcass class column (optional). Typically, the "carcass 
+class" would be for carcass characteristics that would be expected to affect
+distances that carcasses would fall from the turbine. For example, distances 
+would not be expected to be the same for large and small carcasses, and bats
+may have significantly different distance distributions than small birds. The ccCol
+could also be used for subsetting by any covariate that would be expected 
+to interact with carcass distance distributions, like season (if winds vary 
+by season) or turbine type (if the site has a diverse mix of turbines of 
+different sizes or types). Additionally, ccCol can be used to subset the data by area 
+(for example, NW, NE, SW, SE; or hilltop, river bank) or any other discrete 
+covariate that the user may be interested in.}
 
 \item{unitCol}{name of unit column}
 

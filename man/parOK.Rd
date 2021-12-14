@@ -7,10 +7,10 @@
 parOK(parms, distr)
 }
 \arguments{
-\item{distr}{name of the distribution}
-
-\item{cof}{vector or matrix of named glm parameters (with \code{"r"} as the
+\item{parms}{vector or matrix of named glm parameters (with \code{"r"} as the
 distance variable)}
+
+\item{distr}{name of the distribution}
 }
 \value{
 vector (or scalar) of 0s, 1s, and 2s to indicate whether the parameters

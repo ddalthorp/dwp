@@ -52,8 +52,8 @@ incGamma <- function(a, x, lower = FALSE) pgamma(x, a, lower.tail = lower) * gam
 #' \eqn{f(a) = x^2 e^{-x^2}}{x^2 * exp(-x^2)}, which has a simple closed-form 
 #' integral that involves the error function (\code{pracma::erf}).
 #' 
-#' @param x, q vector of distances
-#' @param a, b0, b1, b2, b3, shape, scale, s2 parameters used in the respective
+#' @param x,q vector of distances
+#' @param a,b0,b1,b2,b3,shape,scale,s2 parameters used in the respective
 #'  distributions.
 #' @param const (optional) scalar normalizing constant for distributions that are
 #'  numerically integrated using \code{integrate}, namely. Providing a \code{const} is
@@ -398,7 +398,7 @@ cofOKInf <- function(cof, distr){
 #' Performs a ouick check on whether the parameters given in \code{parms} are
 #'  valid for the \code{distr}. 
 #' 
-#' @param cof vector or matrix of named glm parameters (with \code{"r"} as the
+#' @param parms vector or matrix of named glm parameters (with \code{"r"} as the
 #'  distance variable)
 #' @param distr name of the distribution
 #' @return vector (or scalar) of 0s, 1s, and 2s to indicate whether the parameters
@@ -440,7 +440,7 @@ exclude <- function(what, from = mod_standard) setdiff(from, what)
 #' 
 #' @param distr character string giving the name of one of the models fit by
 #'  \code{\link{ddFit}}
-#' @param vector of parameters for the \code{distr}, or, alternatively, an array
+#' @param parms vector of parameters for the \code{distr}, or, alternatively, an array
 #'  of parameter sets. Parameterization may follow  either the GLM format or the 
 #'  distribution format. For example, the xep01  model (gamma distribution) has
 #'  GLM parameters for \code{log(r)} and \code{r}, which are the coefficients of 
@@ -449,8 +449,8 @@ exclude <- function(what, from = mod_standard) setdiff(from, what)
 #'  elements of parameter vector must be named. For example, 
 #'  \code{parms = c(log(r) = -0.373, r = -0.0147)} for the GLM format for an 
 #'  xep01 model or, equivalently, \code{parms = c(shape = 1.63, rate = 0.0147)} 
-#'  for the distribution format. If  both formats are given, the GLM parameters are used and the distribution
-#'  parameters ignored.
+#'  for the distribution format. If  both formats are given, the GLM parameters 
+#'  are used and the distribution parameters ignored.
 #' @return a ddSim object with \code{srad = NA}
 #' @export
 mpp2ddSim <- function(distr, parms){
