@@ -1,0 +1,48 @@
+[
+  {
+    "Name": "dwp",
+    "organization": "U.S. Geological Survey",
+    "description": "R package for estimating fraction of bird and bat carcasses lying in the searched area at wind and solar power facilities",
+    "version": "1.0",
+    "status": "Release Candidate",
+
+ "permissions": {
+      "usageType": "openSource",
+      "licenses": [
+        {
+          "name": "Public Domain, CC0-1.0",
+          "URL": "https://code.usgs.gov/ecosystems/dwp/blob/master/LICENSE.md"
+        }
+      ]
+    },
+    "homepageURL": "https://code.usgs.gov/ecosystems/dwp",
+    "downloadURL": "https://code.usgs.gov/ecosystems/dwp/archive/master.zip",
+    "disclaimerURL": "https://code.usgs.gov/ecosystems/dwp/blob/master/DISCLAIMER.md",
+    "repositoryURL": "https://code.usgs.gov/ecosystems/dwp/dwp.git",
+    "vcs": "git",
+
+    "laborHours": 0,
+
+    "tags": [
+      "dwp",    
+      "area correction",
+      "turbines birds bats",
+      "unsearched area",
+      "fatality estimator",
+      "USGS"
+    ],
+
+    "languages": [
+      "R",
+    ],
+
+    "contact": {
+      "name": "Manuela Huso",
+      "email": "mhuso@usgs.gov"
+    },
+
+    "date": {
+      "metadataLastUpdated": "2022-01-07"
+    }
+  }
+]
