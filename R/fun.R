@@ -1128,8 +1128,8 @@ aic.dd <- function(x, ...){
   ))
 }
 
-#'  @name Plot
-#'  Plot dd and ddArray Objects
+#' @name Plot
+#' @title Plot dd and ddArray Objects
 #'  
 #' @description Plot CDF, PDF, or rcd (relative carcass density) for a single
 #'  carcass dispersion glm model (\code{\link[=ddFit]{dd}} object) or a list of 

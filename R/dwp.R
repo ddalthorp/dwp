@@ -38,11 +38,11 @@ utils::globalVariables(c(".", "cof_name", "constraints", "mod_all", "mod_color",
 #'     `dwphat` objects for use with GenEst}
 #'   \item{\code{\link{aic}, \link{modelFilter}, \link{stats}, \link{ddCI}}}{statistics 
 #'      for fitted models}
-#'   \item{\code{plot}}{S3 function for \code{\link[=plot.ddArray]{ddArray}},
-#'     \code{\link[=plot.dd]{dd}}, \code{\link[=plot.fmod]{fmod}},
-#'     \code{\link[=plot.polygonLayout]{polygonLayout}}, 
-#'     \code{\link[=plot.psiHat]{psiHat}},
-#'     \code{\link[=plot.dwphat]{dwpHat}} objects.}
+#'   \item{\code{plot}}{S3 function for \code{\link[=Plot]{ddArray}},
+#'     \code{\link[=Plot]{dd}}, \code{\link[=Plot]{fmod}},
+#'     \code{\link[=Plot]{polygonLayout}}, 
+#'     \code{\link[=Plot]{psiHat}},
+#'     \code{\link[=Plot]{dwpHat}} objects.}
 #'   \item{\code{\link{ddd}, \link[=ddd]{pdd}, \link[=ddd]{qdd}, \link[=ddd]{rdd}, \link[=ddd]{rcd}}}{probability 
 #'      functions for distance distributions}
 #'  }
