@@ -1,5 +1,4 @@
 # dwp
-12345678901234567890123456789012345678901234567890123456789012345678901234567890
 Estimating the number of birds or bats killed at a wind power facility involves
 adjusting observed carcass counts to account for imperfect detection. To account
 for carcasses that lie outside the searched area, the count is adjusted by 
