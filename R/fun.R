@@ -798,6 +798,12 @@ prepRing.numeric <- function(x, srad, ...){
 #' @export
 #'
 prepRing.polygonLayout <- function(x, ...){
+  if (!requireNamespace("gpclib", quietly = TRUE)) {
+    stop(
+      "Package \"gpclib\" must be installed to use this function. Please install.",
+      call. = FALSE
+    )
+  }
   srad <- attr(x, "srad")
   rdat <- list()
   rpA <- list()
