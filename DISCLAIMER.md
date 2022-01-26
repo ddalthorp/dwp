@@ -1,4 +1,4 @@
-This is an incremental update to GenEst v1.0.0 which was approved for release by
+This is an incremental update to dwp v1.0.0 which was approved for release by
 the U.S. Geological Survey (USGS) after rigorous review. This software release 
 is in compliance with the US Geological Survey publishing, which is associated 
 with IP-101457.

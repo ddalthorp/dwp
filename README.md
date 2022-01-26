@@ -100,7 +100,7 @@ Click the Install button on the dialog box.
 
 ## Getting Started
 
-Download the User Guide from <??? we have it but it has to go through the copy editor. With GenEst, we had a copy of the pre-final (i.e., version sent to the copy editor for formatting and style) but approved copy of the user guide posted at code.usgs.gov and then later linked to the T&M docs after they made it through Tacoma.>
+Download the User Guide from <arxiv:2201.10064>
 
 In R, type the following commands for an overview of the main commands in the 
 package:
