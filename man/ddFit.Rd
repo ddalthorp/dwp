@@ -153,3 +153,11 @@ Fit generalized linear models (glm) for distance distribution
  converted to a probability distribution. In these cases, the distribution
  parameters are given as \code{NA}, but the fitted model itself is saved.
 }
+\examples{
+ data(layout_simple) 
+ data(carcass_simple)
+ sitedata <- initLayout(layout_simple) # initialize
+ ringdata <- prepRing(sitedata) # format site layout data for modeling
+ ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata) # add carcasses to site
+ distanceModels <- ddFit(ringsWithCarcasses) # fit distance models
+}

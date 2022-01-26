@@ -144,3 +144,15 @@ Several choices of pre-defined \code{sieve}s are available (or, as described
   custom components may be mixed and matched as desired.}
 }
 }
+\examples{
+ data(layout_simple)
+ data(carcass_simple)
+ sitedata <- initLayout(layout_simple)
+ ringdata <- prepRing(sitedata)
+ ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
+ distanceModels <- ddFit(ringsWithCarcasses)
+ stats(distanceModels)
+ stats(distanceModels[["tnormal"]])
+ stats(distanceModels[["lognormal"]])
+ 
+}

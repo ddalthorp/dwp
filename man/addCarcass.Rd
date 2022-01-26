@@ -57,10 +57,22 @@ covariate that the user may be interested in.}
 
 \item{rCol}{name of column with carcass distances}
 }
+\value{
+an object of class \code{rings} with a tally of the number of
+ of carcasses discovered in each concentric 1m ring from the turbine to the 
+ most distant point searched.
+}
 \description{
 After the site layout is analyzed and structured by rings for analysis,
  carcass data may still need to be added to the site data. \code{addCarcass}
  grabs carcass location data from a shape file or data frame and formats it
  into ring data, with carcass tallies in every 1m ring from the turbine to
  the maximum search distance away from any turbine.
+}
+\examples{
+ data(layout_simple)
+ data(carcass_simple)
+ sitedata <- initLayout(layout_simple)
+ ringdata <- prepRing(sitedata)
+ ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
 }

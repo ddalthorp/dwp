@@ -188,3 +188,15 @@ All the layout types (except for vector, which is addressed elsewhere)
  be entered in the function call. Other components are automatically searched
  for and processed if available.
 }
+\examples{
+data(layout_simple)
+# converts properly formatted dataframe to 'simpleLayout' object
+initLayout(layout_simple) 
+
+data(layout_xy)
+initLayout(layout_xy, dataType = "xy")
+
+data(layout_polygon)
+initLayout(layout_polygon, dataType = "polygon", unitCol = "turbine")
+
+}

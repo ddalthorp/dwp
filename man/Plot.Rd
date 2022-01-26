@@ -79,6 +79,9 @@ objects)}
 \item{CL}{confidence level to show in a \code{\link[=ddFit]{dd}} plot (ignored 
 for \code{\link[=ddFit]{ddArray}} objects)}
 }
+\value{
+Plot displayed; no return value.
+}
 \description{
 Plot CDF, PDF, or rcd (relative carcass density) for a single
  carcass dispersion glm model (\code{\link[=ddFit]{dd}} object) or a list of 

@@ -142,3 +142,17 @@ used are listed below.
  }
 }
 }
+\examples{
+data(layout_simple)
+data(carcass_simple)
+sitedata <- initLayout(layout_simple)
+ringdata <- prepRing(sitedata)
+ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
+distanceModels <- ddFit(ringsWithCarcasses)
+modelEvaluations <- modelFilter(distanceModels)
+bestModel <- modelEvaluations$filtered
+pdd(100, model = bestModel) # estimated fraction of carcasses within 100m
+ddd(1:150, model = bestModel) # estimated PDF of the carcass distances
+qdd(0.9, model = bestModel) # estimated 0.9 quantile of carcass distances
+rdd(1000, model = bestModel) # 1000 random draws from estimated carcass distribution
+}

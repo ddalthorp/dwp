@@ -18,6 +18,9 @@
 
 \item{...}{ignored}
 }
+\value{
+no return value; output printed to the console
+}
 \description{
 \code{\link[=ddFit]{dd}}, \code{\link[=ddFit]{ddArray}}, and 
  \code{\link[=modelFilter]{fmod}} objects are lists consisting of a great

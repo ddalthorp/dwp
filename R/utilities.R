@@ -429,6 +429,7 @@ parOK <- function(parms, distr){
 #' 
 #' @param what vector of distribution names to exclude
 #' @param from vector of distribution names to be excluded from
+#' @return vector of names from "from" after excluding "what"
 #' @export
 exclude <- function(what, from = mod_standard) setdiff(from, what)
  

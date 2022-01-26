@@ -11,6 +11,9 @@ exclude(what, from = mod_standard)
 
 \item{from}{vector of distribution names to be excluded from}
 }
+\value{
+vector of names from "from" after excluding "what"
+}
 \description{
 Removes specific values (\code{what}) from a longer vector of values (\code{from}).
 By default, \code{from = mod_standard}, and the intent is to simplify the

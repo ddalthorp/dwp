@@ -147,6 +147,17 @@
 #'    }
 #'  }
 #'
+#' @examples
+#' data(layout_simple)
+#' # converts properly formatted dataframe to 'simpleLayout' object
+#' initLayout(layout_simple) 
+#' 
+#' data(layout_xy)
+#' initLayout(layout_xy, dataType = "xy")
+#'
+#' data(layout_polygon)
+#' initLayout(layout_polygon, dataType = "polygon", unitCol = "turbine")
+#'
 #' @export
 initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     file_turbine = NULL, radCol = "radius", shapeCol = "shape", padCol = "padrad",
@@ -926,6 +937,14 @@ prepRing.polygonLayout <- function(x, ...){
 #'  shown. To see a full list of the objects, use \code{names(x)}. The elements
 #'  can be extracted in the usual R way via \code{$} or \code{[[x]]}.
 #'
+#' @examples
+#'  data(layout_simple) 
+#'  data(carcass_simple)
+#'  sitedata <- initLayout(layout_simple) # initialize
+#'  ringdata <- prepRing(sitedata) # format site layout data for modeling
+#'  ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata) # add carcasses to site
+#'  distanceModels <- ddFit(ringsWithCarcasses) # fit distance models
+
 #' @export
 #'
 ddFit <- function(x, ...) UseMethod("ddFit", x)
@@ -1179,7 +1198,7 @@ aic.dd <- function(x, ...){
 #'  according to the filter is listed first, with a heavier line than the others; 
 #'  the remaining distributions are listed in descending order, with the best 
 #'  models in the leftmost column. 
-#'
+#' @return Plot displayed; no return value.
 #' @rdname Plot
 #' @export
 #'
@@ -1219,7 +1238,7 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   }
 
     
-  ### graph is in two parts, in succession with par(fig...) and par(new = T)
+  ### graph is in two parts, in succession with fig...) and par(new = T)
   ###  0) preliminaries
   ###  1) legend [common to all parts]
   ###  2) main graph [lines]
@@ -1274,6 +1293,8 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   arglist$x = 0
   arglist$type = "n"
   ## part 1: legend
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))            
   do.call(par, par_default) 
   ncol <- 1 + floor((ndistr - 1)/5)
   sz <- 0.17
@@ -1535,7 +1556,7 @@ ddSim.dd <- function(x, nsim = 1000, extent = "full", ...){
 #'
 #' @param x a \code{\link[=ddFit]{ddArray}} or \code{\link[=ddFit]{ddArray}} object
 #' @param ... ignored
-#'
+#' @return no return value; output printed to the console
 #' @rdname ddprint
 #' @export
 #'
@@ -1880,6 +1901,21 @@ cof2parms.dd <- function(x, ...){
 #'  with dimensions \code{length(x)} by \code{nrow(model)} is returned (where 
 #'  "\code{x}" is \code{x}, \code{q}, or \code{p}, depending on whether \code{ddd},
 #'  \code{pdd}, or \code{qdd} is called).
+#' 
+#' @examples
+#' data(layout_simple)
+#' data(carcass_simple)
+#' sitedata <- initLayout(layout_simple)
+#' ringdata <- prepRing(sitedata)
+#' ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
+#' distanceModels <- ddFit(ringsWithCarcasses)
+#' modelEvaluations <- modelFilter(distanceModels)
+#' bestModel <- modelEvaluations$filtered
+#' pdd(100, model = bestModel) # estimated fraction of carcasses within 100m
+#' ddd(1:150, model = bestModel) # estimated PDF of the carcass distances
+#' qdd(0.9, model = bestModel) # estimated 0.9 quantile of carcass distances
+#' rdd(1000, model = bestModel) # 1000 random draws from estimated carcass distribution
+
 #' @export
 ddd <- function(x, model, parms = NULL, extent = "full", zrad = 200){ # model is either ddSim or dd
   if ("dd" %in% class(model)) {
@@ -3071,6 +3107,8 @@ plot.polygonLayout <- function(x, ...){
 #' @rdname Plot
 #' @export
 plot.layoutSimple <- function(x, ...){
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))            
   par(mfrow = c(ceiling(sqrt(nrow(x))), round(sqrt(nrow(x)))),
     mar = c(0, 0, 0, 0), oma = c(2, 2, 1, 1), mgp = c(2, 0.7, 0), tck = -0.015)
   rmax <- max(x$radius)
@@ -3216,6 +3254,15 @@ Acins <- function(r, s){
 #' @param unitCol name of unit column
 #' @param rCol name of column with carcass distances
 #' @param ... ignored
+#' @return an object of class \code{rings} with a tally of the number of
+#'  of carcasses discovered in each concentric 1m ring from the turbine to the 
+#'  most distant point searched.
+#' @examples
+#'  data(layout_simple)
+#'  data(carcass_simple)
+#'  sitedata <- initLayout(layout_simple)
+#'  ringdata <- prepRing(sitedata)
+#'  ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
 #' @export
 addCarcass <- function(x, ...) UseMethod("addCarcass", x)
 
@@ -3506,6 +3553,8 @@ plot.psiHat <- function(x, ...){
   if (!"ylab" %in% names(arglist)) arglist$ylab  <- expression(hat(psi))
   if (!"cex.lab" %in% names(arglist)) arglist$cex.lab <- 1.2
   bxwd <- 0.4
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))            
   par(mar = c(5.4, 5, 2, 1))
   do.call(plot, arglist)
 #  plot(0, type = "n", xlim = c(1, ncol(x)), ylim = range(x), axes = FALSE,
@@ -3532,6 +3581,8 @@ plot.psiHat <- function(x, ...){
 #' @export
 plot.dwphat <- function(x, ...){
   bxwd <- 0.4
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))            
   par(mar = c(5.4, 5, 2, 1))
   plot(0, type = "n", xlim = c(1, ncol(x)) + bxwd*c(-1, 1), ylim = range(x, na.rm = TRUE),
     axes = FALSE, xlab = "", ylab = expression(widehat(dwp)), cex.lab = 1.2)
@@ -3713,6 +3764,17 @@ exportGenEst <- function(dwp, file){
 #'  is the name of the \code{fmod} return value. The elements
 #'  can be extracted in the usual R way via, for example, \code{x$sieve} or 
 #'  \code{x[["sieve"]]}.
+#'  
+#' @examples
+#'  data(layout_simple)
+#'  data(carcass_simple)
+#'  sitedata <- initLayout(layout_simple)
+#'  ringdata <- prepRing(sitedata)
+#'  ringsWithCarcasses <- addCarcass(carcass_simple, data_ring = ringdata)
+#'  distanceModels <- ddFit(ringsWithCarcasses)
+#'  stats(distanceModels)
+#'  stats(distanceModels[["tnormal"]])
+#'  stats(distanceModels[["lognormal"]])
 #'  
 #' @export
 modelFilter <- function(dmod, sieve = "default", quiet = FALSE){
