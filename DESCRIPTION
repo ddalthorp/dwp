@@ -1,8 +1,8 @@
 Package: dwp
 Type: Package
 Title: Density-Weighted Proportion
-Version: 1.0
-Date: 2022-01-20
+Version: 1.1
+Date: 2023-06-30
 Authors@R: c(
     person("Daniel", "Dalthorp", , "ddalthorp@protonmail.com", c("aut", "cre")),
     person("Manuela", "Huso", , "mhuso@usgs.gov", "aut"))
@@ -30,4 +30,4 @@ Imports:
     VGAM
 Suggests:
     gpclib
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3

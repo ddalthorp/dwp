@@ -7,6 +7,7 @@
 #'  each turbine (square, circular, road & pad). A vector of distances along with
 #'  a search radius is also accommodated by \code{dwp}, but these can be directly
 #'  processed in \code{\link{prepRing}} without preprocessing in \code{initLayout}.
+
 #' @param data_layout Either the name of a shape file (polygons or multipolygons)
 #'  that delineates areas searched at each turbine; a .csv file with R polygons,
 #'  (x, y) coordinates, or simple descriptions of search parameters at each turbine;
@@ -159,6 +160,7 @@
 #' initLayout(layout_polygon, dataType = "polygon", unitCol = "turbine")
 #'
 #' @export
+
 initLayout <- function(data_layout, dataType = "simple",  unitCol = "turbine",
     file_turbine = NULL, radCol = "radius", shapeCol = "shape", padCol = "padrad",
     roadwidCol = "roadwidth", nRoadCol = "n_road", xCol = "x", yCol = "y",
@@ -809,39 +811,40 @@ prepRing.numeric <- function(x, srad, ...){
 #' @export
 #'
 prepRing.polygonLayout <- function(x, ...){
-  if (!requireNamespace("gpclib", quietly = TRUE)) {
-    stop(
-      "Package \"gpclib\" must be installed to use this function. Please install.",
-      call. = FALSE
-    )
-  }
   srad <- attr(x, "srad")
   rdat <- list()
   rpA <- list()
-  theta <- seq(0, 2*pi, length = 1000)
-  rr <- 1:srad
-  cx <- outer(rr, cos(theta))
+  ndiv <- 1000
+  theta <- seq(0, 2*pi, length = ndiv) # number of segments to divide the circle into for approx area
+  rr <- 1:srad # outer radii of rings
+  cx <- outer(rr, cos(theta)) # approx area in 1m ring with outer radius rr = 2 pi (rr - 0.5)
   cy <- outer(rr, sin(theta))
   iarea <- list()
   rtot <- data.frame(r = 1:srad, exposure = 0, ncarc = 0)
   Atot <- data.frame(r = 1:srad, pinc = 0)
-  for (ti in names(x)){
+  for(ti in names(x)){
+    poly1 <- sf::st_polygon(list(poly1 = rbind(x[[ti]], x[[ti]][1,])))
     rmax <- ceiling(max(sqrt(rowSums(x[[ti]]^2))))
     iarea[[ti]] <- numeric(rmax)
-    for (ri in 1:rmax){
-      iarea[[ti]][ri] <- gpclib::area.poly(gpclib::intersect(
-        as(cbind(cx[ri, ], cy[ri, ]), "gpc.poly"),
-        as(x[[ti]], "gpc.poly")
-      ))
+    for(ri in 1:rmax){
+      iarea[[ti]][ri] <- sf::st_length(cx[ri, ] %>% cbind(cy[ri, ]) %>% 
+        sf::st_multipoint(., dim = "XY") %>%
+        sf::st_cast(., "LINESTRING") %>%
+        sf::st_intersection(., poly1))
+      if(is.null(iarea[[ti]][ri])) next
     }
-    iarea[[ti]] <- c(0, iarea[[ti]])
-    rdat[[ti]] <- data.frame(r = 1:rmax, exposure = diff(iarea[[ti]]), ncarc = 0)
+    rdat[[ti]] <- data.frame(
+      r = 1:rmax, 
+      exposure = (c(0, iarea[[ti]][1:(rmax - 1)]) + iarea[[ti]])/2, 
+      ncarc = 0
+    )
     rpA[[ti]] <- data.frame(
       r = 1:rmax,
       pinc = rdat[[ti]][, "exposure"]/((1:rmax - 1/2) * 2 * pi)
     )
     rtot[1:rmax, "exposure"] %<>% `+` (., rdat[[ti]][, "exposure"])
     Atot[1:rmax, "pinc"] %<>% `+` (., rpA[[ti]][, "pinc"])
+
   }
   rdat[["total"]] <- rtot
   rpA[["total"]] <- Atot
@@ -857,7 +860,6 @@ prepRing.polygonLayout <- function(x, ...){
   class(output) <- "rings"
   return(output)
 }
-
 
 #' Fit Distance Distribution Model(s)
 #'
