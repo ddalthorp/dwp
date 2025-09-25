@@ -356,7 +356,7 @@ cofOK <- function(cof, distr){
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
-  lim <- constraints[[distr]]
+  lim <- dwp::constraints[[distr]]
   for (ci in rownames(lim)){
     output[cof[, ci] <= lim[ci, "lower"] | cof[, ci] >= lim[ci, "upper"]] <- FALSE
   }
@@ -370,7 +370,7 @@ cofOK0 <- function(cof, distr){
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
-  lim <- constraints[[distr]]
+  lim <- dwp::constraints[[distr]]
   ci <- grep("log(r)", rownames(lim))
   if (length(ci) > 0) output[cof[, ci] <= lim[ci, "lower"]] <- FALSE
   ci <- grep("I(1/r)", rownames(lim))
@@ -385,7 +385,7 @@ cofOKInf <- function(cof, distr){
   if (is.vector(cof))
     cof <- matrix(cof, nrow = 1, dimnames = list(NULL, names(cof)))
   output <- rep(TRUE, nrow(cof))
-  lim <- constraints[[distr]]
+  lim <- dwp::constraints[[distr]]
   ci <- rownames(lim)[nrow(lim)]
   for (ci in rownames(lim)){
     output[cof[, ci] >= lim[ci, "upper"]] <- FALSE
@@ -409,7 +409,7 @@ parOK <- function(parms, distr){
   if (is.vector(parms))
     parms <- matrix(parms, nrow = 1, dimnames = list(NULL, names(parms)))
   output <- rep(TRUE, nrow(parms))
-  lim <- constraints_par[[distr]]
+  lim <- dwp::constraints_par[[distr]]
   for (ci in rownames(lim)){
     output[parms[, ci] <= lim[ci, "lower"] | parms[, ci] >= lim[ci, "upper"]] <- FALSE
   }
@@ -597,7 +597,7 @@ parms2cof.matrix <- function(x, distr, ...){
   }
   return(ans)
 }
-
+#' @export
 parms2cof.numeric <- function(x, distr, ...){
   output <- parms2cof(matrix(x, nrow = 1, dimnames = list(NULL, names(x))), distr)
   return(output)

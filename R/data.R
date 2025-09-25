@@ -164,4 +164,5 @@
 "xyr"
 
 #' Section of Code that Serves No Purpose but for Package to Pass CRAN Check
+#' @name junk
 utils::globalVariables(c("sieve_win", "alt_names", "constraints_par", "distr_names"))

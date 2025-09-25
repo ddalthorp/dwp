@@ -733,6 +733,7 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
 #' @export
 #'
 prepRing.simpleLayout <- function(x, ...){
+  print("hello")
   rdat <- list()
   rpA <- list()
   rownames(x) <- x$turbine
@@ -747,13 +748,15 @@ prepRing.simpleLayout <- function(x, ...){
       square = diff(Acins(r = 0:rmax, s = x[ti, "radius"])),
       RP = {
         expo <- numeric(rmax) # 1 exposure for each radius = 1, ..., rmax
-        rout <- ceiling(x[ti, "padrad"]:rmax)
-        expo[rout] <- x[ti, "roadwidth"] * x[ti, "n_road"]
-        rin <- which(rdat[[ti]]$r < x[ti, "padrad"])
+        rout <- floor((1 + x[ti, "padrad"]):rmax)
+        y <- roadwidth/2
+        expo[rout] <- y*(sqrt(rout^2 - y^2) - sqrt((rout-1)^2 - y^2)) + rout^2 * asin(y/rout) - (rout-1)^2 * asin(y/(rout-1)) * x[ti, "n_road"]
+        rin <- which(rdat[[ti]]$r <= round(x[ti, "padrad"]))
         expo[rin] <- 2*pi*(rin - 1/2)
         expo
       }
     )
+    if ("type" %in% names(x)) rdat[[ti]]$type <- x[ti, "type"]
     rpA[[ti]] <- rdat[[ti]][, c("r", "exposure")]
     names(rpA[[ti]]) <- c("r", "pinc")
     rpA[[ti]]$pinc <- pmin(rpA[[ti]]$pinc/(2*pi*(1:rmax - 1/2)), 1)
@@ -773,15 +776,29 @@ prepRing.simpleLayout <- function(x, ...){
   totA$pinc <- pmin(totA$pinc/nrow(x), 1)
   rpA[["total"]] <- totA
   class(rpA) <- "rpA"
-  rdat[["total"]] <- totr
+  if (!"type" %in% names(x)){
+    rdat[["total"]] <- totr
+    scVar <- NULL
+  } else {
+    rdat[["total"]] <- aggregate(exposure ~ r + type, data = do.call(rbind, rdat), sum)
+    rdat[["total"]]$ncarc  <- 0
+    scVar <- "type"
+  }
   class(rdat) <- "rdat"
   # cull the rows with radii beyond the edge
   ncarc <- numeric(nrow(x) + 1)
   names(ncarc) <- c(x[, "turbine"], "total")
-  output <- list(rdat = rdat, rpA = rpA, srad = srad, ncarc = ncarc, scVar = NULL)
+  output <- list(
+    rdat = rdat, 
+    rpA = rpA, 
+    srad = srad, 
+    ncarc = ncarc,
+    scVar = scVar
+  )
   class(output) <- "rings"
   return(output)
 }
+
 
 #' @rdname prepRing
 #' @export
@@ -859,7 +876,7 @@ prepRing.polygonLayout <- function(x, ...){
     ncarc = ncarc, srad = srad, scVar = NULL)
   class(output) <- "rings"
   return(output)
-}
+}#.prepRing.polygonLayout
 
 #' Fit Distance Distribution Model(s)
 #'
@@ -1295,9 +1312,9 @@ plot.ddArray = function(x, type = "CDF", extent = "full", distr = "all",
   arglist$x = 0
   arglist$type = "n"
   ## part 1: legend
-  oldpar <- par(no.readonly = TRUE)
-  on.exit(par(oldpar))            
-  do.call(par, par_default) 
+  #oldpar <- par(no.readonly = TRUE)
+  #on.exit(par(oldpar))            
+  #do.call(par, par_default) 
   ncol <- 1 + floor((ndistr - 1)/5)
   sz <- 0.17
   par(fig = c(0, 1, 0, sz), mar = c(0, 1, 1.2, 0), family = "sans")
@@ -2764,13 +2781,14 @@ estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
   parmsim <- prepmod(model, nsim)
   tmp <- lapply(x, FUN = estpsi, model = parmsim,
     extent = extent, nsim = nsim, zrad = zrad)
-  output <- sapply(tmp, "[[", "psi")
+  output <- do.call(cbind, tmp)
+  colnames(output) <- names(x)
+  print("bye-bye")
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
   class(output) <- c("psiHat", "matrix")
   output
 }
-
 
 #' @rdname estpsi
 #' @export
@@ -2795,20 +2813,16 @@ estpsi.rdat <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...)
 #' @export
 estpsi.data.frame <- function(x, model, extent = "full", nsim = 1000, zrad = 200,
     ...){
-  parmsim <- prepmod(model, nsim)
-  output <- list(
-    psi = c(t(ddd(x$r - 1/2, parmsim, extent = extent, zrad = zrad)) %*% x$pinc),
-    ncarc = sum(x$ncarc)
-  )
-  output$psi[output$psi > 1] <- 1
+  if (!"ddSim" %in% model) parmsim <- prepmod(model, nsim)
+  output <- t(ddd(x$r - 1/2, parmsim, extent = extent, zrad = zrad)) %*% x$pinc
+  output[output > 1] <- 1
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
-  class(output) <- c("psiHat", "matrix")
+  class(output) <- "psiHat"
   output
 }
 
-
-#'  Internal Utility Function to Parse and Format Model for Calculating Psihat
+#'  Internal Utility Function to Parse and Format Model for Calculating psihat
 #'
 #' @param model \code{dd} or \code{ddSim} object
 #' @param nsim number of simulation reps. If \code{nsim = 0}, return dd2ddSim
@@ -2972,7 +2986,6 @@ estdwp.psiHat <- function(x, ncarc, nboot = NULL, forGenEst = FALSE,
 
 #' @rdname estdwp
 #' @export
-#x = psi_size; ncarc = getncarc(cod_free_size); forGenEst = T; nboot = NULL; silent = TRUE
 estdwp.psiHatcc <- function(x, ncarc, nboot = NULL,
     forGenEst = FALSE, silent = TRUE, ...){
   if (!is.list(ncarc))
@@ -3109,8 +3122,8 @@ plot.polygonLayout <- function(x, ...){
 #' @rdname Plot
 #' @export
 plot.layoutSimple <- function(x, ...){
-  oldpar <- par(no.readonly = TRUE)
-  on.exit(par(oldpar))            
+  #oldpar <- par(no.readonly = TRUE)
+  #on.exit(par(oldpar))            
   par(mfrow = c(ceiling(sqrt(nrow(x))), round(sqrt(nrow(x)))),
     mar = c(0, 0, 0, 0), oma = c(2, 2, 1, 1), mgp = c(2, 0.7, 0), tck = -0.015)
   rmax <- max(x$radius)
@@ -3376,7 +3389,7 @@ addCarcass.shapeCarcass <- function(x, data_ring, plotLayout = NULL,
 #' @rdname addCarcass
 #' @export
 addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
-    ncarcReset = TRUE, unitCol = "turbine", rCol = "r", ...){
+    ncarcReset = TRUE, unitCol = "turbine", rCol = "r",...){
   if (!is.null(ccCol)){
     if (!ccCol %in% names(x)) stop("ccCol not in carcass data frame")
     if (!is.character(x[, ccCol]))
@@ -3397,20 +3410,50 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
       })
       data_ring$ncarc %<>% `*` (., 0)
     }
-    for (ti in unique(x[, unitCol])){
-      tbl <- table(ceiling(x[x[, unitCol] == ti, rCol]))
-      ind <- match(as.numeric(names(tbl)), data_ring$rdat[[ti]][, rCol])
-      data_ring$rdat[[ti]][ind, "ncarc"] %<>% `+`(., unname(tbl))
-      itot <- match(as.numeric(names(tbl)), data_ring$rdat[["total"]][, rCol])
-      data_ring$rdat[["total"]][itot, "ncarc"] %<>% `+`(., unname(tbl))
+    if (!"type" %in% data_ring$scVar){
+      for (ti in unique(x[, unitCol])){
+        tbl <- table(ceiling(x[x[, unitCol] == ti, rCol]))
+        ind <- match(as.numeric(names(tbl)), data_ring$rdat[[ti]][, rCol])
+        data_ring$rdat[[ti]][ind, "ncarc"] %<>% `+`(., unname(tbl))
+        itot <- match(as.numeric(names(tbl)), data_ring$rdat[["total"]][, rCol])
+        data_ring$rdat[["total"]][itot, "ncarc"] %<>% `+`(., unname(tbl))
+      }
+    } else {
+      if (!scCol %in% colnames(x)){
+        stop("mismatch in 'type' name. 'scCol' must be a column name in x.")
+      } else if (!all((unique(x[, scCol])) %in% unique(do.call(rbind, data_ring$rdat)[, "type"]))) {
+        stop("mismatch between turbine types in data_ring$rdat and x[, scCol]")
+      }
+      tab <- table(x[, unitCol], x[, rCol])
+
+      ## step 2: loop through data_ring and update turbines
+      for (nm in rownames(tab)) {
+        ind <- which(tab[nm, ] > 0)
+        tmp <- numeric(max(data_ring$rdat[[nm]]$r))#numeric(max(as.numeric(names(ind))))
+        tmp[as.numeric(names(ind))] <- unname(tab[nm, names(ind)])
+        data_ring$rdat[[nm]]$ncarc <- tmp + data_ring$rdat[[nm]]$ncarc
+      }
+
+      # step 3: update total 
+      tab <- table(x[, scCol], x[, rCol])
+      nup <- NULL # updated rcarc data
+      for (nm in rownames(tab)){
+        ti <- which(data_ring$rdat[["total"]][, scCol] == nm)
+        newn <- data_ring$rdat[["total"]]$ncarc[ti]
+        ind <- which(tab[nm, ] > 0)
+        newn[as.numeric(colnames(tab)[ind])] <- tab[nm, ind]
+        nup <- c(nup, newn)
+      }
+      data_ring$rdat[["total"]]$ncarc <- nup
     }
     data_ring$ncarc <- sapply(data_ring$rdat, FUN = function(ti) sum(ti[, "ncarc"]))
     class(data_ring$rdat) <- "rings"
   } else {
-      stop("addCarcass: class(data_ring) must be rings")
+    stop("addCarcass: class(data_ring) must be rings")
   }
   return(data_ring)
 }
+
 
 #' Subset Data from an Imported and Formatted Shape File
 #'
@@ -3555,8 +3598,8 @@ plot.psiHat <- function(x, ...){
   if (!"ylab" %in% names(arglist)) arglist$ylab  <- expression(hat(psi))
   if (!"cex.lab" %in% names(arglist)) arglist$cex.lab <- 1.2
   bxwd <- 0.4
-  oldpar <- par(no.readonly = TRUE)
-  on.exit(par(oldpar))            
+  #oldpar <- par(no.readonly = TRUE)
+  #on.exit(par(oldpar))            
   par(mar = c(5.4, 5, 2, 1))
   do.call(plot, arglist)
 #  plot(0, type = "n", xlim = c(1, ncol(x)), ylim = range(x), axes = FALSE,
@@ -3583,8 +3626,8 @@ plot.psiHat <- function(x, ...){
 #' @export
 plot.dwphat <- function(x, ...){
   bxwd <- 0.4
-  oldpar <- par(no.readonly = TRUE)
-  on.exit(par(oldpar))            
+  #oldpar <- par(no.readonly = TRUE)
+  #on.exit(par(oldpar))            
   par(mar = c(5.4, 5, 2, 1))
   plot(0, type = "n", xlim = c(1, ncol(x)) + bxwd*c(-1, 1), ylim = range(x, na.rm = TRUE),
     axes = FALSE, xlab = "", ylab = expression(widehat(dwp)), cex.lab = 1.2)
