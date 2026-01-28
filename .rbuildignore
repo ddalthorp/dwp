@@ -1,6 +1,0 @@
-^data-raw$
-^.travis.yml$
-^LICENSE.md$
-^code.json$
-^DISCLAIMER.md$
-^R/.*0\.R$
