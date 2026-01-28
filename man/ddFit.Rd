@@ -90,7 +90,14 @@ is ignored if \code{x} is not a \code{shapeLayout} or \code{xyLayout} object.
 If \code{x} is a \code{shapeLayout} object, \code{scVar} may be either \code{NULL}
 or the name of a single column with search class data. If \code{x} is an \code{xyLayout}
 object, \code{scVar} may be either NULL or a vector of names of search class
-variables to include in the models.}
+variables to include in the models. If \code{x} is a data frame for a site 
+"simple" layout turbines with varying detection probabilities among turbines,
+\code{x} must have a column named "type" to indicate a search plot type. The
+"type" for each turbine is a character string to differentiate turbine types
+that may have different detection probababilities (e.g., turbines 1 and 2
+might be cleared plots with a relatively low carcass detection probability, while
+turbines 3 and 4 are searched on only the roads and pads with a relatively high
+carcass detection probability.}
 
 \item{rCol}{name of the distance column (which gives the outer radii of the rings).
  This will be correct by default for objects coming from \code{\link{prepRing}} 

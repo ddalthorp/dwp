@@ -131,6 +131,7 @@ A list or data frame with components appropriate to the type of data
        \item \code{padrad} = radius of the turbine pad (assumed circular)
        \item \code{roadwidth} = width of the access road(s)
        \item \code{n_road} = number of access roads
+       \item \code{type} = type of search plot layout at each turbine (e.g. "RP", or "cleared plot")
      }
    }
    \item{\code{polygonLayout}}{
@@ -167,8 +168,10 @@ All the layout types (except for vector, which is addressed elsewhere)
  can accommodate patterns of seached and not searched areas. If the searched
  areas are subdivided into different search classes with different detection
  probabilities, then search plot layout data must be input either from shape files
- with non-intersecting polgons delineating the search classes or from x-y grid
- data. If there is more than one search class variable (for example, ground
+ with non-intersecting polgons delineating the search classes, from x-y grid
+ data, or in a \"simple\" data frame layout with a \"type\" column which gives
+ a search class type for each turbine (e.g., RP or CP for road and pad search
+ or cleared plot). If there is more than one search class variable (for example, ground
  cover and search schedule), then the covariates may be entered in separate
  columns if the layout files give grid coordinates or may be combined into
  one column in the shape files. For example, ground visibility may be easy or

@@ -67,8 +67,10 @@
 #'  can accommodate patterns of seached and not searched areas. If the searched
 #'  areas are subdivided into different search classes with different detection
 #'  probabilities, then search plot layout data must be input either from shape files
-#'  with non-intersecting polgons delineating the search classes or from x-y grid
-#'  data. If there is more than one search class variable (for example, ground
+#'  with non-intersecting polgons delineating the search classes, from x-y grid
+#'  data, or in a \"simple\" data frame layout with a \"type\" column which gives
+#'  a search class type for each turbine (e.g., RP or CP for road and pad search
+#'  or cleared plot). If there is more than one search class variable (for example, ground
 #'  cover and search schedule), then the covariates may be entered in separate
 #'  columns if the layout files give grid coordinates or may be combined into
 #'  one column in the shape files. For example, ground visibility may be easy or
@@ -126,6 +128,7 @@
 #'        \item \code{padrad} = radius of the turbine pad (assumed circular)
 #'        \item \code{roadwidth} = width of the access road(s)
 #'        \item \code{n_road} = number of access roads
+#'        \item \code{type} = type of search plot layout at each turbine (e.g. "RP", or "cleared plot")
 #'      }
 #'    }
 #'    \item{\code{polygonLayout}}{
@@ -733,7 +736,6 @@ prepRing.shapeLayout <- function(x, scVar = NULL, notSearched = NULL,
 #' @export
 #'
 prepRing.simpleLayout <- function(x, ...){
-  print("hello")
   rdat <- list()
   rpA <- list()
   rownames(x) <- x$turbine
@@ -913,7 +915,14 @@ prepRing.polygonLayout <- function(x, ...){
 #'  If \code{x} is a \code{shapeLayout} object, \code{scVar} may be either \code{NULL}
 #'  or the name of a single column with search class data. If \code{x} is an \code{xyLayout}
 #'  object, \code{scVar} may be either NULL or a vector of names of search class
-#'  variables to include in the models.
+#'  variables to include in the models. If \code{x} is a data frame for a site 
+#'  "simple" layout turbines with varying detection probabilities among turbines,
+#'  \code{x} must have a column named "type" to indicate a search plot type. The
+#'  "type" for each turbine is a character string to differentiate turbine types
+#'  that may have different detection probababilities (e.g., turbines 1 and 2
+#'  might be cleared plots with a relatively low carcass detection probability, while
+#'  turbines 3 and 4 are searched on only the roads and pads with a relatively high
+#'  carcass detection probability.
 #' @param notSearched the name of the level (if any) in \code{scVar} that
 #'  indicates an unsearched area
 #' @param rCol name of the distance column (which gives the outer radii of the rings).
@@ -2783,7 +2792,6 @@ estpsi.rpA <- function(x, model, extent = "full", nsim = 1000, zrad = 200, ...){
     extent = extent, nsim = nsim, zrad = zrad)
   output <- do.call(cbind, tmp)
   colnames(output) <- names(x)
-  print("bye-bye")
   attr(output, "extent") <- extent
   attr(output, "zrad") <- zrad
   class(output) <- c("psiHat", "matrix")
@@ -3419,9 +3427,9 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
         data_ring$rdat[["total"]][itot, "ncarc"] %<>% `+`(., unname(tbl))
       }
     } else {
-      if (!scCol %in% colnames(x)){
-        stop("mismatch in 'type' name. 'scCol' must be a column name in x.")
-      } else if (!all((unique(x[, scCol])) %in% unique(do.call(rbind, data_ring$rdat)[, "type"]))) {
+      if (!"type" %in% colnames(x)){
+        stop("mismatch in 'type' name. 'type' must be a column name in x.")
+      } else if (!all((unique(x[, "type"])) %in% unique(do.call(rbind, data_ring$rdat)[, "type"]))) {
         stop("mismatch between turbine types in data_ring$rdat and x[, scCol]")
       }
       tab <- table(x[, unitCol], x[, rCol])
@@ -3435,10 +3443,10 @@ addCarcass.data.frame <- function(x, data_ring, ccCol = NULL,
       }
 
       # step 3: update total 
-      tab <- table(x[, scCol], x[, rCol])
+      tab <- table(x[, "type"], x[, rCol])
       nup <- NULL # updated rcarc data
       for (nm in rownames(tab)){
-        ti <- which(data_ring$rdat[["total"]][, scCol] == nm)
+        ti <- which(data_ring$rdat[["total"]][, "type"] == nm)
         newn <- data_ring$rdat[["total"]]$ncarc[ti]
         ind <- which(tab[nm, ] > 0)
         newn[as.numeric(colnames(tab)[ind])] <- tab[nm, ind]

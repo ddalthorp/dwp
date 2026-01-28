@@ -2,7 +2,7 @@
 % Please edit documentation in R/fun.R
 \name{prepmod}
 \alias{prepmod}
-\title{Internal Utility Function to Parse and Format Model for Calculating Psihat}
+\title{Internal Utility Function to Parse and Format Model for Calculating psihat}
 \usage{
 prepmod(model, nsim)
 }
@@ -15,5 +15,5 @@ prepmod(model, nsim)
 \code{\link{ddSim}} object of simulated distribution model parameters
 }
 \description{
-Internal Utility Function to Parse and Format Model for Calculating Psihat
+Internal Utility Function to Parse and Format Model for Calculating psihat
 }
