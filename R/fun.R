@@ -7,7 +7,6 @@
 #'  each turbine (square, circular, road & pad). A vector of distances along with
 #'  a search radius is also accommodated by \code{dwp}, but these can be directly
 #'  processed in \code{\link{prepRing}} without preprocessing in \code{initLayout}.
-
 #' @param data_layout Either the name of a shape file (polygons or multipolygons)
 #'  that delineates areas searched at each turbine; a .csv file with R polygons,
 #'  (x, y) coordinates, or simple descriptions of search parameters at each turbine;
